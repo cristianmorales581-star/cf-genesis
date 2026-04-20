@@ -25,22 +25,21 @@ interface Programa {
 }
 
 const schema = z.object({
-  codigo_pcfb: z.string().trim().regex(/^P-CFB-\d{3,}$/, "Código debe ser P-CFB-001, P-CFB-002, …").max(30),
+  codigo_pcfb: z.string().trim().min(3, "Código requerido").max(60, "Máx 60 caracteres")
+    .regex(/^[A-Z0-9\-]+$/, "Solo mayúsculas, números y guiones (ej: CFB-CASHEA-2025-C)"),
   cedente_id: z.string().uuid("Selecciona un cedente"),
   linea: z.string().trim().max(60).optional().or(z.literal("")),
   plazo_ejecucion_dias: z.number().int().positive().max(3650),
-  descuento_base: z.number().min(0).max(0.20),
+  descuento_base_pct: z.number().min(0, "Mínimo 0%").max(20, "Máximo 20%"),
   plazo_cuotas_dias: z.number().int().positive().max(3650),
   fecha_inicio: z.string(),
-  fecha_vencimiento: z.string(),
   contrato_cesion: z.string().trim().max(80).optional().or(z.literal("")),
-}).refine(d => new Date(d.fecha_vencimiento) > new Date(d.fecha_inicio), { message: "Vencimiento debe ser posterior al inicio", path: ["fecha_vencimiento"] });
+});
 
 const empty = {
   codigo_pcfb: "", cedente_id: "", linea: "PRINCIPAL",
-  plazo_ejecucion_dias: 360, descuento_base: 0.04, plazo_cuotas_dias: 30,
+  plazo_ejecucion_dias: 360, descuento_base_pct: 4, plazo_cuotas_dias: 30,
   fecha_inicio: new Date().toISOString().slice(0, 10),
-  fecha_vencimiento: new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10),
   contrato_cesion: "",
 };
 
