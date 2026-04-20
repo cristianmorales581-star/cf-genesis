@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, Building2, BookOpenCheck,
-  FilePlus2, FileStack, Upload, ScrollText, LogOut,
+  FilePlus2, FileStack, Upload, ScrollText, LogOut, FileSpreadsheet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ const NAV = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard", end: true, group: "general" },
   { to: "/emisiones", icon: FileStack, label: "Emisiones", group: "operación" },
   { to: "/emisiones/nueva", icon: FilePlus2, label: "Nueva Emisión", op: true, group: "operación" },
+  { to: "/emisiones/masiva", icon: FileSpreadsheet, label: "Emisión Masiva", op: true, group: "operación" },
   { to: "/confirmaciones", icon: Upload, label: "Confirmaciones", group: "operación" },
   { to: "/programas", icon: BookOpenCheck, label: "Programas", group: "maestros" },
   { to: "/cedentes", icon: Building2, label: "Cedentes", group: "maestros" },
