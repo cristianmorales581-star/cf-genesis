@@ -1,13 +1,22 @@
 // SICEBOP — Emisión Masiva: carga CSV → mapeo → generación de CFBs + Vector
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { PageHeader, Card, Numeric, Pill } from "@/components/ui-bits";
+import { PageHeader } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Download, Loader2, Wand2 } from "lucide-react";
+import { Upload, FileSpreadsheet, Download, Loader2, Wand2 } from "lucide-react";
+
+function Card({ title, children }: { title?: string; children: React.ReactNode }) {
+  return (
+    <section className="surface-card p-5 mb-6">
+      {title && <h3 className="font-display text-sm uppercase tracking-[0.16em] text-muted-foreground mb-4">{title}</h3>}
+      {children}
+    </section>
+  );
+}
 import { fmtUSD, fmtPct, todayISO } from "@/lib/format";
 import { parseCSVText, inferCedenteName, nameSimilarity, type ParsedRow } from "@/lib/csvParser";
 import JSZip from "jszip";
@@ -307,7 +316,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok
 }
 
 /** Construye el .xlsx del vector consolidado, espejo del formato SIBE. */
-function buildVectorXlsx(rows: any[], fechaEmision: string): ArrayBuffer {
+function buildVectorXlsx(rows: any[], _fechaEmision: string): ArrayBuffer {
   const wb = XLSX.utils.book_new();
 
   // Hoja 1: Vector
