@@ -14,16 +14,359 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          resource_id: string | null
+          resource_type: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          resource_id?: string | null
+          resource_type: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          resource_id?: string | null
+          resource_type?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      cedentes: {
+        Row: {
+          activo: boolean
+          cargo: string | null
+          cedula: string | null
+          created_at: string
+          id: string
+          nombre_comercial: string | null
+          razon_social: string
+          representante_legal: string | null
+          rif: string
+        }
+        Insert: {
+          activo?: boolean
+          cargo?: string | null
+          cedula?: string | null
+          created_at?: string
+          id?: string
+          nombre_comercial?: string | null
+          razon_social: string
+          representante_legal?: string | null
+          rif: string
+        }
+        Update: {
+          activo?: boolean
+          cargo?: string | null
+          cedula?: string | null
+          created_at?: string
+          id?: string
+          nombre_comercial?: string | null
+          razon_social?: string
+          representante_legal?: string | null
+          rif?: string
+        }
+        Relationships: []
+      }
+      confirmaciones: {
+        Row: {
+          contraparte_razon_social: string
+          created_at: string
+          emision_id: string
+          fecha_operacion: string
+          fecha_valor: string
+          id: string
+          monto_efectivo_usd: number
+          pdf_url: string | null
+          tipo: Database["public"]["Enums"]["tipo_confirmacion"]
+          valor_efectivo_bs: number
+        }
+        Insert: {
+          contraparte_razon_social: string
+          created_at?: string
+          emision_id: string
+          fecha_operacion: string
+          fecha_valor: string
+          id?: string
+          monto_efectivo_usd: number
+          pdf_url?: string | null
+          tipo: Database["public"]["Enums"]["tipo_confirmacion"]
+          valor_efectivo_bs: number
+        }
+        Update: {
+          contraparte_razon_social?: string
+          created_at?: string
+          emision_id?: string
+          fecha_operacion?: string
+          fecha_valor?: string
+          id?: string
+          monto_efectivo_usd?: number
+          pdf_url?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_confirmacion"]
+          valor_efectivo_bs?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmaciones_emision_id_fkey"
+            columns: ["emision_id"]
+            isOneToOne: false
+            referencedRelation: "emisiones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emisiones: {
+        Row: {
+          cantidad_ordenes_compra: number
+          created_at: string
+          descuento: number
+          dias_colocados: number
+          estado: string
+          fecha_emision: string
+          fecha_vencimiento: string
+          financista_id: string | null
+          id: string
+          monto_efectivo_usd: number
+          operador_id: string | null
+          precio: number
+          programa_id: string
+          rendimiento_anualizado: number
+          simbolo_cfb: string
+          tasa_cambio_bs_usd: number
+          valor_efectivo_bs: number
+          valor_nominal_usd: number
+        }
+        Insert: {
+          cantidad_ordenes_compra?: number
+          created_at?: string
+          descuento: number
+          dias_colocados: number
+          estado?: string
+          fecha_emision: string
+          fecha_vencimiento: string
+          financista_id?: string | null
+          id?: string
+          monto_efectivo_usd: number
+          operador_id?: string | null
+          precio: number
+          programa_id: string
+          rendimiento_anualizado: number
+          simbolo_cfb: string
+          tasa_cambio_bs_usd: number
+          valor_efectivo_bs: number
+          valor_nominal_usd: number
+        }
+        Update: {
+          cantidad_ordenes_compra?: number
+          created_at?: string
+          descuento?: number
+          dias_colocados?: number
+          estado?: string
+          fecha_emision?: string
+          fecha_vencimiento?: string
+          financista_id?: string | null
+          id?: string
+          monto_efectivo_usd?: number
+          operador_id?: string | null
+          precio?: number
+          programa_id?: string
+          rendimiento_anualizado?: number
+          simbolo_cfb?: string
+          tasa_cambio_bs_usd?: number
+          valor_efectivo_bs?: number
+          valor_nominal_usd?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emisiones_financista_id_fkey"
+            columns: ["financista_id"]
+            isOneToOne: false
+            referencedRelation: "financistas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emisiones_programa_id_fkey"
+            columns: ["programa_id"]
+            isOneToOne: false
+            referencedRelation: "programas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financistas: {
+        Row: {
+          activo: boolean
+          cargo: string | null
+          cedula: string | null
+          celular: string | null
+          correo: string | null
+          created_at: string
+          id: string
+          razon_social: string
+          representante_legal: string | null
+          rif: string | null
+          tipo: Database["public"]["Enums"]["tipo_financista"]
+        }
+        Insert: {
+          activo?: boolean
+          cargo?: string | null
+          cedula?: string | null
+          celular?: string | null
+          correo?: string | null
+          created_at?: string
+          id?: string
+          razon_social: string
+          representante_legal?: string | null
+          rif?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_financista"]
+        }
+        Update: {
+          activo?: boolean
+          cargo?: string | null
+          cedula?: string | null
+          celular?: string | null
+          correo?: string | null
+          created_at?: string
+          id?: string
+          razon_social?: string
+          representante_legal?: string | null
+          rif?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_financista"]
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      programas: {
+        Row: {
+          activo: boolean
+          cedente_id: string
+          codigo_pcfb: string
+          contrato_cesion: string | null
+          created_at: string
+          descuento_base: number
+          fecha_inicio: string
+          fecha_vencimiento: string
+          id: string
+          linea: string | null
+          plazo_cuotas_dias: number
+          plazo_ejecucion_dias: number
+        }
+        Insert: {
+          activo?: boolean
+          cedente_id: string
+          codigo_pcfb: string
+          contrato_cesion?: string | null
+          created_at?: string
+          descuento_base?: number
+          fecha_inicio: string
+          fecha_vencimiento: string
+          id?: string
+          linea?: string | null
+          plazo_cuotas_dias?: number
+          plazo_ejecucion_dias?: number
+        }
+        Update: {
+          activo?: boolean
+          cedente_id?: string
+          codigo_pcfb?: string
+          contrato_cesion?: string | null
+          created_at?: string
+          descuento_base?: number
+          fecha_inicio?: string
+          fecha_vencimiento?: string
+          id?: string
+          linea?: string | null
+          plazo_cuotas_dias?: number
+          plazo_ejecucion_dias?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programas_cedente_id_fkey"
+            columns: ["cedente_id"]
+            isOneToOne: false
+            referencedRelation: "cedentes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_authenticated_user: { Args: never; Returns: boolean }
+      next_simbolo_for_programa: {
+        Args: { _programa_id: string }
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "operador"
+      tipo_confirmacion: "CDC" | "CDV"
+      tipo_financista: "natural" | "juridica"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +493,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "operador"],
+      tipo_confirmacion: ["CDC", "CDV"],
+      tipo_financista: ["natural", "juridica"],
+    },
   },
 } as const
