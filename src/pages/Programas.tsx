@@ -79,12 +79,23 @@ export default function Programas() {
     const parsed = schema.safeParse(form);
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     setBusy(true);
+    const payload = {
+      codigo_pcfb: parsed.data.codigo_pcfb,
+      cedente_id: parsed.data.cedente_id,
+      linea: parsed.data.linea || null,
+      plazo_ejecucion_dias: parsed.data.plazo_ejecucion_dias,
+      descuento_base: parsed.data.descuento_base,
+      plazo_cuotas_dias: parsed.data.plazo_cuotas_dias,
+      fecha_inicio: parsed.data.fecha_inicio,
+      fecha_vencimiento: parsed.data.fecha_vencimiento,
+      contrato_cesion: parsed.data.contrato_cesion || null,
+    };
     if (editing) {
-      const { error } = await supabase.from("programas").update(parsed.data).eq("id", editing.id);
-      if (error) toast.error(error.message); else { await logAudit({ action: "update", resource_type: "programa", resource_id: editing.id, details: parsed.data }); toast.success("Programa actualizado"); }
+      const { error } = await supabase.from("programas").update(payload).eq("id", editing.id);
+      if (error) toast.error(error.message); else { await logAudit({ action: "update", resource_type: "programa", resource_id: editing.id, details: payload }); toast.success("Programa actualizado"); }
     } else {
-      const { data, error } = await supabase.from("programas").insert([parsed.data]).select().single();
-      if (error) toast.error(error.message); else { await logAudit({ action: "create", resource_type: "programa", resource_id: data.id, details: parsed.data }); toast.success("Programa creado"); }
+      const { data, error } = await supabase.from("programas").insert(payload).select().single();
+      if (error) toast.error(error.message); else { await logAudit({ action: "create", resource_type: "programa", resource_id: data.id, details: payload }); toast.success("Programa creado"); }
     }
     setBusy(false); setOpen(false); load();
   }
