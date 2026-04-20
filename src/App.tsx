@@ -11,8 +11,12 @@ import Dashboard from "./pages/Dashboard";
 import Cedentes from "./pages/Cedentes";
 import Financistas from "./pages/Financistas";
 import Programas from "./pages/Programas";
-import Placeholder from "./pages/Placeholder";
 import NotFound from "./pages/NotFound";
+import NuevaEmision from "./pages/NuevaEmision";
+import Emisiones from "./pages/Emisiones";
+import EmisionDetalle from "./pages/EmisionDetalle";
+import Confirmaciones from "./pages/Confirmaciones";
+import Auditoria from "./pages/Auditoria";
 
 const queryClient = new QueryClient();
 
@@ -30,11 +34,11 @@ const App = () => (
               <Route path="/cedentes" element={<Cedentes />} />
               <Route path="/financistas" element={<Financistas />} />
               <Route path="/programas" element={<Programas />} />
-              <Route path="/emisiones" element={<Placeholder title="Emisiones" subtitle="Listado completo de emisiones CFB" />} />
-              <Route path="/emisiones/nueva" element={<Placeholder title="Nueva Emisión" subtitle="Registro de una nueva emisión CFB" />} />
-              <Route path="/emisiones/:id" element={<Placeholder title="Detalle de Emisión" subtitle="Documentos y operaciones asociadas" />} />
-              <Route path="/confirmaciones" element={<Placeholder title="Confirmaciones" subtitle="Carga masiva del vector SIBE y generación de CDC/CDV" />} />
-              <Route path="/auditoria" element={<Placeholder title="Auditoría" subtitle="Registro de todas las acciones del sistema" />} />
+              <Route path="/emisiones" element={<Emisiones />} />
+              <Route path="/emisiones/nueva" element={<NuevaEmision />} />
+              <Route path="/emisiones/:id" element={<EmisionDetalle />} />
+              <Route path="/confirmaciones" element={<Confirmaciones />} />
+              <Route path="/auditoria" element={<Auditoria />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
