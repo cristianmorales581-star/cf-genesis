@@ -10,8 +10,12 @@
 // Implementación: la edge function compone el HTML final (fechas formateadas,
 // montos, texto legal) y el cliente se encarga del render a PDF mediante
 // `window.print()` con CSS @page.
-import { corsHeaders } from '@supabase/supabase-js/cors'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 interface Body {
   emision_id: string;
