@@ -3,114 +3,130 @@
 @tailwind utilities;
 
 /* ============================================================
-   SICEBOP — Grupo Bursátil Venezolano design system
-   Editorial financial palette: deep navy + warm gold accents
+   SICEBOP — Dark institutional design system
+   Deep navy + warm gold accents · Montserrat
    ============================================================ */
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Surfaces */
+    --background: 222 38% 7%;
+    --foreground: 210 25% 92%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 222 35% 9%;
+    --card-foreground: 210 25% 92%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 222 38% 9%;
+    --popover-foreground: 210 25% 92%;
 
-    /* Brand primary: deep navy (institutional, financial) */
-    --primary: 217 65% 19%;
-    --primary-foreground: 40 38% 96%;
-    --primary-glow: 217 60% 32%;
+    /* Brand: deep navy + glow */
+    --primary: 217 70% 55%;
+    --primary-foreground: 222 38% 7%;
+    --primary-glow: 217 80% 65%;
 
-    /* Brand accent: warm gold (BVC tradition) */
-    --accent: 38 72% 48%;
-    --accent-foreground: 222 47% 11%;
-    --accent-soft: 40 78% 92%;
+    /* Accent: warm gold (BVC) */
+    --accent: 38 78% 58%;
+    --accent-foreground: 222 38% 7%;
+    --accent-soft: 38 30% 18%;
 
-    --secondary: 215 25% 95%;
-    --secondary-foreground: 217 65% 19%;
+    --secondary: 222 25% 14%;
+    --secondary-foreground: 210 25% 92%;
 
-    --muted: 215 20% 94%;
-    --muted-foreground: 215 16% 42%;
+    --muted: 222 22% 13%;
+    --muted-foreground: 215 14% 58%;
 
-    --success: 152 56% 32%;
-    --success-foreground: 152 60% 96%;
-    --warning: 35 90% 45%;
-    --warning-foreground: 35 90% 12%;
-    --destructive: 0 72% 45%;
+    --success: 152 56% 48%;
+    --success-foreground: 152 60% 8%;
+    --warning: 35 90% 58%;
+    --warning-foreground: 35 90% 10%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 215 22% 88%;
-    --input: 215 22% 88%;
-    --ring: 217 65% 19%;
+    --border: 222 22% 16%;
+    --input: 222 22% 16%;
+    --ring: 38 78% 58%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 65% 19%), hsl(217 60% 32%));
-    --gradient-gold: linear-gradient(135deg, hsl(38 72% 48%), hsl(35 78% 56%));
-    --gradient-surface: linear-gradient(180deg, hsl(210 40% 99%), hsl(215 25% 95%));
+    --gradient-primary: linear-gradient(135deg, hsl(217 65% 22%), hsl(217 70% 32%));
+    --gradient-gold: linear-gradient(135deg, hsl(38 78% 52%), hsl(35 84% 62%));
+    --gradient-surface: radial-gradient(ellipse at top left, hsl(222 35% 10%), hsl(222 38% 6%));
+    --gradient-card: linear-gradient(180deg, hsl(222 32% 10%), hsl(222 38% 8%));
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(217 50% 15% / 0.06);
-    --shadow-md: 0 4px 12px -2px hsl(217 50% 15% / 0.08);
-    --shadow-lg: 0 12px 32px -8px hsl(217 50% 15% / 0.18);
-    --shadow-elegant: 0 8px 24px -6px hsl(217 65% 19% / 0.25);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.45);
+    --shadow-lg: 0 18px 40px -12px hsl(0 0% 0% / 0.55);
+    --shadow-elegant: 0 8px 24px -6px hsl(217 70% 30% / 0.45);
+    --shadow-glow: 0 0 0 1px hsl(38 78% 58% / 0.18), 0 8px 24px -6px hsl(38 78% 58% / 0.22);
 
-    /* Sidebar */
-    --sidebar-background: 217 65% 14%;
-    --sidebar-foreground: 215 30% 88%;
-    --sidebar-primary: 38 72% 48%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 217 55% 22%;
-    --sidebar-accent-foreground: 40 38% 96%;
-    --sidebar-border: 217 50% 25%;
-    --sidebar-ring: 38 72% 48%;
+    /* Sidebar — deepest tone */
+    --sidebar-background: 222 42% 5%;
+    --sidebar-foreground: 215 18% 70%;
+    --sidebar-primary: 38 78% 58%;
+    --sidebar-primary-foreground: 222 42% 5%;
+    --sidebar-accent: 222 30% 11%;
+    --sidebar-accent-foreground: 210 28% 95%;
+    --sidebar-border: 222 28% 12%;
+    --sidebar-ring: 38 78% 58%;
 
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 96%;
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 38 72% 52%;
-    --primary-foreground: 222 47% 8%;
-    --secondary: 217 32% 14%;
-    --secondary-foreground: 210 40% 96%;
-    --muted: 217 32% 14%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 38 72% 52%;
-    --accent-foreground: 222 47% 8%;
-    --border: 217 32% 18%;
-    --input: 217 32% 18%;
-    --ring: 38 72% 52%;
+  /* Light theme retained for printable PDFs only */
+  .light-print {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --border: 215 22% 88%;
+    --primary: 217 65% 19%;
+    --primary-foreground: 40 38% 96%;
+    --muted-foreground: 215 16% 42%;
   }
 }
 
 @layer base {
   * { @apply border-border; }
+  html, body, #root { @apply min-h-screen; }
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "cv11";
+    background-image: var(--gradient-surface);
+    background-attachment: fixed;
   }
-  h1, h2, h3, h4 { @apply font-display tracking-tight; }
+  h1, h2, h3, h4, h5 { @apply font-display tracking-tight; }
+  /* Scrollbars dark */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: hsl(var(--background)); }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
+}
+
+@layer components {
+  .surface-card {
+    background: var(--gradient-card);
+    @apply border border-border rounded-lg shadow-sm;
+  }
+  .glow-ring {
+    box-shadow: var(--shadow-glow);
+  }
+  .pill {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.12em];
+  }
 }
 
 /* Print styles for PDF previews */
 @media print {
-  body { background: white; }
+  body { background: white !important; color: black !important; background-image: none !important; }
   .no-print { display: none !important; }
 }
 
-/* PDF document styling */
+/* PDF document styling — light, formal */
 .pdf-doc {
   font-family: 'Source Serif 4', Georgia, serif;
   color: #1a1a1a;
   background: white;
 }
-.pdf-doc h1, .pdf-doc h2, .pdf-doc h3 { font-family: 'Inter', sans-serif; }
+.pdf-doc h1, .pdf-doc h2, .pdf-doc h3 { font-family: 'Montserrat', sans-serif; }
