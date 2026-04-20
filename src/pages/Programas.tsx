@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
-import { fmtDate, fmtPct } from "@/lib/format";
+import { fmtDate, fmtPct, addDaysISO } from "@/lib/format";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -26,7 +26,7 @@ interface Programa {
 
 const schema = z.object({
   codigo_pcfb: z.string().trim().min(3, "Código requerido").max(60, "Máx 60 caracteres")
-    .regex(/^[A-Z0-9\-]+$/, "Solo mayúsculas, números y guiones (ej: CFB-CASHEA-2025-C)"),
+    .regex(/^[A-Z0-9-]+$/, "Solo mayúsculas, números y guiones (ej: CFB-CASHEA-2025-C)"),
   cedente_id: z.string().uuid("Selecciona un cedente"),
   linea: z.string().trim().max(60).optional().or(z.literal("")),
   plazo_ejecucion_dias: z.number().int().positive().max(3650),
@@ -67,26 +67,32 @@ export default function Programas() {
     setEditing(p);
     setForm({
       codigo_pcfb: p.codigo_pcfb, cedente_id: p.cedente_id, linea: p.linea ?? "",
-      plazo_ejecucion_dias: p.plazo_ejecucion_dias, descuento_base: Number(p.descuento_base),
+      plazo_ejecucion_dias: p.plazo_ejecucion_dias,
+      descuento_base_pct: Number(p.descuento_base) * 100,
       plazo_cuotas_dias: p.plazo_cuotas_dias, fecha_inicio: p.fecha_inicio,
-      fecha_vencimiento: p.fecha_vencimiento, contrato_cesion: p.contrato_cesion ?? "",
+      contrato_cesion: p.contrato_cesion ?? "",
     });
     setOpen(true);
   }
 
+  const fechaVencimientoCalc = form.fecha_inicio && form.plazo_ejecucion_dias > 0
+    ? addDaysISO(form.fecha_inicio, form.plazo_ejecucion_dias)
+    : "";
+
   async function save() {
     const parsed = schema.safeParse(form);
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    if (!fechaVencimientoCalc) { toast.error("Fecha de vencimiento inválida"); return; }
     setBusy(true);
     const payload = {
       codigo_pcfb: parsed.data.codigo_pcfb,
       cedente_id: parsed.data.cedente_id,
       linea: parsed.data.linea || null,
       plazo_ejecucion_dias: parsed.data.plazo_ejecucion_dias,
-      descuento_base: parsed.data.descuento_base,
+      descuento_base: parsed.data.descuento_base_pct / 100,
       plazo_cuotas_dias: parsed.data.plazo_cuotas_dias,
       fecha_inicio: parsed.data.fecha_inicio,
-      fecha_vencimiento: parsed.data.fecha_vencimiento,
+      fecha_vencimiento: fechaVencimientoCalc,
       contrato_cesion: parsed.data.contrato_cesion || null,
     };
     if (editing) {
@@ -119,7 +125,7 @@ export default function Programas() {
             <DialogContent className="max-w-2xl">
               <DialogHeader><DialogTitle className="font-display text-xl text-primary">{editing ? "Editar" : "Nuevo"} Programa</DialogTitle></DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-2">
-                <div><Label>Código P-CFB *</Label><Input value={form.codigo_pcfb} onChange={e => setForm({ ...form, codigo_pcfb: e.target.value.toUpperCase() })} placeholder="P-CFB-001" maxLength={30} /></div>
+                <div><Label>Código del Programa *</Label><Input value={form.codigo_pcfb} onChange={e => setForm({ ...form, codigo_pcfb: e.target.value.toUpperCase() })} placeholder="CFB-CASHEA-2025-C" maxLength={60} /></div>
                 <div><Label>Línea</Label>
                   <Select value={form.linea} onValueChange={v => setForm({ ...form, linea: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -141,10 +147,14 @@ export default function Programas() {
                 </div>
                 <div><Label>Plazo Ejecución (días)</Label><Input type="number" value={form.plazo_ejecucion_dias} onChange={e => setForm({ ...form, plazo_ejecucion_dias: parseInt(e.target.value || "0") })} /></div>
                 <div><Label>Plazo Cuotas (días)</Label><Input type="number" value={form.plazo_cuotas_dias} onChange={e => setForm({ ...form, plazo_cuotas_dias: parseInt(e.target.value || "0") })} /></div>
-                <div><Label>Descuento Base (decimal, máx 0.20)</Label><Input type="number" step="0.0001" value={form.descuento_base} onChange={e => setForm({ ...form, descuento_base: parseFloat(e.target.value || "0") })} /></div>
+                <div><Label>Descuento Base (%) — máx 20%</Label><Input type="number" step="0.01" value={form.descuento_base_pct} onChange={e => setForm({ ...form, descuento_base_pct: parseFloat(e.target.value || "0") })} placeholder="4" /></div>
                 <div><Label>Contrato de Cesión</Label><Input value={form.contrato_cesion} onChange={e => setForm({ ...form, contrato_cesion: e.target.value })} placeholder="N° contrato" maxLength={80} /></div>
                 <div><Label>Fecha Inicio *</Label><Input type="date" value={form.fecha_inicio} onChange={e => setForm({ ...form, fecha_inicio: e.target.value })} /></div>
-                <div><Label>Fecha Vencimiento *</Label><Input type="date" value={form.fecha_vencimiento} onChange={e => setForm({ ...form, fecha_vencimiento: e.target.value })} /></div>
+                <div>
+                  <Label>Fecha Vencimiento (calculada)</Label>
+                  <Input type="date" value={fechaVencimientoCalc} readOnly disabled className="bg-muted/50" />
+                  <p className="text-xs text-muted-foreground mt-1">Inicio + Plazo Ejecución</p>
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
