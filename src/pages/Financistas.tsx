@@ -68,12 +68,22 @@ export default function Financistas() {
     const parsed = schema.safeParse(form);
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     setBusy(true);
+    const payload = {
+      razon_social: parsed.data.razon_social,
+      rif: parsed.data.rif || null,
+      tipo: parsed.data.tipo,
+      representante_legal: parsed.data.representante_legal || null,
+      cargo: parsed.data.cargo || null,
+      cedula: parsed.data.cedula || null,
+      correo: parsed.data.correo || null,
+      celular: parsed.data.celular || null,
+    };
     if (editing) {
-      const { error } = await supabase.from("financistas").update(parsed.data).eq("id", editing.id);
-      if (error) toast.error(error.message); else { await logAudit({ action: "update", resource_type: "financista", resource_id: editing.id, details: parsed.data }); toast.success("Financista actualizado"); }
+      const { error } = await supabase.from("financistas").update(payload).eq("id", editing.id);
+      if (error) toast.error(error.message); else { await logAudit({ action: "update", resource_type: "financista", resource_id: editing.id, details: payload }); toast.success("Financista actualizado"); }
     } else {
-      const { data, error } = await supabase.from("financistas").insert([parsed.data]).select().single();
-      if (error) toast.error(error.message); else { await logAudit({ action: "create", resource_type: "financista", resource_id: data.id, details: parsed.data }); toast.success("Financista creado"); }
+      const { data, error } = await supabase.from("financistas").insert(payload).select().single();
+      if (error) toast.error(error.message); else { await logAudit({ action: "create", resource_type: "financista", resource_id: data.id, details: payload }); toast.success("Financista creado"); }
     }
     setBusy(false); setOpen(false); load();
   }

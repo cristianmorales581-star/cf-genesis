@@ -61,14 +61,22 @@ export default function Cedentes() {
     const parsed = schema.safeParse(form);
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     setBusy(true);
+    const payload = {
+      razon_social: parsed.data.razon_social,
+      rif: parsed.data.rif,
+      representante_legal: parsed.data.representante_legal || null,
+      cargo: parsed.data.cargo || null,
+      cedula: parsed.data.cedula || null,
+      nombre_comercial: parsed.data.nombre_comercial || null,
+    };
     if (editing) {
-      const { error } = await supabase.from("cedentes").update(parsed.data).eq("id", editing.id);
+      const { error } = await supabase.from("cedentes").update(payload).eq("id", editing.id);
       if (error) toast.error(error.message);
-      else { await logAudit({ action: "update", resource_type: "cedente", resource_id: editing.id, details: parsed.data }); toast.success("Cedente actualizado"); }
+      else { await logAudit({ action: "update", resource_type: "cedente", resource_id: editing.id, details: payload }); toast.success("Cedente actualizado"); }
     } else {
-      const { data, error } = await supabase.from("cedentes").insert([parsed.data]).select().single();
+      const { data, error } = await supabase.from("cedentes").insert(payload).select().single();
       if (error) toast.error(error.message);
-      else { await logAudit({ action: "create", resource_type: "cedente", resource_id: data.id, details: parsed.data }); toast.success("Cedente creado"); }
+      else { await logAudit({ action: "create", resource_type: "cedente", resource_id: data.id, details: payload }); toast.success("Cedente creado"); }
     }
     setBusy(false); setOpen(false); load();
   }
