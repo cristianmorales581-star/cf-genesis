@@ -83,7 +83,7 @@ export default function Programas() {
       const { error } = await supabase.from("programas").update(parsed.data).eq("id", editing.id);
       if (error) toast.error(error.message); else { await logAudit({ action: "update", resource_type: "programa", resource_id: editing.id, details: parsed.data }); toast.success("Programa actualizado"); }
     } else {
-      const { data, error } = await supabase.from("programas").insert(parsed.data).select().single();
+      const { data, error } = await supabase.from("programas").insert([parsed.data]).select().single();
       if (error) toast.error(error.message); else { await logAudit({ action: "create", resource_type: "programa", resource_id: data.id, details: parsed.data }); toast.success("Programa creado"); }
     }
     setBusy(false); setOpen(false); load();

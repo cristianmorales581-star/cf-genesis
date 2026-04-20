@@ -66,7 +66,7 @@ export default function Cedentes() {
       if (error) toast.error(error.message);
       else { await logAudit({ action: "update", resource_type: "cedente", resource_id: editing.id, details: parsed.data }); toast.success("Cedente actualizado"); }
     } else {
-      const { data, error } = await supabase.from("cedentes").insert(parsed.data).select().single();
+      const { data, error } = await supabase.from("cedentes").insert([parsed.data]).select().single();
       if (error) toast.error(error.message);
       else { await logAudit({ action: "create", resource_type: "cedente", resource_id: data.id, details: parsed.data }); toast.success("Cedente creado"); }
     }

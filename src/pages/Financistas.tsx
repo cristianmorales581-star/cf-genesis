@@ -33,14 +33,18 @@ const schema = z.object({
   celular: z.string().trim().max(30).optional().or(z.literal("")),
 });
 
-const empty = { razon_social: "", rif: "", tipo: "juridica" as const, representante_legal: "", cargo: "", cedula: "", correo: "", celular: "" };
+type FormState = {
+  razon_social: string; rif: string; tipo: "natural" | "juridica";
+  representante_legal: string; cargo: string; cedula: string; correo: string; celular: string;
+};
+const empty: FormState = { razon_social: "", rif: "", tipo: "juridica", representante_legal: "", cargo: "", cedula: "", correo: "", celular: "" };
 
 export default function Financistas() {
   const { isOperador } = useAuth();
   const [rows, setRows] = useState<Financista[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Financista | null>(null);
-  const [form, setForm] = useState<typeof empty>(empty);
+  const [form, setForm] = useState<FormState>(empty);
   const [busy, setBusy] = useState(false);
 
   async function load() {
@@ -68,7 +72,7 @@ export default function Financistas() {
       const { error } = await supabase.from("financistas").update(parsed.data).eq("id", editing.id);
       if (error) toast.error(error.message); else { await logAudit({ action: "update", resource_type: "financista", resource_id: editing.id, details: parsed.data }); toast.success("Financista actualizado"); }
     } else {
-      const { data, error } = await supabase.from("financistas").insert(parsed.data).select().single();
+      const { data, error } = await supabase.from("financistas").insert([parsed.data]).select().single();
       if (error) toast.error(error.message); else { await logAudit({ action: "create", resource_type: "financista", resource_id: data.id, details: parsed.data }); toast.success("Financista creado"); }
     }
     setBusy(false); setOpen(false); load();
