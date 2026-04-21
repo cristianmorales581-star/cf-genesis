@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState, Numeric } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import { fmtDate, fmtPct, addDaysISO } from "@/lib/format";
@@ -116,52 +117,57 @@ export default function Programas() {
     <>
       <PageHeader title="Programas" subtitle="Programas marco de Certificados de Financiamiento Bursátil">
         {isOperador && (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openNew} className="bg-gradient-primary shadow-elegant hover:opacity-95">
-                <Plus className="h-4 w-4 mr-1.5" /> Nuevo Programa
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle className="font-display text-xl text-primary">{editing ? "Editar" : "Nuevo"} Programa</DialogTitle></DialogHeader>
-              <div className="grid grid-cols-2 gap-4 py-2">
-                <div><Label>Código del Programa *</Label><Input value={form.codigo_pcfb} onChange={e => setForm({ ...form, codigo_pcfb: e.target.value.toUpperCase() })} placeholder="CFB-CASHEA-2025-C" maxLength={60} /></div>
-                <div><Label>Línea</Label>
-                  <Select value={form.linea} onValueChange={v => setForm({ ...form, linea: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PRINCIPAL">PRINCIPAL</SelectItem>
-                      <SelectItem value="COTIDIANA">COTIDIANA</SelectItem>
-                      <SelectItem value="ESPECIAL">ESPECIAL</SelectItem>
-                    </SelectContent>
-                  </Select>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/importar"><Upload className="h-4 w-4 mr-1.5" /> Importar Excel</Link>
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openNew} className="bg-gradient-primary shadow-elegant hover:opacity-95">
+                  <Plus className="h-4 w-4 mr-1.5" /> Nuevo Programa
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader><DialogTitle className="font-display text-xl text-primary">{editing ? "Editar" : "Nuevo"} Programa</DialogTitle></DialogHeader>
+                <div className="grid grid-cols-2 gap-4 py-2">
+                  <div><Label>Código del Programa *</Label><Input value={form.codigo_pcfb} onChange={e => setForm({ ...form, codigo_pcfb: e.target.value.toUpperCase() })} placeholder="CFB-CASHEA-2025-C" maxLength={60} /></div>
+                  <div><Label>Línea</Label>
+                    <Select value={form.linea} onValueChange={v => setForm({ ...form, linea: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PRINCIPAL">PRINCIPAL</SelectItem>
+                        <SelectItem value="COTIDIANA">COTIDIANA</SelectItem>
+                        <SelectItem value="ESPECIAL">ESPECIAL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Cedente *</Label>
+                    <Select value={form.cedente_id} onValueChange={v => setForm({ ...form, cedente_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="Seleccionar cedente" /></SelectTrigger>
+                      <SelectContent>
+                        {cedentes.map(c => <SelectItem key={c.id} value={c.id}>{c.razon_social}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Plazo Ejecución (días)</Label><Input type="number" value={form.plazo_ejecucion_dias} onChange={e => setForm({ ...form, plazo_ejecucion_dias: parseInt(e.target.value || "0") })} /></div>
+                  <div><Label>Plazo Cuotas (días)</Label><Input type="number" value={form.plazo_cuotas_dias} onChange={e => setForm({ ...form, plazo_cuotas_dias: parseInt(e.target.value || "0") })} /></div>
+                  <div><Label>Descuento Base (%) — máx 20%</Label><Input type="number" step="0.01" value={form.descuento_base_pct} onChange={e => setForm({ ...form, descuento_base_pct: parseFloat(e.target.value || "0") })} placeholder="4" /></div>
+                  <div><Label>Contrato de Cesión</Label><Input value={form.contrato_cesion} onChange={e => setForm({ ...form, contrato_cesion: e.target.value })} placeholder="N° contrato" maxLength={80} /></div>
+                  <div><Label>Fecha Inicio *</Label><Input type="date" value={form.fecha_inicio} onChange={e => setForm({ ...form, fecha_inicio: e.target.value })} /></div>
+                  <div>
+                    <Label>Fecha Vencimiento (calculada)</Label>
+                    <Input type="date" value={fechaVencimientoCalc} readOnly disabled className="bg-muted/50" />
+                    <p className="text-xs text-muted-foreground mt-1">Inicio + Plazo Ejecución</p>
+                  </div>
                 </div>
-                <div className="col-span-2">
-                  <Label>Cedente *</Label>
-                  <Select value={form.cedente_id} onValueChange={v => setForm({ ...form, cedente_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Seleccionar cedente" /></SelectTrigger>
-                    <SelectContent>
-                      {cedentes.map(c => <SelectItem key={c.id} value={c.id}>{c.razon_social}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div><Label>Plazo Ejecución (días)</Label><Input type="number" value={form.plazo_ejecucion_dias} onChange={e => setForm({ ...form, plazo_ejecucion_dias: parseInt(e.target.value || "0") })} /></div>
-                <div><Label>Plazo Cuotas (días)</Label><Input type="number" value={form.plazo_cuotas_dias} onChange={e => setForm({ ...form, plazo_cuotas_dias: parseInt(e.target.value || "0") })} /></div>
-                <div><Label>Descuento Base (%) — máx 20%</Label><Input type="number" step="0.01" value={form.descuento_base_pct} onChange={e => setForm({ ...form, descuento_base_pct: parseFloat(e.target.value || "0") })} placeholder="4" /></div>
-                <div><Label>Contrato de Cesión</Label><Input value={form.contrato_cesion} onChange={e => setForm({ ...form, contrato_cesion: e.target.value })} placeholder="N° contrato" maxLength={80} /></div>
-                <div><Label>Fecha Inicio *</Label><Input type="date" value={form.fecha_inicio} onChange={e => setForm({ ...form, fecha_inicio: e.target.value })} /></div>
-                <div>
-                  <Label>Fecha Vencimiento (calculada)</Label>
-                  <Input type="date" value={fechaVencimientoCalc} readOnly disabled className="bg-muted/50" />
-                  <p className="text-xs text-muted-foreground mt-1">Inicio + Plazo Ejecución</p>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button onClick={save} disabled={busy} className="bg-gradient-primary">{busy ? "Guardando…" : "Guardar"}</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+                  <Button onClick={save} disabled={busy} className="bg-gradient-primary">{busy ? "Guardando…" : "Guardar"}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         )}
       </PageHeader>
 
