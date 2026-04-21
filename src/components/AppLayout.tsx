@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, Building2, BookOpenCheck,
   FilePlus2, FileStack, Upload, ScrollText, LogOut, FileSpreadsheet,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ const NAV = [
   { to: "/programas", icon: BookOpenCheck, label: "Programas", group: "maestros" },
   { to: "/cedentes", icon: Building2, label: "Cedentes", group: "maestros" },
   { to: "/financistas", icon: Users, label: "Financistas", group: "maestros" },
+  { to: "/importar", icon: Database, label: "Carga Masiva", op: true, group: "maestros" },
   { to: "/auditoria", icon: ScrollText, label: "Auditoría", group: "sistema" },
 ];
 
