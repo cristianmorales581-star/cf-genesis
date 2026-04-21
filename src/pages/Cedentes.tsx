@@ -127,6 +127,7 @@ export default function Cedentes() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         )}
       </PageHeader>
 
