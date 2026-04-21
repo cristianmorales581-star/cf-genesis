@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import { z } from "zod";
@@ -92,12 +93,16 @@ export default function Cedentes() {
     <>
       <PageHeader title="Cedentes" subtitle="Empresas emisoras de los programas CFB">
         {isOperador && (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openNew} className="bg-gradient-primary shadow-elegant hover:opacity-95">
-                <Plus className="h-4 w-4 mr-1.5" /> Nuevo Cedente
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/importar"><Upload className="h-4 w-4 mr-1.5" /> Importar Excel</Link>
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openNew} className="bg-gradient-primary shadow-elegant hover:opacity-95">
+                  <Plus className="h-4 w-4 mr-1.5" /> Nuevo Cedente
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle className="font-display text-xl text-primary">
