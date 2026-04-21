@@ -2,7 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type AuditAction =
   | "create" | "update" | "delete" | "disable" | "enable"
-  | "issue" | "cancel" | "download" | "upload" | "generate_pdf";
+  | "issue" | "cancel" | "download" | "upload" | "generate_pdf"
+  | "import_excel";
 
 export async function logAudit(params: {
   action: AuditAction;

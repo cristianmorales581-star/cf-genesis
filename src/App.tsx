@@ -14,6 +14,7 @@ import Programas from "./pages/Programas";
 import NotFound from "./pages/NotFound";
 import NuevaEmision from "./pages/NuevaEmision";
 import EmisionMasiva from "./pages/EmisionMasiva";
+import CargaMasiva from "./pages/CargaMasiva";
 import Emisiones from "./pages/Emisiones";
 import EmisionDetalle from "./pages/EmisionDetalle";
 import Confirmaciones from "./pages/Confirmaciones";
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/emisiones" element={<Emisiones />} />
               <Route path="/emisiones/nueva" element={<NuevaEmision />} />
               <Route path="/emisiones/masiva" element={<EmisionMasiva />} />
+              <Route path="/importar" element={<CargaMasiva />} />
               <Route path="/emisiones/:id" element={<EmisionDetalle />} />
               <Route path="/confirmaciones" element={<Confirmaciones />} />
               <Route path="/auditoria" element={<Auditoria />} />

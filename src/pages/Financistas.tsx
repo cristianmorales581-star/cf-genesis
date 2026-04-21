@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import { z } from "zod";
@@ -99,46 +100,51 @@ export default function Financistas() {
     <>
       <PageHeader title="Financistas" subtitle="Personas o entidades que colocan capital en cada emisión">
         {isOperador && (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openNew} className="bg-gradient-primary shadow-elegant hover:opacity-95">
-                <Plus className="h-4 w-4 mr-1.5" /> Nuevo Financista
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle className="font-display text-xl text-primary">{editing ? "Editar" : "Nuevo"} Financista</DialogTitle></DialogHeader>
-              <div className="grid gap-4 py-2">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Tipo *</Label>
-                    <Select value={form.tipo} onValueChange={(v: "natural" | "juridica") => setForm({ ...form, tipo: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="juridica">Persona Jurídica</SelectItem>
-                        <SelectItem value="natural">Persona Natural</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div><Label>RIF / Cédula</Label><Input value={form.rif} onChange={e => setForm({ ...form, rif: e.target.value.toUpperCase() })} maxLength={20} /></div>
-                </div>
-                <div><Label>Razón Social / Nombre *</Label><Input value={form.razon_social} onChange={e => setForm({ ...form, razon_social: e.target.value })} maxLength={200} /></div>
-                {form.tipo === "juridica" && (
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/importar"><Upload className="h-4 w-4 mr-1.5" /> Importar Excel</Link>
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openNew} className="bg-gradient-primary shadow-elegant hover:opacity-95">
+                  <Plus className="h-4 w-4 mr-1.5" /> Nuevo Financista
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader><DialogTitle className="font-display text-xl text-primary">{editing ? "Editar" : "Nuevo"} Financista</DialogTitle></DialogHeader>
+                <div className="grid gap-4 py-2">
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Representante</Label><Input value={form.representante_legal} onChange={e => setForm({ ...form, representante_legal: e.target.value })} maxLength={150} /></div>
-                    <div><Label>Cargo</Label><Input value={form.cargo} onChange={e => setForm({ ...form, cargo: e.target.value })} maxLength={100} /></div>
+                    <div>
+                      <Label>Tipo *</Label>
+                      <Select value={form.tipo} onValueChange={(v: "natural" | "juridica") => setForm({ ...form, tipo: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="juridica">Persona Jurídica</SelectItem>
+                          <SelectItem value="natural">Persona Natural</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label>RIF / Cédula</Label><Input value={form.rif} onChange={e => setForm({ ...form, rif: e.target.value.toUpperCase() })} maxLength={20} /></div>
                   </div>
-                )}
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Correo</Label><Input type="email" value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })} maxLength={255} /></div>
-                  <div><Label>Celular</Label><Input value={form.celular} onChange={e => setForm({ ...form, celular: e.target.value })} maxLength={30} /></div>
+                  <div><Label>Razón Social / Nombre *</Label><Input value={form.razon_social} onChange={e => setForm({ ...form, razon_social: e.target.value })} maxLength={200} /></div>
+                  {form.tipo === "juridica" && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label>Representante</Label><Input value={form.representante_legal} onChange={e => setForm({ ...form, representante_legal: e.target.value })} maxLength={150} /></div>
+                      <div><Label>Cargo</Label><Input value={form.cargo} onChange={e => setForm({ ...form, cargo: e.target.value })} maxLength={100} /></div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Correo</Label><Input type="email" value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })} maxLength={255} /></div>
+                    <div><Label>Celular</Label><Input value={form.celular} onChange={e => setForm({ ...form, celular: e.target.value })} maxLength={30} /></div>
+                  </div>
                 </div>
-              </div>
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button onClick={save} disabled={busy} className="bg-gradient-primary">{busy ? "Guardando…" : "Guardar"}</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+                  <Button onClick={save} disabled={busy} className="bg-gradient-primary">{busy ? "Guardando…" : "Guardar"}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         )}
       </PageHeader>
 
