@@ -358,6 +358,7 @@ export type Database = {
         Returns: boolean
       }
       is_authenticated_user: { Args: never; Returns: boolean }
+      next_simbolo_cfb: { Args: never; Returns: string }
       next_simbolo_for_programa: {
         Args: { _programa_id: string }
         Returns: string

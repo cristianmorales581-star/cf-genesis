@@ -18,9 +18,14 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
   );
 }
 import { fmtUSD, fmtPct, todayISO } from "@/lib/format";
-import { parseCSVText, inferCedenteName, nameSimilarity, type ParsedRow } from "@/lib/csvParser";
+import { parseCSVText, inferCedenteName, type ParsedRow } from "@/lib/csvParser";
 import JSZip from "jszip";
 import * as XLSX from "xlsx";
+
+/** Normaliza RIF: quita guiones, espacios, uppercase. Clave única verdadera. */
+function normRif(r: string | null | undefined): string {
+  return (r ?? "").replace(/[-\s]/g, "").toUpperCase().trim();
+}
 
 interface Cedente { id: string; razon_social: string; rif: string; }
 interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; }
@@ -74,34 +79,31 @@ export default function EmisionMasiva() {
       if (warnings.length) {
         toast({ title: `${warnings.length} advertencias`, description: warnings.slice(0, 3).join(" · ") });
       }
-      // Auto-mapeo
+      // Bug 4: match EXCLUSIVO por RIF normalizado. El nombre queda solo descriptivo.
       const mapped: RowMapping[] = parsed.map(r => {
-        const cedName = inferCedenteName(r);
-        // Match programa por código exacto
-        let progMatch = programas.find(p => p.codigo_pcfb === r.programa_o_inversionista);
-        // Match cedente por similitud
-        let bestCed: Cedente | undefined;
-        let bestScore = 0;
-        for (const c of cedentes) {
-          const s = Math.max(
-            nameSimilarity(c.razon_social, cedName),
-            r.rif_csv ? (c.rif.replace(/[-\s]/g,"") === r.rif_csv.replace(/[-\s]/g,"") ? 1 : 0) : 0,
-          );
-          if (s > bestScore) { bestScore = s; bestCed = c; }
+        const rifCsv = normRif(r.rif_csv);
+        const matchedCedente = rifCsv
+          ? cedentes.find(c => normRif(c.rif) === rifCsv)
+          : undefined;
+
+        if (!matchedCedente) {
+          return { ...r, cedente_id: undefined, programa_id: undefined, include: false };
         }
-        // Si match programa pero ced no coincide, usar el cedente del programa
-        if (progMatch && (!bestCed || bestCed.id !== progMatch.cedente_id)) {
-          bestCed = cedentes.find(c => c.id === progMatch!.cedente_id) ?? bestCed;
+
+        // Programa: 1) match exacto por código PCFB; 2) primer activo del cedente
+        let matchedPrograma = programas.find(
+          p => p.cedente_id === matchedCedente.id &&
+               p.codigo_pcfb === r.programa_o_inversionista
+        );
+        if (!matchedPrograma) {
+          matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id);
         }
-        // Si encontramos ced pero no programa, sugerir el primer programa del ced
-        if (bestCed && !progMatch) {
-          progMatch = programas.find(p => p.cedente_id === bestCed!.id);
-        }
+
         return {
           ...r,
-          cedente_id: bestCed?.id,
-          programa_id: progMatch?.id,
-          include: bestCed != null && progMatch != null && bestScore > 0.5,
+          cedente_id: matchedCedente.id,
+          programa_id: matchedPrograma?.id,
+          include: matchedCedente != null && matchedPrograma != null,
         };
       });
       setRows(mapped);
@@ -144,7 +146,7 @@ export default function EmisionMasiva() {
           monto_total_usd: r.monto_total_usd,
           vencimiento_primera_orden: r.vencimiento_primera_orden,
           plazo_dias: r.plazo_dias,
-          descuento_pct: r.descuento_pct,
+          descuento_decimal: r.descuento_decimal,
           linea: r.linea,
           inversionista_label: r.programa_o_inversionista || r.razon_social_csv,
         })),
@@ -249,6 +251,11 @@ export default function EmisionMasiva() {
                         <td className="px-2 py-1.5">
                           <div className="font-medium">{inferCedenteName(r)}</div>
                           <div className="text-[10px] text-muted-foreground">{r.rif_csv} · {r.tipo}</div>
+                          {!r.cedente_id && (
+                            <div className="text-[10px] text-destructive mt-1">
+                              ⚠️ RIF no encontrado en la base — agregar cedente antes de procesar
+                            </div>
+                          )}
                         </td>
                         <td className="px-2 py-1.5">
                           <Select value={r.cedente_id ?? ""} onValueChange={(v) => updateRow(i, { cedente_id: v, programa_id: undefined })}>
@@ -269,7 +276,7 @@ export default function EmisionMasiva() {
                         <td className="px-2 py-1.5 text-muted-foreground">{r.linea}</td>
                         <td className="px-2 py-1.5 text-right font-mono">{fmtUSD(r.monto_total_usd)}</td>
                         <td className="px-2 py-1.5 text-right">{r.plazo_dias}d</td>
-                        <td className="px-2 py-1.5 text-right">{fmtPct(r.descuento_pct / 100, 2)}</td>
+                        <td className="px-2 py-1.5 text-right">{fmtPct(r.descuento_decimal, 2)}</td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.vencimiento_primera_orden}</td>
                       </tr>
                     );

@@ -11,7 +11,7 @@ export interface ParsedRow {
   monto_total_usd: number;         // Valor nominal en USD
   vencimiento_primera_orden: string; // ISO yyyy-mm-dd
   plazo_dias: number;              // 14, 28, 42...
-  descuento_pct: number;           // En porcentaje (e.g. 4.00 = 4%)
+  descuento_decimal: number;       // En decimal (0.03 = 3%)
   certificados_reporte: string;    // Nombre del cedente embebido (Express) o lote (Masivo)
   programa_o_inversionista: string; // Programa CFB-... o Inversionista
   status_csv: string;
@@ -100,23 +100,16 @@ function parseNumber(s: string): number {
 }
 
 /**
- * Descuento puede venir como:
- *  - "300" → en CSV Express viene en BPS (3.00%)
- *  - "0.92" → ya en porcentaje
- *  - "1,49" o "1.49" → porcentaje
- * Reglas:
- *  - Express usa puntos básicos *10 (ej: 300 = 3.00%, 160 = 1.60%)
- *  - Masivo/Paquetizado ya viene en %
+ * Devuelve el descuento SIEMPRE en formato decimal (0.03 = 3%).
+ * El CSV de Cashea trae el descuento con unidades distintas según tipo:
+ *  - Express: basis points × 100  (ej: 300 = 3.00%  => 0.03)
+ *  - Masivo/Paquetizado: porcentaje directo (ej: 0.92 = 0.92%  => 0.0092)
  */
-function parseDescuento(raw: string, tipo: "Express" | "Masivo" | "Paquetizado"): number {
+function parseDescuentoDecimal(raw: string, tipo: "Express" | "Masivo" | "Paquetizado"): number {
   const n = parseNumber(raw);
   if (!isFinite(n) || n === 0) return 0;
-  if (tipo === "Express") {
-    // 300 → 3.00, 160 → 1.60, 14 → 0.14? — observamos 300=3% y 160=1.6%, ambos /100
-    return n / 100;
-  }
-  // Masivo/Paquetizado: 0.92 → 0.92%, 1.49 → 1.49%, 1.90 → 1.90%
-  return n;
+  if (tipo === "Express") return n / 10000;   // 300 → 0.03
+  return n / 100;                              // 0.92 → 0.0092
 }
 
 export function parseCSVText(text: string): ParseResult {
@@ -168,7 +161,7 @@ export function parseCSVText(text: string): ParseResult {
       monto_total_usd: parseNumber(cols[idx.monto] ?? "0"),
       vencimiento_primera_orden: parseDateDDMMYYYY(cols[idx.venc] ?? ""),
       plazo_dias: parsePlazo(cols[idx.plazo] ?? ""),
-      descuento_pct: parseDescuento(cols[idx.desc] ?? "0", tipo),
+      descuento_decimal: parseDescuentoDecimal(cols[idx.desc] ?? "0", tipo),
       certificados_reporte: clean(cols[idx.certs] ?? ""),
       programa_o_inversionista: clean(cols[idx.progInv] ?? ""),
       status_csv: clean(cols[idx.status] ?? ""),

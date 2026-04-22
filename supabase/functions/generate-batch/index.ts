@@ -18,7 +18,7 @@ interface BatchRow {
   monto_total_usd: number;          // Valor nominal USD
   vencimiento_primera_orden: string; // ISO
   plazo_dias: number;
-  descuento_pct: number;             // En porcentaje (1.49 = 1.49%)
+  descuento_decimal: number;         // En decimal (0.0149 = 1.49%)
   linea: string;
   inversionista_label?: string;      // Para vector
   inversionista_rif?: string;
@@ -74,12 +74,18 @@ Deno.serve(async (req) => {
     if (!ced || !prog) continue;
 
     // Cálculos zero-coupon
-    const precio = round5(1 - (r.descuento_pct / 100));
+    const precio = round5(1 - r.descuento_decimal);
     const dias = r.plazo_dias;
     const rendimiento = ((1 - precio) / precio) * (360 / dias);
     const vnUsd = round2(r.monto_total_usd);
     const montoUsd = round2(vnUsd * precio);
     const valorBs = round2(montoUsd * body.tasa_bcv);
+
+    // Bug 2: fecha de vencimiento real del CFB = fecha_emision + plazo_dias
+    const fechaVencimientoCFB = addDaysISO(body.fecha_emision, r.plazo_dias);
+    if (r.vencimiento_primera_orden && fechaVencimientoCFB > r.vencimiento_primera_orden) {
+      console.warn(`⚠️ Emisión ${prog.codigo_pcfb}: CFB vence ${fechaVencimientoCFB} pero primera orden vence ${r.vencimiento_primera_orden}`);
+    }
 
     // Símbolo provisional (la bolsa asignará el real)
     const { data: nextSym } = await supabase.rpc('next_simbolo_for_programa', { _programa_id: r.programa_id });
@@ -93,11 +99,11 @@ Deno.serve(async (req) => {
         financista_id: r.financista_id ?? null,
         operador_id: user.id,
         fecha_emision: body.fecha_emision,
-        fecha_vencimiento: r.vencimiento_primera_orden,
-        dias_colocados: dias,
+        fecha_vencimiento: fechaVencimientoCFB,
+        dias_colocados: r.plazo_dias,
         valor_nominal_usd: vnUsd,
         precio,
-        descuento: r.descuento_pct / 100,
+        descuento: r.descuento_decimal,
         rendimiento_anualizado: rendimiento,
         monto_efectivo_usd: montoUsd,
         valor_efectivo_bs: valorBs,
@@ -143,8 +149,8 @@ Deno.serve(async (req) => {
       rif_deudor: r.inversionista_rif ?? 'J-501934070',
       cantidad_certificados: 1,
       fecha_emision: body.fecha_emision,
-      fecha_vencimiento: r.vencimiento_primera_orden,
-      dias_colocados: dias,
+      fecha_vencimiento: fechaVencimientoCFB,
+      dias_colocados: r.plazo_dias,
       rendimiento,
       volumen_ordenes: r.cantidad_ordenes,
       valor_nominal_bs: round2(vnUsd * body.tasa_bcv),
@@ -177,6 +183,12 @@ function json(b: unknown, s = 200) {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const round5 = (n: number) => Math.round(n * 100000) / 100000;
+
+function addDaysISO(iso: string, days: number): string {
+  const d = new Date(iso + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 function fmtCaracas(d: string) {
   const date = new Date(d + 'T12:00:00');
