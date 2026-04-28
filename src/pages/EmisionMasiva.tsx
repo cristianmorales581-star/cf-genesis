@@ -391,47 +391,32 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok
   );
 }
 
-async function htmlToPdfBlob(html: string, filename: string): Promise<Blob> {
-  const wrapper = document.createElement("div");
-  const parsed = new DOMParser().parseFromString(html, "text/html");
-  wrapper.innerHTML = `${parsed.head.innerHTML}${parsed.body.innerHTML}`;
-  wrapper.querySelectorAll(".actions").forEach((el) => el.remove());
-  wrapper.style.position = "absolute";
-  wrapper.style.left = `${window.scrollX}px`;
-  wrapper.style.top = `${window.scrollY}px`;
-  wrapper.style.width = "210mm";
-  wrapper.style.minHeight = "297mm";
-  wrapper.style.background = "#ffffff";
-  wrapper.style.color = "#000000";
-  wrapper.style.zIndex = "2147483647";
-  wrapper.style.pointerEvents = "none";
-  wrapper.style.boxShadow = "none";
-  document.body.appendChild(wrapper);
-  try {
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    return await html2pdf()
-      .set({
-        filename: `${filename}.pdf`,
-        margin: 0,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth: wrapper.scrollWidth,
-          windowHeight: wrapper.scrollHeight,
-          logging: false,
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(wrapper)
-      .toPdf()
-      .outputPdf("blob");
-  } finally {
-    document.body.removeChild(wrapper);
-  }
+function PdfDebugPanel({ snapshot, onClose }: { snapshot: PdfDebugSnapshot; onClose: () => void }) {
+  return (
+    <section className="surface-card p-4 mb-6 border-accent/40">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <h3 className="font-display text-sm uppercase tracking-[0.16em] text-accent">PDF Debug</h3>
+          <p className="text-xs text-muted-foreground">{snapshot.filename} · canvas {snapshot.canvasWidth}×{snapshot.canvasHeight} · {snapshot.capturedAt}</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={onClose}>Cerrar</Button>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Canvas renderizado</div>
+          <div className="rounded-md border border-border bg-card p-2">
+            <img src={snapshot.canvasDataUrl} alt="Vista previa del canvas PDF" className="w-full rounded-sm border border-border bg-background" />
+          </div>
+        </div>
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">HTML enviado a html2pdf</div>
+          <pre className="max-h-80 overflow-auto rounded-md border border-border bg-muted/30 p-3 text-[10px] leading-relaxed text-foreground whitespace-pre-wrap break-words">
+            {snapshot.html}
+          </pre>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 /** Construye el .xlsx del vector consolidado, espejo del formato SIBE. */
