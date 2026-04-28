@@ -14,7 +14,7 @@ import { fmtBs, fmtDate, fmtPct, fmtUSD, todayISO } from "@/lib/format";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import { useAuth } from "@/contexts/AuthContext";
-import html2pdf from "html2pdf.js";
+import { htmlToPdfDownload, type PdfDebugSnapshot } from "@/lib/pdfDebug";
 
 // deno-lint-ignore no-explicit-any
 type Emision = any;
@@ -44,6 +44,7 @@ export default function EmisionDetalle() {
   });
   const [busy, setBusy] = useState(false);
   const [genTipo, setGenTipo] = useState<string | null>(null);
+  const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
 
   async function load() {
     if (!id) return;
@@ -90,7 +91,7 @@ export default function EmisionDetalle() {
         throw new Error(err?.error ?? "Error generando documento");
       }
       const html = await res.text();
-      await htmlToPdfDownload(html, `${tipo}_${e.simbolo_cfb}.pdf`);
+      await htmlToPdfDownload(html, `${tipo}_${e.simbolo_cfb}.pdf`, { onDebug: setPdfDebug });
       await logAudit({ action: "generate_pdf", resource_type: tipo.toLowerCase(), resource_id: e.id });
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Error");
@@ -129,6 +130,7 @@ export default function EmisionDetalle() {
         </Button>
         <Pill tone={e.estado === "activa" ? "success" : "default"}>{e.estado}</Pill>
       </PageHeader>
+      {pdfDebug && <PdfDebugPanel snapshot={pdfDebug} onClose={() => setPdfDebug(null)} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Datos */}
