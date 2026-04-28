@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, Download, Loader2, Wand2 } from "lucide-react";
+import { Upload, FileSpreadsheet, Download, Loader2, Wand2, Trash2 } from "lucide-react";
 
 function Card({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
@@ -29,32 +30,38 @@ function normRif(r: string | null | undefined): string {
 
 interface Cedente { id: string; razon_social: string; rif: string; }
 interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; }
+interface Financista { id: string; razon_social: string; rif: string | null; }
 
 type RowMapping = ParsedRow & {
   cedente_id?: string;
   programa_id?: string;
+  financista_id?: string;
   include: boolean;
 };
 
 export default function EmisionMasiva() {
   const [cedentes, setCedentes] = useState<Cedente[]>([]);
   const [programas, setProgramas] = useState<Programa[]>([]);
+  const [financistas, setFinancistas] = useState<Financista[]>([]);
   const [rows, setRows] = useState<RowMapping[]>([]);
   const [fechaEmision, setFechaEmision] = useState(todayISO());
   const [tasaBcv, setTasaBcv] = useState<number>(0);
   const [loadingBcv, setLoadingBcv] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [filename, setFilename] = useState<string>("");
+  const [pastedCsv, setPastedCsv] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     (async () => {
-      const [c, p] = await Promise.all([
+      const [c, p, f] = await Promise.all([
         supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
         supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea").eq("activo", true).order("codigo_pcfb"),
+        supabase.from("financistas").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
       ]);
       setCedentes((c.data ?? []) as Cedente[]);
       setProgramas((p.data ?? []) as Programa[]);
+      setFinancistas((f.data ?? []) as Financista[]);
       fetchBcv();
     })();
   }, []);
@@ -71,45 +78,44 @@ export default function EmisionMasiva() {
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    setFilename(f.name);
     const reader = new FileReader();
     reader.onload = () => {
-      const text = String(reader.result ?? "");
-      const { rows: parsed, detectedFormat, warnings } = parseCSVText(text);
-      if (warnings.length) {
-        toast({ title: `${warnings.length} advertencias`, description: warnings.slice(0, 3).join(" · ") });
-      }
-      // Bug 4: match EXCLUSIVO por RIF normalizado. El nombre queda solo descriptivo.
-      const mapped: RowMapping[] = parsed.map(r => {
-        const rifCsv = normRif(r.rif_csv);
-        const matchedCedente = rifCsv
-          ? cedentes.find(c => normRif(c.rif) === rifCsv)
-          : undefined;
-
-        if (!matchedCedente) {
-          return { ...r, cedente_id: undefined, programa_id: undefined, include: false };
-        }
-
-        // Programa: 1) match exacto por código PCFB; 2) primer activo del cedente
-        let matchedPrograma = programas.find(
-          p => p.cedente_id === matchedCedente.id &&
-               p.codigo_pcfb === r.programa_o_inversionista
-        );
-        if (!matchedPrograma) {
-          matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id);
-        }
-
-        return {
-          ...r,
-          cedente_id: matchedCedente.id,
-          programa_id: matchedPrograma?.id,
-          include: matchedCedente != null && matchedPrograma != null,
-        };
-      });
-      setRows(mapped);
-      toast({ title: `${parsed.length} filas leídas`, description: `Formato: ${detectedFormat}` });
+      loadCsvText(String(reader.result ?? ""), f.name);
     };
     reader.readAsText(f, "latin1");
+  }
+
+  function loadCsvText(text: string, sourceName: string) {
+    setFilename(sourceName);
+    const { rows: parsed, detectedFormat, warnings } = parseCSVText(text);
+    if (warnings.length) {
+      toast({ title: `${warnings.length} advertencias`, description: warnings.slice(0, 3).join(" · ") });
+    }
+    const defaultFinancista = financistas.find(f => /grupo\s+cashea\s+ve/i.test(f.razon_social)) ?? financistas[0];
+    const mapped: RowMapping[] = parsed.map(r => {
+      const rifCsv = normRif(r.rif_csv);
+      const matchedCedente = rifCsv ? cedentes.find(c => normRif(c.rif) === rifCsv) : undefined;
+      if (!matchedCedente) {
+        return { ...r, cedente_id: undefined, programa_id: undefined, financista_id: defaultFinancista?.id, include: false };
+      }
+      let matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id && p.codigo_pcfb === r.programa_o_inversionista);
+      if (!matchedPrograma) matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id);
+      return { ...r, cedente_id: matchedCedente.id, programa_id: matchedPrograma?.id, financista_id: defaultFinancista?.id, include: matchedCedente != null && matchedPrograma != null };
+    });
+    setRows(mapped);
+    toast({ title: `${parsed.length} filas leídas`, description: `Formato: ${detectedFormat}` });
+  }
+
+  function onPasteCsvImport() {
+    if (!pastedCsv.trim()) {
+      toast({ title: "Pega primero el CSV", variant: "destructive" });
+      return;
+    }
+    loadCsvText(pastedCsv, "CSV pegado");
+  }
+
+  function removeRow(i: number) {
+    setRows(prev => prev.filter((_, idx) => idx !== i));
   }
 
   function updateRow(i: number, patch: Partial<RowMapping>) {
