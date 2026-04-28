@@ -28,6 +28,8 @@ function daysRemaining(iso: string): number {
 export default function Emisiones() {
   const { isOperador, isAdmin } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
   const [q, setQ] = useState("");
   const [estado, setEstado] = useState<"todos" | "activa" | "vencida" | "redimida">("todos");
 
@@ -52,6 +54,29 @@ export default function Emisiones() {
     toast.success(`Certificado ${row.simbolo_cfb} eliminado`);
   }
 
+  async function deleteSelected() {
+    const selectedRows = rows.filter(r => selected.includes(r.id));
+    if (!selectedRows.length) return;
+    if (!window.confirm(`¿Eliminar definitivamente ${selectedRows.length} certificado(s) seleccionado(s)?`)) return;
+
+    setDeleting(true);
+    const { error } = await supabase.from("emisiones").delete().in("id", selected);
+    if (error) {
+      toast.error(error.message);
+      setDeleting(false);
+      return;
+    }
+    await logAudit({
+      action: "bulk_delete",
+      resource_type: "emision",
+      details: { count: selectedRows.length, simbolos_cfb: selectedRows.map(r => r.simbolo_cfb) },
+    });
+    setRows(prev => prev.filter(r => !selected.includes(r.id)));
+    setSelected([]);
+    setDeleting(false);
+    toast.success(`${selectedRows.length} certificado(s) eliminado(s)`);
+  }
+
   const filtered = rows.filter(r => {
     if (estado !== "todos" && r.estado !== estado) return false;
     if (q) {
@@ -63,6 +88,16 @@ export default function Emisiones() {
     }
     return true;
   });
+  const filteredIds = filtered.map(r => r.id);
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every(id => selected.includes(id));
+
+  function toggleAllFiltered(checked: boolean) {
+    setSelected(prev => checked ? [...new Set([...prev, ...filteredIds])] : prev.filter(id => !filteredIds.includes(id)));
+  }
+
+  function toggleSelected(id: string, checked: boolean) {
+    setSelected(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
+  }
 
   return (
     <>
@@ -81,6 +116,11 @@ export default function Emisiones() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar por símbolo, programa, cedente o financista…" className="pl-9" />
         </div>
+        {isAdmin && selected.length > 0 && (
+          <Button variant="destructive" onClick={deleteSelected} disabled={deleting}>
+            <Trash2 className="h-4 w-4 mr-1.5" /> Borrar {selected.length} seleccionado(s)
+          </Button>
+        )}
         <div className="flex gap-1.5">
           {(["todos", "activa", "vencida", "redimida"] as const).map(e => (
             <Button key={e} size="sm" variant={estado === e ? "default" : "outline"} onClick={() => setEstado(e)} className="capitalize text-xs">
@@ -97,6 +137,11 @@ export default function Emisiones() {
           <table className="w-full text-sm">
             <thead className="bg-secondary/40 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
               <tr>
+                {isAdmin && (
+                  <th className="text-left px-5 py-3 font-semibold w-10">
+                    <input type="checkbox" checked={allFilteredSelected} onChange={e => toggleAllFiltered(e.target.checked)} aria-label="Seleccionar emisiones filtradas" />
+                  </th>
+                )}
                 <th className="text-left px-5 py-3 font-semibold">Símbolo</th>
                 <th className="text-left px-5 py-3 font-semibold">Cedente / Financista</th>
                 <th className="text-right px-5 py-3 font-semibold">VN USD</th>
@@ -112,6 +157,11 @@ export default function Emisiones() {
               {filtered.map(r => {
                 const remaining = daysRemaining(r.fecha_vencimiento);
                 return <tr key={r.id} className="border-t border-border hover:bg-secondary/30 transition-smooth">
+                  {isAdmin && (
+                    <td className="px-5 py-3">
+                      <input type="checkbox" checked={selected.includes(r.id)} onChange={e => toggleSelected(r.id, e.target.checked)} aria-label={`Seleccionar ${r.simbolo_cfb}`} />
+                    </td>
+                  )}
                   <td className="px-5 py-3">
                     <Link to={`/emisiones/${r.id}`} className="font-mono text-xs font-semibold text-accent hover:underline">
                       {r.simbolo_cfb}
