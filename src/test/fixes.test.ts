@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { rendimientoAnualizado, addDaysISO } from "@/lib/format";
+import { parseCSVText } from "@/lib/csvParser";
 
 describe("Bug 1 — Normalización de descuento", () => {
   function parseDescuentoDecimal(raw: number, tipo: "Express" | "Masivo" | "Paquetizado"): number {
@@ -61,5 +62,18 @@ describe("Bug 4 — Normalización de RIF para matching", () => {
   });
   it("Minúsculas matchean", () => {
     expect(normRif("j-503636742")).toBe(normRif("J503636742"));
+  });
+});
+
+describe("Emisión masiva — símbolo CFB variable desde CSV", () => {
+  it("lee la columna simbolo_cfb como dato variable del lote", () => {
+    const csv = [
+      "NRO,SIMBOLO CFB,RAZON SOCIAL,RIF,LINEA,TIPO,CANTIDAD,MONTO TOTAL,VENCIMIENTO,PLAZO,DESCUENTO,CERTIFICADOS,PROGRAMA,STATUS",
+      "1,C4891A,ACME C.A.,J-123456789,Principal,Express,1,1,000.00,30/04/2026,14 Días,300,ACME C.A.,PCFB-1,OK",
+    ].join("\n");
+
+    const { rows } = parseCSVText(csv);
+
+    expect(rows[0].simbolo_cfb).toBe("C4891A");
   });
 });
