@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Trash2, RefreshCw } from "lucide-react";
 import {
   parseExcelFile,
+  parsePastedValues,
   dedupeCedentes,
   dedupeFinancistas,
   dedupeProgramas,
@@ -49,6 +50,7 @@ export default function CargaMasiva() {
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [validation, setValidation] = useState<ValidationState | null>(null);
   const [tab, setTab] = useState("cedentes");
+  const [pastedValues, setPastedValues] = useState("");
 
   if (!isOperador) return <Navigate to="/" replace />;
 
@@ -72,6 +74,34 @@ export default function CargaMasiva() {
       }
     } catch (err: any) {
       toast.error("Error al leer Excel: " + (err.message ?? String(err)));
+    }
+  }
+
+  async function loadParsed(result: ParsedSheet, sourceName: string) {
+    result.cedentes = dedupeCedentes(result.cedentes);
+    result.financistas = dedupeFinancistas(result.financistas);
+    result.programas = dedupeProgramas(result.programas);
+    setFileName(sourceName);
+    setParsed(result);
+    setValidation(null);
+    setSummary(null);
+    const total = result.cedentes.length + result.financistas.length + result.programas.length;
+    if (total === 0) toast.error("No se detectaron registros válidos");
+    else {
+      toast.success(`Detectados: ${result.cedentes.length} cedentes · ${result.programas.length} programas · ${result.financistas.length} financistas`);
+      void validateMatches(result);
+    }
+  }
+
+  function onPasteImport() {
+    if (!pastedValues.trim()) {
+      toast.error("Pega primero el rango copiado desde Excel");
+      return;
+    }
+    try {
+      void loadParsed(parsePastedValues(pastedValues), "Valores pegados");
+    } catch (err: any) {
+      toast.error("Error al leer valores pegados: " + (err.message ?? String(err)));
     }
   }
 
