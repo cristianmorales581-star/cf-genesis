@@ -279,12 +279,16 @@ async function htmlToPdfDownload(html: string, filename: string) {
   wrapper.innerHTML = `${parsed.head.innerHTML}${parsed.body.innerHTML}`;
   wrapper.querySelectorAll(".actions").forEach((el) => el.remove());
   wrapper.style.position = "fixed";
-  wrapper.style.left = "-10000px";
+  wrapper.style.left = "0";
   wrapper.style.top = "0";
   wrapper.style.width = "210mm";
+  wrapper.style.minHeight = "297mm";
   wrapper.style.background = "#ffffff";
+  wrapper.style.zIndex = "-1";
+  wrapper.style.pointerEvents = "none";
   document.body.appendChild(wrapper);
   try {
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     await html2pdf()
       .set({
         filename,
