@@ -327,7 +327,7 @@ export default function EmisionMasiva() {
           <Card title="3. Generar lote">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="text-sm text-muted-foreground">
-                Se crearán <strong className="text-foreground">{stats.included}</strong> emisiones, {stats.included * 2} documentos HTML imprimibles y un archivo Vector consolidado .xlsx.
+                Se crearán <strong className="text-foreground">{stats.included}</strong> emisiones, {stats.included * 6} documentos HTML imprimibles y un archivo Vector consolidado .xlsx.
               </div>
               <Button onClick={generate} disabled={generating || stats.included === 0} className="bg-gradient-gold text-accent-foreground hover:opacity-95">
                 {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
