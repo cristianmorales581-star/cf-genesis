@@ -4,6 +4,15 @@
 // El frontend arma el ZIP final (JSZip) y descarga el .xlsx (xlsx lib).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import {
+  type TemplateContext,
+  renderCFB as renderTemplateCFB,
+  renderCartaSunaval as renderTemplateCartaSunaval,
+  renderCartaBVC as renderTemplateCartaBVC,
+  renderHojaTerminos as renderTemplateHojaTerminos,
+  renderODC as renderTemplateODC,
+  renderODV as renderTemplateODV,
+} from '../_shared/templates.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -159,19 +168,15 @@ Deno.serve(async (req) => {
       details: { simbolo, programa: prog.codigo_pcfb, vn_usd: vnUsd },
     });
 
-    // HTML del CFB
-    docs.push({
-      filename: `CFB_${simbolo}.html`,
-      html: renderCFB(emision, ced, prog),
-    });
-    docs.push({
-      filename: `HOJA_TERMINOS_${simbolo}.html`,
-      html: renderHoja(emision, ced, prog),
-    });
-    docs.push({ filename: `CDC_${simbolo}.html`, html: renderConfirmacion(emision, ced, 'CDC', r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
-    docs.push({ filename: `CDV_${simbolo}.html`, html: renderConfirmacion(emision, ced, 'CDV', r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
-    docs.push({ filename: `CARTA_BVC_${simbolo}.html`, html: renderCartaBVC(emision, ced, prog) });
-    docs.push({ filename: `CARTA_SUNAVAL_${simbolo}.html`, html: renderCartaSunaval(emision, ced, prog, r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
+    const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif);
+    docs.push(
+      { filename: `CFB_${simbolo}.pdf`, html: renderTemplateCFB(ctx) },
+      { filename: `CARTA_SUNAVAL_${simbolo}.pdf`, html: renderTemplateCartaSunaval(ctx) },
+      { filename: `CARTA_BVC_${simbolo}.pdf`, html: renderTemplateCartaBVC(ctx) },
+      { filename: `HOJA_TERMINOS_${simbolo}.pdf`, html: renderTemplateHojaTerminos(ctx) },
+      { filename: `ODC_${simbolo}.pdf`, html: renderTemplateODC(ctx) },
+      { filename: `ODV_${simbolo}.pdf`, html: renderTemplateODV(ctx) },
+    );
 
     // Fila vector
     vector.push({
@@ -240,6 +245,59 @@ function fmtShort(d: string) {
 function fmtUSD(n: number) { return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(n); }
 function fmtBs(n: number) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n); }
 function fmtPct(n: number, d = 2) { return (n * 100).toFixed(d) + '%'; }
+
+function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: string, financistaRif?: string): TemplateContext {
+  return {
+    simbolo_cfb: e.simbolo_cfb,
+    fecha_emision: e.fecha_emision,
+    fecha_vencimiento: e.fecha_vencimiento,
+    fecha_documento: e.fecha_emision,
+    valor_nominal_usd: Number(e.valor_nominal_usd),
+    cantidad_ordenes_compra: Number(e.cantidad_ordenes_compra),
+    precio: Number(e.precio),
+    descuento: Number(e.descuento),
+    rendimiento_anualizado: Number(e.rendimiento_anualizado),
+    dias_colocados: Number(e.dias_colocados),
+    monto_efectivo_usd: Number(e.monto_efectivo_usd),
+    valor_efectivo_bs: Number(e.valor_efectivo_bs),
+    tasa_cambio_bs_usd: Number(e.tasa_cambio_bs_usd),
+    cedente_razon_social: ced.razon_social,
+    cedente_rif: ced.rif,
+    cedente_rep_legal: ced.representante_legal ?? 'Jesus Augusto Rojas Hernandez',
+    cedente_cargo: ced.cargo_representante ?? ced.cargo ?? 'Mandatario',
+    cedente_cedula: ced.cedula_representante ?? ced.cedula ?? 'V-26.741.091',
+    programa_pcfb: prog.codigo_pcfb,
+    programa_plazo_ejecucion: Number(prog.plazo_ejecucion_dias ?? 180),
+    programa_contrato_cesion: prog.contrato_cesion ?? prog.codigo_pcfb,
+    deudor_razon_social: prog.deudor_cedido_razon_social ?? 'Grupo Cashea Ve, C.A.',
+    deudor_rif: prog.deudor_cedido_rif ?? 'J-501934070',
+    deudor_rep_legal: prog.deudor_cedido_rep_legal ?? 'Jesus Augusto Rojas Hernandez',
+    deudor_cargo: prog.deudor_cedido_cargo ?? 'Apoderado',
+    deudor_cedula: prog.deudor_cedido_cedula ?? 'V-26.741.091',
+    deudor_correo: prog.deudor_cedido_correo ?? null,
+    deudor_telefono: prog.deudor_cedido_telefono ?? null,
+    financista_razon_social: financistaLabel ?? 'Grupo Cashea Ve, C.A.',
+    financista_rif: financistaRif ?? 'J-501934070',
+    financista_es_persona_natural: false,
+    gbv_razon_social: 'Grupo Bursatil Venezolano Casa de Bolsa, C.A.',
+    gbv_rif: 'J-502409831',
+    gbv_miembro_bvc: '3',
+    gbv_presidente: 'Luis Alfredo Cercós Ruiz',
+    operador_nombre: 'Cristian Alexander Morales Di Stefano',
+    operador_cedula: 'V-26.818.100',
+    operador_telefono: '+584141510211',
+    bvc_atencion: 'Enrique Rosal / Néstor Fernández',
+    bvc_gerencia: 'Gerencia de Mercados.',
+    bvc_direccion_l1: 'Av. Sorocaima entre Av. Venezuela Av. Tamanaco,',
+    bvc_direccion_l2: 'Edif. Atrium, PB, Urb, El Rosal - Municipio Chacao,',
+    bvc_direccion_l3: 'Estado Miranda, Caracas, Venezuela.',
+    asesores_cashea: 'Latin Assets Group, C.A. - LAGroup',
+    circular_sunaval: 'DSNV/GCI/Nº 000014',
+    circular_sunaval_fecha: '16 de agosto de 2023',
+    circular_bvc_fecha: '01 de septiembre de 2023',
+    texto_activo_subyacente: 'Ordenes de compra vigentes contenidas en el "Reporte de cuentas por cobrar" anexo al contrato suscrito.',
+  };
+}
 
 function baseStyles() {
   return `<style>
