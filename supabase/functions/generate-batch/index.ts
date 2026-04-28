@@ -11,6 +11,7 @@ const corsHeaders = {
 };
 
 interface BatchRow {
+  simbolo_cfb: string;
   cedente_id: string;
   programa_id: string;
   financista_id?: string | null;
@@ -87,9 +88,11 @@ Deno.serve(async (req) => {
       console.warn(`⚠️ Emisión ${prog.codigo_pcfb}: CFB vence ${fechaVencimientoCFB} pero primera orden vence ${r.vencimiento_primera_orden}`);
     }
 
-    // Símbolo provisional (la bolsa asignará el real)
-    const { data: nextSym } = await supabase.rpc('next_simbolo_for_programa', { _programa_id: r.programa_id });
-    const simbolo = nextSym || `${prog.codigo_pcfb}-PEND`;
+    const simbolo = String(r.simbolo_cfb ?? '').trim();
+    if (!simbolo) {
+      console.error('Fila omitida: símbolo CFB faltante', { programa_id: r.programa_id, cedente_id: r.cedente_id });
+      continue;
+    }
 
     const { data: emision, error: insErr } = await supabase
       .from('emisiones')
