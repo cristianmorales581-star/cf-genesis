@@ -416,13 +416,16 @@ function PreviewCedentes({ rows, matches, onChange }: { rows: CedenteRow[]; matc
   );
 }
 
-function PreviewProgramas({ rows }: { rows: ProgramaRow[] }) {
+function PreviewProgramas({ rows, matches, onChange }: { rows: ProgramaRow[]; matches?: ValidationRow[]; onChange: (rows: ProgramaRow[]) => void }) {
   if (!rows.length) return <p className="text-sm text-muted-foreground py-6 text-center">Sin programas detectados</p>;
+  const update = (i: number, patch: Partial<ProgramaRow>) => onChange(rows.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+  const remove = (i: number) => onChange(rows.filter((_, idx) => idx !== i));
   return (
     <div className="overflow-x-auto rounded border border-border">
       <table className="w-full text-xs">
         <thead className="bg-secondary/60 text-muted-foreground uppercase tracking-wider">
           <tr>
+            <th className="text-left px-3 py-2">Validación</th>
             <th className="text-left px-3 py-2">PCFB</th>
             <th className="text-left px-3 py-2">Cedente (RIF)</th>
             <th className="text-left px-3 py-2">Línea</th>
@@ -430,18 +433,21 @@ function PreviewProgramas({ rows }: { rows: ProgramaRow[] }) {
             <th className="text-right px-3 py-2">Descuento</th>
             <th className="text-right px-3 py-2">Cuotas</th>
             <th className="text-left px-3 py-2">Vigencia</th>
+            <th className="px-3 py-2"></th>
           </tr>
         </thead>
         <tbody>
           {rows.map((p, i) => (
             <tr key={i} className="border-t border-border hover:bg-secondary/30">
-              <td className="px-3 py-2 font-mono text-primary font-medium">{p.codigo_pcfb}</td>
-              <td className="px-3 py-2 font-mono">{p.cedente_rif}</td>
-              <td className="px-3 py-2">{p.linea ?? "—"}</td>
-              <td className="px-3 py-2 text-right">{p.plazo_ejecucion_dias}d</td>
-              <td className="px-3 py-2 text-right font-mono">{(p.descuento_base * 100).toFixed(2)}%</td>
-              <td className="px-3 py-2 text-right">{p.plazo_cuotas_dias}d</td>
-              <td className="px-3 py-2 text-muted-foreground">{p.fecha_inicio} → {p.fecha_vencimiento}</td>
+              <td className="px-3 py-2"><MatchBadge match={matches?.[i]} /></td>
+              <td className="px-3 py-2 min-w-32"><Input value={p.codigo_pcfb} onChange={e => update(i, { codigo_pcfb: e.target.value })} className="h-8 font-mono text-xs" /></td>
+              <td className="px-3 py-2 min-w-32"><Input value={p.cedente_rif ?? ""} onChange={e => update(i, { cedente_rif: e.target.value })} className="h-8 font-mono text-xs" /></td>
+              <td className="px-3 py-2 min-w-28"><Input value={p.linea ?? ""} onChange={e => update(i, { linea: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2 min-w-24"><Input type="number" value={p.plazo_ejecucion_dias} onChange={e => update(i, { plazo_ejecucion_dias: Number(e.target.value) })} className="h-8 text-xs text-right" /></td>
+              <td className="px-3 py-2 min-w-24"><Input type="number" step="0.01" value={(p.descuento_base * 100).toFixed(2)} onChange={e => update(i, { descuento_base: Number(e.target.value) / 100 })} className="h-8 text-xs text-right" /></td>
+              <td className="px-3 py-2 min-w-24"><Input type="number" value={p.plazo_cuotas_dias} onChange={e => update(i, { plazo_cuotas_dias: Number(e.target.value) })} className="h-8 text-xs text-right" /></td>
+              <td className="px-3 py-2 min-w-72"><div className="flex gap-2"><Input type="date" value={p.fecha_inicio} onChange={e => update(i, { fecha_inicio: e.target.value })} className="h-8 text-xs" /><Input type="date" value={p.fecha_vencimiento} onChange={e => update(i, { fecha_vencimiento: e.target.value })} className="h-8 text-xs" /></div></td>
+              <td className="px-3 py-2"><Button variant="ghost" size="icon" onClick={() => remove(i)} aria-label="Eliminar fila"><Trash2 className="h-4 w-4 text-destructive" /></Button></td>
             </tr>
           ))}
         </tbody>
@@ -450,30 +456,39 @@ function PreviewProgramas({ rows }: { rows: ProgramaRow[] }) {
   );
 }
 
-function PreviewFinancistas({ rows }: { rows: FinancistaRow[] }) {
+function PreviewFinancistas({ rows, matches, onChange }: { rows: FinancistaRow[]; matches?: ValidationRow[]; onChange: (rows: FinancistaRow[]) => void }) {
   if (!rows.length) return <p className="text-sm text-muted-foreground py-6 text-center">Sin financistas detectados</p>;
+  const update = (i: number, patch: Partial<FinancistaRow>) => onChange(rows.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+  const remove = (i: number) => onChange(rows.filter((_, idx) => idx !== i));
   return (
     <div className="overflow-x-auto rounded border border-border">
       <table className="w-full text-xs">
         <thead className="bg-secondary/60 text-muted-foreground uppercase tracking-wider">
           <tr>
+            <th className="text-left px-3 py-2">Validación</th>
             <th className="text-left px-3 py-2">Tipo</th>
             <th className="text-left px-3 py-2">Razón Social</th>
             <th className="text-left px-3 py-2">RIF/Cédula</th>
             <th className="text-left px-3 py-2">Correo</th>
             <th className="text-left px-3 py-2">Celular</th>
+            <th className="px-3 py-2"></th>
           </tr>
         </thead>
         <tbody>
           {rows.map((f, i) => (
             <tr key={i} className="border-t border-border hover:bg-secondary/30">
+              <td className="px-3 py-2"><MatchBadge match={matches?.[i]} /></td>
               <td className="px-3 py-2">
-                <span className="pill bg-secondary text-secondary-foreground">{f.tipo}</span>
+                <select value={f.tipo} onChange={e => update(i, { tipo: e.target.value as FinancistaRow["tipo"] })} className="h-8 rounded-md border border-input bg-background px-2 text-xs">
+                  <option value="juridica">juridica</option>
+                  <option value="natural">natural</option>
+                </select>
               </td>
-              <td className="px-3 py-2 font-medium text-primary">{f.razon_social}</td>
-              <td className="px-3 py-2 font-mono">{f.rif ?? f.cedula ?? "—"}</td>
-              <td className="px-3 py-2 text-muted-foreground">{f.correo ?? "—"}</td>
-              <td className="px-3 py-2 text-muted-foreground">{f.celular ?? "—"}</td>
+              <td className="px-3 py-2 min-w-56"><Input value={f.razon_social} onChange={e => update(i, { razon_social: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2 min-w-32"><Input value={f.rif ?? ""} onChange={e => update(i, { rif: e.target.value })} className="h-8 font-mono text-xs" /></td>
+              <td className="px-3 py-2 min-w-48"><Input value={f.correo ?? ""} onChange={e => update(i, { correo: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2 min-w-32"><Input value={f.celular ?? ""} onChange={e => update(i, { celular: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2"><Button variant="ghost" size="icon" onClick={() => remove(i)} aria-label="Eliminar fila"><Trash2 className="h-4 w-4 text-destructive" /></Button></td>
             </tr>
           ))}
         </tbody>
