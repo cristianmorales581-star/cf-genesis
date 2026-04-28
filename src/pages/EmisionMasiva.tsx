@@ -29,7 +29,7 @@ function normRif(r: string | null | undefined): string {
 }
 
 interface Cedente { id: string; razon_social: string; rif: string; }
-interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; }
+interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; descuento_base: number; }
 interface Financista { id: string; razon_social: string; rif: string | null; }
 
 type RowMapping = ParsedRow & {
@@ -56,7 +56,7 @@ export default function EmisionMasiva() {
     (async () => {
       const [c, p, f] = await Promise.all([
         supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
-        supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea").eq("activo", true).order("codigo_pcfb"),
+        supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base").eq("activo", true).order("codigo_pcfb"),
         supabase.from("financistas").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
       ]);
       setCedentes((c.data ?? []) as Cedente[]);
@@ -100,7 +100,14 @@ export default function EmisionMasiva() {
       }
       let matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id && p.codigo_pcfb === r.programa_o_inversionista);
       if (!matchedPrograma) matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id);
-      return { ...r, cedente_id: matchedCedente.id, programa_id: matchedPrograma?.id, financista_id: defaultFinancista?.id, include: matchedCedente != null && matchedPrograma != null };
+      return {
+        ...r,
+        descuento_decimal: matchedPrograma ? Number(matchedPrograma.descuento_base) : r.descuento_decimal,
+        cedente_id: matchedCedente.id,
+        programa_id: matchedPrograma?.id,
+        financista_id: defaultFinancista?.id,
+        include: matchedCedente != null && matchedPrograma != null,
+      };
     });
     setRows(mapped);
     toast({ title: `${parsed.length} filas leídas`, description: `Formato: ${detectedFormat}` });
