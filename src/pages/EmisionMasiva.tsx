@@ -218,6 +218,18 @@ export default function EmisionMasiva() {
             </div>
           </div>
         </div>
+        <div className="mt-4 space-y-2">
+          <Label>Pegar CSV directamente</Label>
+          <Textarea
+            value={pastedCsv}
+            onChange={(e) => setPastedCsv(e.target.value)}
+            placeholder="Pega aquí el CSV completo o el rango con encabezados"
+            className="min-h-32 font-mono text-xs"
+          />
+          <Button variant="outline" onClick={onPasteCsvImport}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" /> Cargar CSV pegado
+          </Button>
+        </div>
       </Card>
 
       {/* Step 2: Previsualización + mapeo */}
@@ -240,11 +252,13 @@ export default function EmisionMasiva() {
                     <th className="px-2 py-2 text-left">CSV - Cedente</th>
                     <th className="px-2 py-2 text-left">Cedente BD</th>
                     <th className="px-2 py-2 text-left">Programa BD</th>
+                    <th className="px-2 py-2 text-left">Financista</th>
                     <th className="px-2 py-2 text-left">Línea</th>
                     <th className="px-2 py-2 text-right">VN USD</th>
                     <th className="px-2 py-2 text-right">Plazo</th>
                     <th className="px-2 py-2 text-right">Desc.</th>
                     <th className="px-2 py-2 text-left">Vcto</th>
+                    <th className="px-2 py-2"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -282,11 +296,24 @@ export default function EmisionMasiva() {
                             </SelectContent>
                           </Select>
                         </td>
+                        <td className="px-2 py-1.5">
+                          <Select value={r.financista_id ?? ""} onValueChange={(v) => updateRow(i, { financista_id: v })}>
+                            <SelectTrigger className="h-7 text-[11px] w-full min-w-[190px]"><SelectValue placeholder="Grupo Cashea VE, C.A." /></SelectTrigger>
+                            <SelectContent>
+                              {financistas.map(f => <SelectItem key={f.id} value={f.id}>{f.razon_social}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.linea}</td>
                         <td className="px-2 py-1.5 text-right font-mono">{fmtUSD(r.monto_total_usd)}</td>
                         <td className="px-2 py-1.5 text-right">{r.plazo_dias}d</td>
                         <td className="px-2 py-1.5 text-right">{fmtPct(r.descuento_decimal, 2)}</td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.vencimiento_primera_orden}</td>
+                        <td className="px-2 py-1.5 text-right">
+                          <Button variant="ghost" size="icon" onClick={() => removeRow(i)} aria-label="Eliminar fila">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </td>
                       </tr>
                     );
                   })}
