@@ -18,7 +18,7 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
     </section>
   );
 }
-import { fmtUSD, fmtPct, todayISO } from "@/lib/format";
+import { fmtUSD, fmtPct, todayISO, fmtDate } from "@/lib/format";
 import { parseCSVText, inferCedenteName, type ParsedRow } from "@/lib/csvParser";
 import JSZip from "jszip";
 import * as XLSX from "xlsx";
@@ -389,6 +389,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok
 /** Construye el .xlsx del vector consolidado, espejo del formato SIBE. */
 function buildVectorXlsx(rows: any[], _fechaEmision: string): ArrayBuffer {
   const wb = XLSX.utils.book_new();
+  const vectorDate = (date: string | null | undefined) => (date ? fmtDate(date) : "");
 
   // Hoja 1: Vector
   const headers = [
@@ -404,7 +405,7 @@ function buildVectorXlsx(rows: any[], _fechaEmision: string): ArrayBuffer {
     headers,
     ...rows.map(r => [
       r.simbolo_cfb, r.cedente, r.rif_cedente, r.deudor_cedido, r.rif_deudor,
-      r.cantidad_certificados, r.fecha_emision, r.fecha_vencimiento, r.dias_colocados,
+      r.cantidad_certificados, vectorDate(r.fecha_emision), vectorDate(r.fecha_vencimiento), r.dias_colocados,
       r.rendimiento, r.volumen_ordenes, r.valor_nominal_bs, r.precio_emision,
       r.tipo_sociedad, r.moneda, r.valor_nominal_usd, r.monto_sibe_usd, r.tasa_cambio, r.inversionista,
     ]),
@@ -420,7 +421,7 @@ function buildVectorXlsx(rows: any[], _fechaEmision: string): ArrayBuffer {
     ["", `Identificador del Estructurador: Grupo Bursatil Venezolano Casa de Bolsa, C.A.`],
     [],
     headers2,
-    ...rows.map(r => [r.simbolo_cfb, r.cedente, r.rif_cedente, r.fecha_emision, r.precio_emision, r.monto_sibe_usd, r.inversionista, r.rif_deudor]),
+    ...rows.map(r => [r.simbolo_cfb, r.cedente, r.rif_cedente, vectorDate(r.fecha_emision), r.precio_emision, r.monto_sibe_usd, r.inversionista, r.rif_deudor]),
   ];
   const ws2 = XLSX.utils.aoa_to_sheet(data2);
   ws2["!cols"] = headers2.map(h => ({ wch: Math.max(h.length, 14) }));
