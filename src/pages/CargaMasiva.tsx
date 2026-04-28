@@ -377,26 +377,37 @@ function SummaryBox({ title, data }: { title: string; data: { creados: number; a
   );
 }
 
-function PreviewCedentes({ rows }: { rows: CedenteRow[] }) {
+function MatchBadge({ match }: { match?: ValidationRow }) {
+  const cls = match?.status === "error" ? "border-destructive/40 text-destructive" : match?.status === "actualiza" ? "border-primary/30 text-primary" : "border-border text-muted-foreground";
+  return <span className={`inline-flex rounded-md border px-2 py-1 text-[11px] font-medium ${cls}`}>{match?.label ?? "Pendiente"}</span>;
+}
+
+function PreviewCedentes({ rows, matches, onChange }: { rows: CedenteRow[]; matches?: ValidationRow[]; onChange: (rows: CedenteRow[]) => void }) {
   if (!rows.length) return <p className="text-sm text-muted-foreground py-6 text-center">Sin cedentes detectados</p>;
+  const update = (i: number, patch: Partial<CedenteRow>) => onChange(rows.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+  const remove = (i: number) => onChange(rows.filter((_, idx) => idx !== i));
   return (
     <div className="overflow-x-auto rounded border border-border">
       <table className="w-full text-xs">
         <thead className="bg-secondary/60 text-muted-foreground uppercase tracking-wider">
           <tr>
+            <th className="text-left px-3 py-2">Validación</th>
             <th className="text-left px-3 py-2">Razón Social</th>
             <th className="text-left px-3 py-2">RIF</th>
             <th className="text-left px-3 py-2">Representante</th>
             <th className="text-left px-3 py-2">Nombre comercial</th>
+            <th className="px-3 py-2"></th>
           </tr>
         </thead>
         <tbody>
           {rows.map((c, i) => (
             <tr key={i} className="border-t border-border hover:bg-secondary/30">
-              <td className="px-3 py-2 font-medium text-primary">{c.razon_social}</td>
-              <td className="px-3 py-2 font-mono">{c.rif}</td>
-              <td className="px-3 py-2 text-muted-foreground">{c.representante_legal ?? "—"}</td>
-              <td className="px-3 py-2 text-muted-foreground">{c.nombre_comercial ?? "—"}</td>
+              <td className="px-3 py-2"><MatchBadge match={matches?.[i]} /></td>
+              <td className="px-3 py-2 min-w-56"><Input value={c.razon_social} onChange={e => update(i, { razon_social: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2 min-w-32"><Input value={c.rif} onChange={e => update(i, { rif: e.target.value })} className="h-8 font-mono text-xs" /></td>
+              <td className="px-3 py-2 min-w-48"><Input value={c.representante_legal ?? ""} onChange={e => update(i, { representante_legal: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2 min-w-48"><Input value={c.nombre_comercial ?? ""} onChange={e => update(i, { nombre_comercial: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2"><Button variant="ghost" size="icon" onClick={() => remove(i)} aria-label="Eliminar fila"><Trash2 className="h-4 w-4 text-destructive" /></Button></td>
             </tr>
           ))}
         </tbody>
