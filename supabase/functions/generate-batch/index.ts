@@ -202,54 +202,34 @@ function fmtCaracas(d: string) {
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   return `${date.getDate()} de ${meses[date.getMonth()]}. de ${date.getFullYear()}`;
 }
+function fmtShort(d: string) {
+  const date = new Date(d + 'T12:00:00');
+  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+}
 function fmtUSD(n: number) { return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(n); }
-function fmtBs(n: number) { return new Intl.NumberFormat('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n) + ' Bs.'; }
-function fmtPct(n: number, d = 4) { return (n * 100).toFixed(d) + ' %'; }
+function fmtBs(n: number) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n); }
+function fmtPct(n: number, d = 2) { return (n * 100).toFixed(d) + '%'; }
 
 function baseStyles() {
   return `<style>
-  @page { size: A4; margin: 18mm 16mm 22mm 16mm; }
+  @page { size: A4; margin: 16mm 18mm; }
   * { box-sizing: border-box; }
-  body { font-family: 'Source Serif 4', Georgia, serif; color: #15151a; margin: 0; font-size: 11pt; line-height: 1.55; }
-  .hdr { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0c2a52; padding-bottom: 12px; margin-bottom: 18px; }
-  .brand { font-family: 'Montserrat', sans-serif; }
-  .brand h1 { margin: 0; font-size: 16pt; color: #0c2a52; letter-spacing: 1px; }
-  .brand p { margin: 2px 0 0; font-size: 8pt; color: #555; text-transform: uppercase; letter-spacing: 2px; }
-  .meta { text-align: right; font-family: 'Montserrat', sans-serif; font-size: 8pt; color: #555; text-transform: uppercase; letter-spacing: 1.5px; }
-  .meta strong { display: block; color: #0c2a52; font-size: 10pt; letter-spacing: 1px; margin-bottom: 4px; }
-  h2.titulo { font-family: 'Montserrat', sans-serif; text-align: center; font-size: 13pt; color: #0c2a52; letter-spacing: 2px; margin: 18px 0 4px; }
-  .sub { text-align: center; font-size: 9pt; color: #555; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 18px; }
-  table.kv { width: 100%; border-collapse: collapse; margin: 10px 0 16px; }
-  table.kv td { padding: 6px 8px; border-bottom: 1px solid #ddd; font-size: 10pt; vertical-align: top; }
-  table.kv td.k { width: 38%; font-family: 'Montserrat', sans-serif; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 1px; color: #555; }
-  table.kv td.v { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: #0c2a52; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; font-size: 11pt; line-height: 1.35; }
+  .logo { font-weight: 700; color: #123c69; font-size: 13pt; margin-bottom: 16px; }
+  .symbol { font-size: 18pt; font-weight: 700; margin-bottom: 12px; }
+  h1 { font-size: 14pt; margin: 6px 0 8px; font-weight: 700; }
+  h2 { font-size: 11pt; margin: 18px 0 8px; font-weight: 700; }
+  table.kv { width: 100%; border-collapse: collapse; margin: 8px 0 14px; }
+  table.kv td { padding: 4px 6px; border: 1px solid #cfcfcf; font-size: 10pt; vertical-align: top; }
+  table.kv td.k { width: 42%; font-weight: 700; }
+  table.kv td.v { font-weight: 400; }
   p.legal { text-align: justify; margin: 10px 0; }
-  .firma { margin-top: 50px; display: flex; justify-content: space-between; gap: 40px; }
-  .firma .box { flex: 1; border-top: 1px solid #333; padding-top: 6px; text-align: center; font-size: 9pt; }
-  .ftr { position: fixed; bottom: 8mm; left: 16mm; right: 16mm; border-top: 1px solid #ccc; padding-top: 6px; font-family: 'Montserrat', sans-serif; font-size: 7.5pt; color: #777; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 1px; }
+  .sign { margin-top: 28px; }
+  .muted { color: #333; font-size: 9pt; font-style: italic; }
   .actions { text-align: center; margin: 24px 0; }
-  .actions button { font-family: 'Montserrat', sans-serif; padding: 10px 24px; background: #0c2a52; color: #fff; border: 0; cursor: pointer; letter-spacing: 1px; font-size: 10pt; }
+  .actions button { padding: 10px 24px; background: #123c69; color: #fff; border: 0; cursor: pointer; font-size: 10pt; }
   @media print { .actions { display: none; } }
   </style>`;
-}
-
-function header(simbolo: string, today: string, prog: any) {
-  return `<div class="hdr">
-    <div class="brand"><h1>GRUPO BURSÁTIL VENEZOLANO</h1><p>Casa de Bolsa · SUNAVAL · Bolsa de Valores de Caracas</p></div>
-    <div class="meta"><strong>${simbolo}</strong>Caracas, ${fmtCaracas(today)}</div>
-  </div>
-  <p class="sub">Programa ${prog.codigo_pcfb} · Línea ${prog.linea ?? '—'}</p>`;
-}
-
-function footer(simbolo: string, today: string, ced: any) {
-  return `<div class="firma">
-    <div class="box">Por el Cedente<br/><small>${ced?.representante_legal ?? '—'}<br/>${ced?.cargo ?? ''}</small></div>
-    <div class="box">Por Grupo Bursátil Venezolano<br/><small>Operador autorizado</small></div>
-  </div>
-  <div class="ftr">
-    <span>SICEBOP · ${simbolo}</span>
-    <span>Documento generado el ${fmtCaracas(today)}</span>
-  </div>`;
 }
 
 function renderCFB(e: any, ced: any, prog: any) {
