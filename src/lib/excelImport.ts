@@ -115,7 +115,10 @@ export function parseAccountingNumber(v: any): number {
 }
 
 export function parsePastedValues(text: string): ParsedSheet {
-  const delimiter = text.includes("\t") ? "\t" : ";";
+  if (!text.includes("\t")) {
+    return parseWorkbook(XLSX.read(text, { type: "string", raw: false }));
+  }
+  const delimiter = "\t";
   const rows = text
     .replace(/\r/g, "")
     .split("\n")

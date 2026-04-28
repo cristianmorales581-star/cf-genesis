@@ -13,6 +13,14 @@ interface Row {
   fecha_emision: string; fecha_vencimiento: string; estado: string;
   rendimiento_anualizado: number; monto_efectivo_usd: number;
   programas?: { codigo_pcfb: string; cedentes?: { razon_social: string } };
+  financistas?: { razon_social: string } | null;
+}
+
+function daysRemaining(iso: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const end = new Date(`${iso}T00:00:00`);
+  return Math.ceil((end.getTime() - today.getTime()) / 86400000);
 }
 
 export default function Emisiones() {
@@ -24,7 +32,7 @@ export default function Emisiones() {
   async function load() {
     const { data } = await supabase
       .from("emisiones")
-      .select("*, programas(codigo_pcfb, cedentes(razon_social))")
+      .select("*, programas(codigo_pcfb, cedentes(razon_social)), financistas(razon_social)")
       .order("fecha_emision", { ascending: false });
     setRows((data ?? []) as Row[]);
   }
@@ -36,7 +44,8 @@ export default function Emisiones() {
       const t = q.toLowerCase();
       return r.simbolo_cfb.toLowerCase().includes(t)
         || r.programas?.codigo_pcfb?.toLowerCase().includes(t)
-        || r.programas?.cedentes?.razon_social?.toLowerCase().includes(t);
+        || r.programas?.cedentes?.razon_social?.toLowerCase().includes(t)
+        || r.financistas?.razon_social?.toLowerCase().includes(t);
     }
     return true;
   });
@@ -56,7 +65,7 @@ export default function Emisiones() {
       <div className="flex flex-col md:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar por símbolo, programa o cedente…" className="pl-9" />
+          <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar por símbolo, programa, cedente o financista…" className="pl-9" />
         </div>
         <div className="flex gap-1.5">
           {(["todos", "activa", "vencida", "redimida"] as const).map(e => (
@@ -75,37 +84,42 @@ export default function Emisiones() {
             <thead className="bg-secondary/40 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
               <tr>
                 <th className="text-left px-5 py-3 font-semibold">Símbolo</th>
-                <th className="text-left px-5 py-3 font-semibold">Programa / Cedente</th>
+                <th className="text-left px-5 py-3 font-semibold">Cedente / Financista</th>
                 <th className="text-right px-5 py-3 font-semibold">VN USD</th>
+                <th className="text-right px-5 py-3 font-semibold">Monto SIBE</th>
                 <th className="text-right px-5 py-3 font-semibold">Precio</th>
                 <th className="text-right px-5 py-3 font-semibold">Rend.</th>
-                <th className="text-left px-5 py-3 font-semibold">Emisión</th>
-                <th className="text-left px-5 py-3 font-semibold">Vencimiento</th>
+                <th className="text-left px-5 py-3 font-semibold">Vigencia</th>
                 <th className="text-center px-5 py-3 font-semibold">Estado</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(r => (
-                <tr key={r.id} className="border-t border-border hover:bg-secondary/30 transition-smooth">
+              {filtered.map(r => {
+                const remaining = daysRemaining(r.fecha_vencimiento);
+                return <tr key={r.id} className="border-t border-border hover:bg-secondary/30 transition-smooth">
                   <td className="px-5 py-3">
                     <Link to={`/emisiones/${r.id}`} className="font-mono text-xs font-semibold text-accent hover:underline">
                       {r.simbolo_cfb}
                     </Link>
+                    <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{r.programas?.codigo_pcfb}</div>
                   </td>
                   <td className="px-5 py-3">
-                    <div className="text-xs font-mono text-foreground">{r.programas?.codigo_pcfb}</div>
-                    <div className="text-[11px] text-muted-foreground">{r.programas?.cedentes?.razon_social}</div>
+                    <div className="text-xs font-medium text-foreground">{r.programas?.cedentes?.razon_social}</div>
+                    <div className="text-[11px] text-muted-foreground">Financista: {r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A."}</div>
                   </td>
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.valor_nominal_usd)}</Numeric></td>
+                  <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.monto_efectivo_usd)}</Numeric></td>
                   <td className="px-5 py-3 text-right"><Numeric>{Number(r.precio).toFixed(5)}</Numeric></td>
                   <td className="px-5 py-3 text-right"><Numeric>{fmtPct(r.rendimiento_anualizado)}</Numeric></td>
-                  <td className="px-5 py-3 text-xs text-muted-foreground">{fmtDate(r.fecha_emision)}</td>
-                  <td className="px-5 py-3 text-xs text-muted-foreground">{fmtDate(r.fecha_vencimiento)}</td>
+                  <td className="px-5 py-3 text-xs text-muted-foreground">
+                    <div>{fmtDate(r.fecha_emision)} → {fmtDate(r.fecha_vencimiento)}</div>
+                    <div className={remaining < 0 ? "text-warning" : "text-accent"}>{remaining < 0 ? `${Math.abs(remaining)} días vencida` : `${remaining} días restantes`}</div>
+                  </td>
                   <td className="px-5 py-3 text-center">
                     <Pill tone={r.estado === "activa" ? "success" : r.estado === "vencida" ? "warning" : "default"}>{r.estado}</Pill>
                   </td>
-                </tr>
-              ))}
+                </tr>;
+              })}
             </tbody>
           </table>
         )}

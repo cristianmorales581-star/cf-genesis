@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, Download, Loader2, Wand2 } from "lucide-react";
+import { Upload, FileSpreadsheet, Download, Loader2, Wand2, Trash2 } from "lucide-react";
 
 function Card({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
@@ -29,32 +30,38 @@ function normRif(r: string | null | undefined): string {
 
 interface Cedente { id: string; razon_social: string; rif: string; }
 interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; }
+interface Financista { id: string; razon_social: string; rif: string | null; }
 
 type RowMapping = ParsedRow & {
   cedente_id?: string;
   programa_id?: string;
+  financista_id?: string;
   include: boolean;
 };
 
 export default function EmisionMasiva() {
   const [cedentes, setCedentes] = useState<Cedente[]>([]);
   const [programas, setProgramas] = useState<Programa[]>([]);
+  const [financistas, setFinancistas] = useState<Financista[]>([]);
   const [rows, setRows] = useState<RowMapping[]>([]);
   const [fechaEmision, setFechaEmision] = useState(todayISO());
   const [tasaBcv, setTasaBcv] = useState<number>(0);
   const [loadingBcv, setLoadingBcv] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [filename, setFilename] = useState<string>("");
+  const [pastedCsv, setPastedCsv] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     (async () => {
-      const [c, p] = await Promise.all([
+      const [c, p, f] = await Promise.all([
         supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
         supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea").eq("activo", true).order("codigo_pcfb"),
+        supabase.from("financistas").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
       ]);
       setCedentes((c.data ?? []) as Cedente[]);
       setProgramas((p.data ?? []) as Programa[]);
+      setFinancistas((f.data ?? []) as Financista[]);
       fetchBcv();
     })();
   }, []);
@@ -71,45 +78,44 @@ export default function EmisionMasiva() {
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    setFilename(f.name);
     const reader = new FileReader();
     reader.onload = () => {
-      const text = String(reader.result ?? "");
-      const { rows: parsed, detectedFormat, warnings } = parseCSVText(text);
-      if (warnings.length) {
-        toast({ title: `${warnings.length} advertencias`, description: warnings.slice(0, 3).join(" · ") });
-      }
-      // Bug 4: match EXCLUSIVO por RIF normalizado. El nombre queda solo descriptivo.
-      const mapped: RowMapping[] = parsed.map(r => {
-        const rifCsv = normRif(r.rif_csv);
-        const matchedCedente = rifCsv
-          ? cedentes.find(c => normRif(c.rif) === rifCsv)
-          : undefined;
-
-        if (!matchedCedente) {
-          return { ...r, cedente_id: undefined, programa_id: undefined, include: false };
-        }
-
-        // Programa: 1) match exacto por código PCFB; 2) primer activo del cedente
-        let matchedPrograma = programas.find(
-          p => p.cedente_id === matchedCedente.id &&
-               p.codigo_pcfb === r.programa_o_inversionista
-        );
-        if (!matchedPrograma) {
-          matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id);
-        }
-
-        return {
-          ...r,
-          cedente_id: matchedCedente.id,
-          programa_id: matchedPrograma?.id,
-          include: matchedCedente != null && matchedPrograma != null,
-        };
-      });
-      setRows(mapped);
-      toast({ title: `${parsed.length} filas leídas`, description: `Formato: ${detectedFormat}` });
+      loadCsvText(String(reader.result ?? ""), f.name);
     };
     reader.readAsText(f, "latin1");
+  }
+
+  function loadCsvText(text: string, sourceName: string) {
+    setFilename(sourceName);
+    const { rows: parsed, detectedFormat, warnings } = parseCSVText(text);
+    if (warnings.length) {
+      toast({ title: `${warnings.length} advertencias`, description: warnings.slice(0, 3).join(" · ") });
+    }
+    const defaultFinancista = financistas.find(f => /grupo\s+cashea\s+ve/i.test(f.razon_social)) ?? financistas[0];
+    const mapped: RowMapping[] = parsed.map(r => {
+      const rifCsv = normRif(r.rif_csv);
+      const matchedCedente = rifCsv ? cedentes.find(c => normRif(c.rif) === rifCsv) : undefined;
+      if (!matchedCedente) {
+        return { ...r, cedente_id: undefined, programa_id: undefined, financista_id: defaultFinancista?.id, include: false };
+      }
+      let matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id && p.codigo_pcfb === r.programa_o_inversionista);
+      if (!matchedPrograma) matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id);
+      return { ...r, cedente_id: matchedCedente.id, programa_id: matchedPrograma?.id, financista_id: defaultFinancista?.id, include: matchedCedente != null && matchedPrograma != null };
+    });
+    setRows(mapped);
+    toast({ title: `${parsed.length} filas leídas`, description: `Formato: ${detectedFormat}` });
+  }
+
+  function onPasteCsvImport() {
+    if (!pastedCsv.trim()) {
+      toast({ title: "Pega primero el CSV", variant: "destructive" });
+      return;
+    }
+    loadCsvText(pastedCsv, "CSV pegado");
+  }
+
+  function removeRow(i: number) {
+    setRows(prev => prev.filter((_, idx) => idx !== i));
   }
 
   function updateRow(i: number, patch: Partial<RowMapping>) {
@@ -143,13 +149,15 @@ export default function EmisionMasiva() {
           simbolo_cfb: r.simbolo_cfb,
           cedente_id: r.cedente_id!,
           programa_id: r.programa_id!,
+          financista_id: r.financista_id ?? null,
           cantidad_ordenes: r.cantidad_ordenes,
           monto_total_usd: r.monto_total_usd,
           vencimiento_primera_orden: r.vencimiento_primera_orden,
           plazo_dias: r.plazo_dias,
           descuento_decimal: r.descuento_decimal,
           linea: r.linea,
-          inversionista_label: r.programa_o_inversionista || r.razon_social_csv,
+          inversionista_label: financistas.find(f => f.id === r.financista_id)?.razon_social || "GRUPO CASHEA VE, C.A.",
+          inversionista_rif: financistas.find(f => f.id === r.financista_id)?.rif || "J-501934070",
         })),
       };
       const { data, error } = await supabase.functions.invoke("generate-batch", { body: payload });
@@ -212,6 +220,18 @@ export default function EmisionMasiva() {
             </div>
           </div>
         </div>
+        <div className="mt-4 space-y-2">
+          <Label>Pegar CSV directamente</Label>
+          <Textarea
+            value={pastedCsv}
+            onChange={(e) => setPastedCsv(e.target.value)}
+            placeholder="Pega aquí el CSV completo o el rango con encabezados"
+            className="min-h-32 font-mono text-xs"
+          />
+          <Button variant="outline" onClick={onPasteCsvImport}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" /> Cargar CSV pegado
+          </Button>
+        </div>
       </Card>
 
       {/* Step 2: Previsualización + mapeo */}
@@ -234,11 +254,13 @@ export default function EmisionMasiva() {
                     <th className="px-2 py-2 text-left">CSV - Cedente</th>
                     <th className="px-2 py-2 text-left">Cedente BD</th>
                     <th className="px-2 py-2 text-left">Programa BD</th>
+                    <th className="px-2 py-2 text-left">Financista</th>
                     <th className="px-2 py-2 text-left">Línea</th>
                     <th className="px-2 py-2 text-right">VN USD</th>
                     <th className="px-2 py-2 text-right">Plazo</th>
                     <th className="px-2 py-2 text-right">Desc.</th>
                     <th className="px-2 py-2 text-left">Vcto</th>
+                    <th className="px-2 py-2"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -276,11 +298,24 @@ export default function EmisionMasiva() {
                             </SelectContent>
                           </Select>
                         </td>
+                        <td className="px-2 py-1.5">
+                          <Select value={r.financista_id ?? ""} onValueChange={(v) => updateRow(i, { financista_id: v })}>
+                            <SelectTrigger className="h-7 text-[11px] w-full min-w-[190px]"><SelectValue placeholder="Grupo Cashea VE, C.A." /></SelectTrigger>
+                            <SelectContent>
+                              {financistas.map(f => <SelectItem key={f.id} value={f.id}>{f.razon_social}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.linea}</td>
                         <td className="px-2 py-1.5 text-right font-mono">{fmtUSD(r.monto_total_usd)}</td>
                         <td className="px-2 py-1.5 text-right">{r.plazo_dias}d</td>
                         <td className="px-2 py-1.5 text-right">{fmtPct(r.descuento_decimal, 2)}</td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.vencimiento_primera_orden}</td>
+                        <td className="px-2 py-1.5 text-right">
+                          <Button variant="ghost" size="icon" onClick={() => removeRow(i)} aria-label="Eliminar fila">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -292,7 +327,7 @@ export default function EmisionMasiva() {
           <Card title="3. Generar lote">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="text-sm text-muted-foreground">
-                Se crearán <strong className="text-foreground">{stats.included}</strong> emisiones, {stats.included * 2} documentos HTML imprimibles y un archivo Vector consolidado .xlsx.
+                Se crearán <strong className="text-foreground">{stats.included}</strong> emisiones, {stats.included * 6} documentos HTML imprimibles y un archivo Vector consolidado .xlsx.
               </div>
               <Button onClick={generate} disabled={generating || stats.included === 0} className="bg-gradient-gold text-accent-foreground hover:opacity-95">
                 {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}

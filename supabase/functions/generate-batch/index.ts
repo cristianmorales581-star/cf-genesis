@@ -142,14 +142,18 @@ Deno.serve(async (req) => {
       filename: `HOJA_TERMINOS_${simbolo}.html`,
       html: renderHoja(emision, ced, prog),
     });
+    docs.push({ filename: `CDC_${simbolo}.html`, html: renderConfirmacion(emision, ced, 'CDC', r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
+    docs.push({ filename: `CDV_${simbolo}.html`, html: renderConfirmacion(emision, ced, 'CDV', r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
+    docs.push({ filename: `CARTA_BVC_${simbolo}.html`, html: renderCartaBVC(emision, ced, prog) });
+    docs.push({ filename: `CARTA_SUNAVAL_${simbolo}.html`, html: renderCartaSunaval(emision, ced, prog, r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
 
     // Fila vector
     vector.push({
       simbolo_cfb: simbolo,
       cedente: ced.razon_social,
       rif_cedente: ced.rif,
-      deudor_cedido: r.inversionista_label ?? 'Grupo Cashea Ve, C.A.',
-      rif_deudor: r.inversionista_rif ?? 'J-501934070',
+      deudor_cedido: 'GRUPO CASHEA VE, C.A.',
+      rif_deudor: 'J-501934070',
       cantidad_certificados: 1,
       fecha_emision: body.fecha_emision,
       fecha_vencimiento: fechaVencimientoCFB,
@@ -159,7 +163,7 @@ Deno.serve(async (req) => {
       valor_nominal_bs: round2(vnUsd * body.tasa_bcv),
       precio_emision: precio,
       tipo_sociedad: 'COMERCIAL',
-      moneda: 'USD',
+      moneda: 'VES',
       valor_nominal_usd: vnUsd,
       monto_sibe_usd: Math.round(montoUsd),
       tasa_cambio: body.tasa_bcv,
@@ -198,106 +202,120 @@ function fmtCaracas(d: string) {
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   return `${date.getDate()} de ${meses[date.getMonth()]}. de ${date.getFullYear()}`;
 }
+function fmtShort(d: string) {
+  const date = new Date(d + 'T12:00:00');
+  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+}
 function fmtUSD(n: number) { return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(n); }
-function fmtBs(n: number) { return new Intl.NumberFormat('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n) + ' Bs.'; }
-function fmtPct(n: number, d = 4) { return (n * 100).toFixed(d) + ' %'; }
+function fmtBs(n: number) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n); }
+function fmtPct(n: number, d = 2) { return (n * 100).toFixed(d) + '%'; }
 
 function baseStyles() {
   return `<style>
-  @page { size: A4; margin: 18mm 16mm 22mm 16mm; }
+  @page { size: A4; margin: 16mm 18mm; }
   * { box-sizing: border-box; }
-  body { font-family: 'Source Serif 4', Georgia, serif; color: #15151a; margin: 0; font-size: 11pt; line-height: 1.55; }
-  .hdr { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0c2a52; padding-bottom: 12px; margin-bottom: 18px; }
-  .brand { font-family: 'Montserrat', sans-serif; }
-  .brand h1 { margin: 0; font-size: 16pt; color: #0c2a52; letter-spacing: 1px; }
-  .brand p { margin: 2px 0 0; font-size: 8pt; color: #555; text-transform: uppercase; letter-spacing: 2px; }
-  .meta { text-align: right; font-family: 'Montserrat', sans-serif; font-size: 8pt; color: #555; text-transform: uppercase; letter-spacing: 1.5px; }
-  .meta strong { display: block; color: #0c2a52; font-size: 10pt; letter-spacing: 1px; margin-bottom: 4px; }
-  h2.titulo { font-family: 'Montserrat', sans-serif; text-align: center; font-size: 13pt; color: #0c2a52; letter-spacing: 2px; margin: 18px 0 4px; }
-  .sub { text-align: center; font-size: 9pt; color: #555; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 18px; }
-  table.kv { width: 100%; border-collapse: collapse; margin: 10px 0 16px; }
-  table.kv td { padding: 6px 8px; border-bottom: 1px solid #ddd; font-size: 10pt; vertical-align: top; }
-  table.kv td.k { width: 38%; font-family: 'Montserrat', sans-serif; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 1px; color: #555; }
-  table.kv td.v { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: #0c2a52; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; font-size: 11pt; line-height: 1.35; }
+  .logo { font-weight: 700; color: #123c69; font-size: 13pt; margin-bottom: 16px; }
+  .symbol { font-size: 18pt; font-weight: 700; margin-bottom: 12px; }
+  h1 { font-size: 14pt; margin: 6px 0 8px; font-weight: 700; }
+  h2 { font-size: 11pt; margin: 18px 0 8px; font-weight: 700; }
+  table.kv { width: 100%; border-collapse: collapse; margin: 8px 0 14px; }
+  table.kv td { padding: 4px 6px; border: 1px solid #cfcfcf; font-size: 10pt; vertical-align: top; }
+  table.kv td.k { width: 42%; font-weight: 700; }
+  table.kv td.v { font-weight: 400; }
   p.legal { text-align: justify; margin: 10px 0; }
-  .firma { margin-top: 50px; display: flex; justify-content: space-between; gap: 40px; }
-  .firma .box { flex: 1; border-top: 1px solid #333; padding-top: 6px; text-align: center; font-size: 9pt; }
-  .ftr { position: fixed; bottom: 8mm; left: 16mm; right: 16mm; border-top: 1px solid #ccc; padding-top: 6px; font-family: 'Montserrat', sans-serif; font-size: 7.5pt; color: #777; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 1px; }
+  .sign { margin-top: 28px; }
+  .muted { color: #333; font-size: 9pt; font-style: italic; }
   .actions { text-align: center; margin: 24px 0; }
-  .actions button { font-family: 'Montserrat', sans-serif; padding: 10px 24px; background: #0c2a52; color: #fff; border: 0; cursor: pointer; letter-spacing: 1px; font-size: 10pt; }
+  .actions button { padding: 10px 24px; background: #123c69; color: #fff; border: 0; cursor: pointer; font-size: 10pt; }
   @media print { .actions { display: none; } }
   </style>`;
 }
 
-function header(simbolo: string, today: string, prog: any) {
-  return `<div class="hdr">
-    <div class="brand"><h1>GRUPO BURSÁTIL VENEZOLANO</h1><p>Casa de Bolsa · SUNAVAL · Bolsa de Valores de Caracas</p></div>
-    <div class="meta"><strong>${simbolo}</strong>Caracas, ${fmtCaracas(today)}</div>
-  </div>
-  <p class="sub">Programa ${prog.codigo_pcfb} · Línea ${prog.linea ?? '—'}</p>`;
-}
-
-function footer(simbolo: string, today: string, ced: any) {
-  return `<div class="firma">
-    <div class="box">Por el Cedente<br/><small>${ced?.representante_legal ?? '—'}<br/>${ced?.cargo ?? ''}</small></div>
-    <div class="box">Por Grupo Bursátil Venezolano<br/><small>Operador autorizado</small></div>
-  </div>
-  <div class="ftr">
-    <span>SICEBOP · ${simbolo}</span>
-    <span>Documento generado el ${fmtCaracas(today)}</span>
-  </div>`;
-}
-
 function renderCFB(e: any, ced: any, prog: any) {
-  const today = new Date().toISOString().slice(0, 10);
   return `<!doctype html><html lang="es-VE"><head><meta charset="utf-8"/><title>CFB ${e.simbolo_cfb}</title>${baseStyles()}</head><body>
   <div class="actions"><button onclick="window.print()">Imprimir / Guardar como PDF</button></div>
-  ${header(e.simbolo_cfb, today, prog)}
-  <h2 class="titulo">CERTIFICADO DE FINANCIAMIENTO BURSÁTIL</h2>
-  <p class="legal">Por el presente <strong>Certificado de Financiamiento Bursátil (CFB)</strong>, identificado con el símbolo <strong>${e.simbolo_cfb}</strong>, emitido bajo el programa <strong>${prog.codigo_pcfb}</strong>, se hace constar que <strong>${ced.razon_social}</strong>, RIF <strong>${ced.rif}</strong>, en su condición de Cedente, ha cedido derechos de cobro por un valor nominal de <strong>${fmtUSD(Number(e.valor_nominal_usd))}</strong> (${fmtBs(Number(e.valor_efectivo_bs))} a la tasa BCV de ${Number(e.tasa_cambio_bs_usd).toFixed(4)} Bs/USD).</p>
+  <div class="symbol">${e.simbolo_cfb}</div>
+  <h1>${ced.razon_social}</h1>
+  <p><strong>Certificado de Financiamiento Bursátil ${fmtUSD(Number(e.valor_nominal_usd))}</strong></p>
+  <p>Expresado en dólares de Los Estados Unidos de América.</p>
+  <p class="legal">Autorizado por la Superintendencia Nacional de Valores, el 16 de agosto de 2023, mediante CIRCULAR DSNV/GCI/00014 sobre lineamientos del segmento:</p>
   <table class="kv">
-    <tr><td class="k">Símbolo CFB</td><td class="v">${e.simbolo_cfb}</td></tr>
+    <tr><td class="k">Programa de CFB</td><td class="v">${prog.codigo_pcfb}</td></tr>
+    <tr><td class="k">Contrato Marco de Cesión de Derechos de Crédito No.</td><td class="v">${prog.contrato_cesion || prog.codigo_pcfb}</td></tr>
+    <tr><td class="k">Estructura del Certificado de Financiamiento Bursátil</td><td class="v">${e.cantidad_ordenes_compra} Ordenes de compra vigentes contenidas en el "Reporte de cuentas por cobrar" anexo (CFB) al contrato suscrito.</td></tr>
+    <tr><td class="k">Fecha de emisión</td><td class="v">${fmtShort(e.fecha_emision)}</td></tr>
+    <tr><td class="k">Fecha de vencimiento</td><td class="v">${fmtShort(e.fecha_vencimiento)}</td></tr>
+    <tr><td class="k">Plazo</td><td class="v">${e.dias_colocados} Días</td></tr>
+    <tr><td class="k">Rendimiento anualizado</td><td class="v">${fmtPct(Number(e.rendimiento_anualizado))} anualizado</td></tr>
+    <tr><td class="k">Base</td><td class="v">ACT/360</td></tr>
+    <tr><td class="k">Precio</td><td class="v">${fmtPct(Number(e.precio))}</td></tr>
+    <tr><td class="k">Modalidad</td><td class="v">A descuento</td></tr>
+    <tr><td class="k">Estructurador</td><td class="v">Grupo Bursatil Venezolano Casa de Bolsa, C.A.</td></tr>
+    <tr><td class="k">Forma de Adquisición</td><td class="v">A través de Bolsa de Valores de Caracas</td></tr>
     <tr><td class="k">Cedente</td><td class="v">${ced.razon_social}</td></tr>
-    <tr><td class="k">Valor Nominal (USD)</td><td class="v">${fmtUSD(Number(e.valor_nominal_usd))}</td></tr>
-    <tr><td class="k">Precio</td><td class="v">${Number(e.precio).toFixed(5)}</td></tr>
-    <tr><td class="k">Descuento aplicado</td><td class="v">${fmtPct(Number(e.descuento), 4)}</td></tr>
-    <tr><td class="k">Monto Efectivo (USD)</td><td class="v">${fmtUSD(Number(e.monto_efectivo_usd))}</td></tr>
-    <tr><td class="k">Tasa BCV (Bs/USD)</td><td class="v">${Number(e.tasa_cambio_bs_usd).toFixed(4)}</td></tr>
-    <tr><td class="k">Valor Efectivo (Bs)</td><td class="v">${fmtBs(Number(e.valor_efectivo_bs))}</td></tr>
-    <tr><td class="k">Fecha de Emisión</td><td class="v">${fmtCaracas(e.fecha_emision)}</td></tr>
-    <tr><td class="k">Fecha de Vencimiento</td><td class="v">${fmtCaracas(e.fecha_vencimiento)}</td></tr>
-    <tr><td class="k">Días colocados</td><td class="v">${e.dias_colocados}</td></tr>
-    <tr><td class="k">Rendimiento Anualizado</td><td class="v">${fmtPct(Number(e.rendimiento_anualizado), 4)}</td></tr>
+    <tr><td class="k">Deudor Cedido</td><td class="v">Grupo Cashea Ve, C.A. en representación de los usuarios de la plataforma Cashea.</td></tr>
+    <tr><td class="k">Asesores Cashea</td><td class="v">Latin Assets Group, C.A. - LAGroup</td></tr>
   </table>
-  <p class="legal">El presente certificado es un instrumento de financiamiento bursátil cero-cupón, regulado por la Superintendencia Nacional de Valores (SUNAVAL) y negociado a través de la Bolsa de Valores de Caracas. Su redención al vencimiento se hará por el valor nominal aquí establecido, conforme a las normas vigentes.</p>
-  ${footer(e.simbolo_cfb, today, ced)}
+  <p><strong>${ced.razon_social}</strong><br/>Cedente</p>
+  <p class="legal">El Financista declara conocer y aceptar expresamente que Grupo Cashea Ve, C.A. actuará en calidad de agente de cobro y pago de los fondos y flujos derivados de la adquisición de los derechos de crédito incorporados en el presente Certificado de Financiamiento Bursátil. En tal carácter, Grupo Cashea Ve, C.A. se limitará a realizar las gestiones de cobro, consolidación y transferencia de dichos fondos, sin asumir obligación de garantía, responsabilidad crediticia ni riesgo distinto al estrictamente operativo.</p>
+  <p class="legal">De conformidad con lo establecido en el Artículo 7 de la CIRCULAR DSNV/GCI/00014, se informa al financista que las inversiones efectuadas en el Mercado de Valores están sujetas a las fluctuaciones propias del mercado, por lo que no se garantiza rendimiento alguno en el futuro.</p>
+  <p class="legal">Los Certificados de Financiamiento Bursátil que sean objeto de negociación a través de las bolsas de valores gozan de las exenciones y exoneraciones previstas en la normativa aplicable.</p>
   </body></html>`;
 }
 
 function renderHoja(e: any, ced: any, prog: any) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = e.fecha_emision;
   return `<!doctype html><html lang="es-VE"><head><meta charset="utf-8"/><title>Hoja Términos ${e.simbolo_cfb}</title>${baseStyles()}</head><body>
   <div class="actions"><button onclick="window.print()">Imprimir / Guardar como PDF</button></div>
-  ${header(e.simbolo_cfb, today, prog)}
-  <h2 class="titulo">HOJA DE TÉRMINOS Y CONDICIONES</h2>
+  <p>Caracas, ${fmtCaracas(today)}</p>
+  <p>Señores:<br/><strong>Grupo Bursatil Venezolano Casa de Bolsa, C.A.</strong><br/>Atn: Luis Alfredo Cercós Ruiz<br/>Presidente</p>
+  <p>Estimados Señores:</p>
+  <p class="legal">Tenemos el agrado de dirigirnos a ustedes para solicitar la emisión del Certificado de Financiamiento Bursátil <strong>${e.simbolo_cfb}</strong>, correspondiente al Programa de Certificados de Financiamiento Bursátil <strong>${prog.codigo_pcfb}</strong>, debidamente notificado a la Superintendencia Nacional de Valores de conformidad con la Circular No. DSNV/GCI/No.000014 del 16 de Agosto de 2023.</p>
   <table class="kv">
-    <tr><td class="k">Emisor / Cedente</td><td class="v">${ced.razon_social} (RIF ${ced.rif})</td></tr>
-    <tr><td class="k">Programa</td><td class="v">${prog.codigo_pcfb}</td></tr>
-    <tr><td class="k">Símbolo del CFB</td><td class="v">${e.simbolo_cfb}</td></tr>
-    <tr><td class="k">Tipo de instrumento</td><td class="v">Certificado de Financiamiento Bursátil (cero cupón)</td></tr>
-    <tr><td class="k">Moneda de denominación</td><td class="v">USD (liquidación en Bs. al BCV)</td></tr>
-    <tr><td class="k">Valor Nominal</td><td class="v">${fmtUSD(Number(e.valor_nominal_usd))}</td></tr>
-    <tr><td class="k">Precio de colocación</td><td class="v">${Number(e.precio).toFixed(5)}</td></tr>
-    <tr><td class="k">Descuento</td><td class="v">${fmtPct(Number(e.descuento), 4)}</td></tr>
-    <tr><td class="k">Rendimiento anualizado</td><td class="v">${fmtPct(Number(e.rendimiento_anualizado), 4)}</td></tr>
-    <tr><td class="k">Plazo</td><td class="v">${e.dias_colocados} días</td></tr>
-    <tr><td class="k">Fecha de Emisión</td><td class="v">${fmtCaracas(e.fecha_emision)}</td></tr>
-    <tr><td class="k">Fecha de Vencimiento</td><td class="v">${fmtCaracas(e.fecha_vencimiento)}</td></tr>
-    <tr><td class="k">Tasa de cambio (BCV)</td><td class="v">${Number(e.tasa_cambio_bs_usd).toFixed(4)} Bs/USD</td></tr>
-    <tr><td class="k">Monto Efectivo</td><td class="v">${fmtUSD(Number(e.monto_efectivo_usd))} (${fmtBs(Number(e.valor_efectivo_bs))})</td></tr>
-    <tr><td class="k">Régimen regulatorio</td><td class="v">SUNAVAL · Bolsa de Valores de Caracas</td></tr>
+    <tr><td class="k">Programa de Certificado de Financiamiento Bursatil</td><td class="v">${prog.codigo_pcfb}</td></tr>
+    <tr><td class="k">Monto Nominal</td><td class="v">${fmtUSD(Number(e.valor_nominal_usd))}</td></tr>
+    <tr><td class="k">Fecha de emisión</td><td class="v">${fmtShort(e.fecha_emision)}</td></tr>
+    <tr><td class="k">Fecha de vencimiento</td><td class="v">${fmtShort(e.fecha_vencimiento)}</td></tr>
+    <tr><td class="k">Plazo</td><td class="v">${e.dias_colocados} Días</td></tr>
+    <tr><td class="k">Modalidad</td><td class="v">A descuento</td></tr>
+    <tr><td class="k">Rendimiento anualizado</td><td class="v">${fmtPct(Number(e.rendimiento_anualizado))} anualizado</td></tr>
+    <tr><td class="k">Precio de colocación</td><td class="v">${fmtPct(Number(e.precio))}</td></tr>
+    <tr><td class="k">Base</td><td class="v">ACT/360</td></tr>
+    <tr><td class="k">Agente Estructurador</td><td class="v">Grupo Bursatil Venezolano Casa de Bolsa, C.A.</td></tr>
+    <tr><td class="k">Contrato de cesión</td><td class="v">Contrato Marco de Cesión de Derechos de Crédito No. ${prog.contrato_cesion || prog.codigo_pcfb}</td></tr>
+    <tr><td class="k">Estructura del Certificado de Financiamiento Bursatil (CFB)</td><td class="v">${e.cantidad_ordenes_compra} Ordenes de compra vigentes contenidas en el "Reporte de cuentas por cobrar" anexo al contrato suscrito.</td></tr>
+    <tr><td class="k">Forma de adquisición</td><td class="v">A través de Bolsa de Valores de Caracas</td></tr>
+    <tr><td class="k">Cedente</td><td class="v">${ced.razon_social}</td></tr>
+    <tr><td class="k">Deudor Cedido</td><td class="v">Grupo Cashea Ve, C.A. en representación de los usuarios de la plataforma Cashea.</td></tr>
   </table>
-  <p class="legal">Esta Hoja de Términos resume las condiciones financieras de la emisión identificada con el símbolo <strong>${e.simbolo_cfb}</strong>. La presente operación se rige por el Contrato Marco de Cesión ${prog.contrato_cesion ? '<strong>N° ' + prog.contrato_cesion + '</strong>' : ''} suscrito entre el Cedente y Grupo Bursátil Venezolano, así como por las normas dictadas por SUNAVAL.</p>
-  ${footer(e.simbolo_cfb, today, ced)}
+  <p class="legal">Los términos anteriores se encuentran en un todo de acuerdo con las condiciones generales del Programa de Certificados de Financiamiento Bursatil notificadas a la Superintendencia Nacional de Valores.</p>
+  <p class="sign">Jesus Augusto Rojas Hernandez<br/><strong>Por Grupo Cashea Ve, C.A.</strong><br/><strong>Mandatario de</strong><br/><strong>${ced.razon_social}</strong></p>
   </body></html>`;
+}
+
+function renderConfirmacion(e: any, ced: any, tipo: 'CDC' | 'CDV', financista: string) {
+  const esCompra = tipo === 'CDC';
+  const destinatario = esCompra ? financista : ced.razon_social;
+  return `<!doctype html><html lang="es-VE"><head><meta charset="utf-8"/><title>${tipo} ${e.simbolo_cfb}</title>${baseStyles()}</head><body>
+  <div class="actions"><button onclick="window.print()">Imprimir / Guardar como PDF</button></div>
+  <div class="logo">GBV GRUPO BURSÁTIL VENEZOLANO</div>
+  <p>Caracas, ${fmtCaracas(e.fecha_emision)}</p>
+  <p>Señores:<br/><strong>${destinatario}</strong><br/>Ciudad. -</p>
+  <p><strong>Estimados Señores:</strong></p>
+  <p class="legal">El objeto de la presente es confirmar la operación de <strong>${esCompra ? 'COMPRA' : 'VENTA'}</strong> de <strong>Títulos Renta Fija</strong> entre Grupo Bursatil Venezolano Casa de Bolsa y ustedes, bajo los términos y condiciones que a continuación se detallan:</p>
+  <h2>DETALLE DE LA TRANSACCIÓN:</h2>
+  <table class="kv"><tr><td class="k">Vendedor</td><td>${ced.razon_social}</td></tr><tr><td class="k">Comprador</td><td>${financista}</td></tr><tr><td class="k">Título</td><td><strong>${e.simbolo_cfb}</strong></td></tr><tr><td class="k">Fecha de operación</td><td>${fmtShort(e.fecha_emision)}</td></tr><tr><td class="k">Fecha Valor</td><td>${fmtShort(e.fecha_emision)}</td></tr><tr><td class="k">Valor Nominal</td><td>${fmtUSD(Number(e.valor_nominal_usd))}</td></tr><tr><td class="k">Precio</td><td>${fmtPct(Number(e.precio))}</td></tr><tr><td class="k">Base</td><td>ACT/360</td></tr><tr><td class="k">Plazo efectivo</td><td>${e.dias_colocados}</td></tr><tr><td class="k">Monto Efectivo</td><td>${fmtUSD(Number(e.monto_efectivo_usd))}</td></tr><tr><td class="k">Tipo de cambio (Bs/USD)</td><td>${Number(e.tasa_cambio_bs_usd).toFixed(4)}</td></tr><tr><td class="k">Valor Efectivo Bs</td><td>${fmtBs(Number(e.valor_efectivo_bs))}</td></tr></table>
+  <h2>DETALLE DEL TITULO:</h2>
+  <table class="kv"><tr><td class="k">Tipo</td><td>Certificado de Financiamiento Bursátil</td></tr><tr><td class="k">Cedente</td><td>${ced.razon_social}</td></tr><tr><td class="k">Valor Nominal CFB</td><td>${fmtUSD(Number(e.valor_nominal_usd))}</td></tr><tr><td class="k">Titulo Valor</td><td><strong>${e.simbolo_cfb}</strong></td></tr><tr><td class="k">Tipo</td><td>Cero Cupón</td></tr><tr><td class="k">Modalidad</td><td>A descuento</td></tr><tr><td class="k">Fecha de emisión</td><td>${fmtShort(e.fecha_emision)}</td></tr><tr><td class="k">Fecha de vencimiento</td><td>${fmtShort(e.fecha_vencimiento)}</td></tr><tr><td class="k">Plazo</td><td>${e.dias_colocados}</td></tr>${esCompra ? `<tr><td class="k">Rendimiento anualizado</td><td>${fmtPct(Number(e.rendimiento_anualizado))}</td></tr>` : ''}<tr><td class="k">Base</td><td>ACT/360</td></tr><tr><td class="k">Precio</td><td>${fmtPct(Number(e.precio))}</td></tr></table>
+  <p>Atentamente,</p><p><strong>Grupo Bursátil Venezolano Casa de Bolsa, C.A.</strong></p><p class="muted">Forma emitida por proceso automatizado. No requiere Firma Autógrafa por parte de GBV. Esta confirmación no requiere firma.</p>
+  </body></html>`;
+}
+
+function renderCartaBVC(e: any, ced: any, prog: any) {
+  return `<!doctype html><html lang="es-VE"><head><meta charset="utf-8"/><title>Carta BVC ${e.simbolo_cfb}</title>${baseStyles()}</head><body><div class="actions"><button onclick="window.print()">Imprimir / Guardar como PDF</button></div><div class="logo">GBV GRUPO BURSÁTIL VENEZOLANO</div><p>Caracas, ${fmtCaracas(e.fecha_emision)}</p><p>Señores:<br/><strong>BOLSA DE VALORES DE CARACAS</strong><br/>Presente. -</p><p>Atención: Enrique Rosal / Néstor Fernández<br/>Gerencia de Mercados.</p><p class="legal">Quien suscribe Cristian Alexander Morales Di Stefano, venezolano, mayor de edad, domiciliado en Caracas y titular de la Cedula de Identidad N° V-26.818.100, en nombre de mi representada Grupo Bursatil Venezolano Casa de Bolsa, C.A. RIF N°: J-502409831, Miembro Nro. 3 de la Bolsa de Valores de Caracas, C.A., solicito por medio de la presente, la inscripción del Certificado de Financiamiento Bursátil, emitido por la empresa ${ced.razon_social}, RIF N°: ${ced.rif}, por la cantidad de ${fmtUSD(Number(e.valor_nominal_usd))} y cuya hoja de términos se anexa a la presente, siguiendo lo establecido en la circular de fecha 01 de septiembre de 2023, emitida por la Bolsa de Valores de Caracas.</p><p>De igual forma, por medio de la presente declaro BAJO FE DE JURAMENTO lo siguiente:</p><p class="legal">1. Que los datos aquí suministrados, así como los establecidos en la hoja de términos del referido Certificado de Financiamiento Bursátil, cumplen con lo establecido en la CIRCULAR RELATIVA A LOS LINEAMIENTOS DEL SEGMENTO DE NEGOCIACION DENOMINADO “MERCADO DE OTROS BIENES” EN LAS BOLSAS DE VALORES, dictado por la Superintendencia Nacional de Valores, identificada DSNV/GCI/N° 000014, de fecha 16 de agosto de 2023.</p><p class="legal">2. Que la Bolsa de Valores de Caracas, C.A., queda exonerada de responsabilidad ante cualquier incumplimiento a lo previsto en la referida circular emitida por la Superintendencia Nacional de Valores y demás obligaciones derivadas de la negociación en bolsa de los Certificados de Financiamiento Bursátil.</p><p>Sin otro particular al que hacer referencia,</p><p>Atentamente,</p><p class="sign"><strong>Cristian Alexander Morales Di Stefano</strong><br/>Firma Autorizada</p></body></html>`;
+}
+
+function renderCartaSunaval(e: any, ced: any, prog: any, financista: string) {
+  return `<!doctype html><html lang="es-VE"><head><meta charset="utf-8"/><title>Carta SUNAVAL ${e.simbolo_cfb}</title>${baseStyles()}</head><body><div class="actions"><button onclick="window.print()">Imprimir / Guardar como PDF</button></div><div class="logo">GBV GRUPO BURSÁTIL VENEZOLANO</div><p>Caracas, ${fmtCaracas(e.fecha_emision)}</p><p>Señores:<br/>Superintendencia Nacional de Valores</p><p>Estimados Señores:</p><p class="legal">Por medio de la presente, y en conformidad con lo dispuesto en la Circular DSNV/GCI/Nº 000014 con fecha del 16 de agosto de 2023, deseamos informarle sobre nuestra intención de emitir un programa de Certificados de Financiamiento Bursátil, con la finalidad de registrar los mismos en la Bolsa de Valores de Caracas para su negociación.</p><h2>FICHA DE IDENTIFICACIÓN DIGITAL</h2><table class="kv"><tr><td class="k">Cedente · Denominación Social</td><td>${ced.razon_social}</td></tr><tr><td class="k">RIF</td><td>${ced.rif}</td></tr><tr><td class="k">Representante Legal</td><td>${ced.representante_legal || 'Jesus Augusto Rojas Hernandez'}</td></tr><tr><td class="k">Cargo</td><td>${ced.cargo || 'Mandatario'}</td></tr><tr><td class="k">Cédula</td><td>${ced.cedula || 'V-26.741.091'}</td></tr><tr><td class="k">Deudor Cedido · Denominación Social</td><td>Grupo Cashea Ve, C.A.</td></tr><tr><td class="k">RIF</td><td>J-501934070</td></tr><tr><td class="k">Representante Legal</td><td>Jesus Augusto Rojas Hernandez</td></tr><tr><td class="k">Cargo</td><td>Apoderado</td></tr><tr><td class="k">Cédula</td><td>V-26.741.091</td></tr></table><h2>CARACTERÍSTICAS GENERALES</h2><table class="kv"><tr><td class="k">Programa de CFB</td><td>${prog.codigo_pcfb}</td></tr><tr><td class="k">Monto total nominal del activo subyacente</td><td>${fmtUSD(Number(e.valor_nominal_usd))}</td></tr><tr><td class="k">Contrato de Cesión de Derechos de Crédito</td><td>Contrato Marco de Cesión de Derechos de Crédito No. ${prog.contrato_cesion || prog.codigo_pcfb}</td></tr><tr><td class="k">Valor Nominal CFB</td><td>${fmtUSD(Number(e.valor_nominal_usd))}</td></tr><tr><td class="k">Fecha de emisión</td><td>${fmtShort(e.fecha_emision)}</td></tr><tr><td class="k">Fecha de vencimiento</td><td>${fmtShort(e.fecha_vencimiento)}</td></tr><tr><td class="k">Cant. Operaciones</td><td>1</td></tr><tr><td class="k">Activo Subyacente</td><td>Ordenes de compra vigentes contenidas en el "Reporte de cuentas por cobrar" anexo al contrato suscrito.</td></tr><tr><td class="k">Financista</td><td>${financista}</td></tr><tr><td class="k">Plazo de ejecución (programa)</td><td>${prog.plazo_ejecucion_dias || 180} días</td></tr></table><p>Agradecemos de antemano su atención, en caso de requerir más detalles o tener alguna pregunta, no dude en ponerse en contacto con nosotros.</p><p>Atentamente,</p><p class="sign"><strong>Cristian Alexander Morales Di Stefano</strong><br/>Firma Autorizada<br/>V-26.818.100</p></body></html>`;
 }
