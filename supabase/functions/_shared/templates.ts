@@ -935,8 +935,8 @@ ${actionsBar()}
   </table>
   <table class="form">
     <tr><td colspan="4" class="form-titulo-claro">Titular / Representante Legal</td><td class="form-titulo-claro">Huella Dactilar</td></tr>
-    <tr>
-      <td colspan="2" style="height: 50px;">
+    <tr class="firma-form-row">
+      <td colspan="2">
         <span class="label-mini">Nombre(s) y Apellido(s)</span><br/>
         ${repNombre}
       </td>
@@ -944,7 +944,7 @@ ${actionsBar()}
         <span class="label-mini">Cédula de identidad</span><br/>
         ${repCedula}
       </td>
-      <td colspan="1">
+      <td colspan="1" class="firma-form-cell">
         <span class="label-mini">Firma</span>
       </td>
       <td>&nbsp;</td>
