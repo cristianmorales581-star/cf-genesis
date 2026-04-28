@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -312,19 +313,37 @@ export default function CargaMasiva() {
       </PageHeader>
 
       {!parsed && (
-        <Card className="bg-gradient-to-br from-card to-secondary/30 border-dashed border-2">
-          <CardContent className="p-12 text-center">
-            <FileSpreadsheet className="h-14 w-14 mx-auto text-primary/40 mb-4" />
-            <h3 className="font-display text-lg font-semibold text-primary mb-2">
-              Sube tu archivo Excel SICEBOP
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Detectamos automáticamente las hojas <span className="font-medium">CEDENTES</span> y{" "}
-              <span className="font-medium">FINANCISTAS</span>. Los programas se crean a partir de las
-              columnas PCFB / Plazo / Descuento de cada cedente.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card className="bg-gradient-to-br from-card to-secondary/30 border-dashed border-2">
+            <CardContent className="p-12 text-center">
+              <FileSpreadsheet className="h-14 w-14 mx-auto text-primary/40 mb-4" />
+              <h3 className="font-display text-lg font-semibold text-primary mb-2">
+                Sube tu archivo Excel SICEBOP
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Detectamos automáticamente las hojas <span className="font-medium">CEDENTES</span> y{" "}
+                <span className="font-medium">FINANCISTAS</span>. Los programas se crean a partir de las
+                columnas PCFB / Plazo / Descuento de cada cedente.
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display text-primary">Pegar rango desde Excel</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Textarea
+                value={pastedValues}
+                onChange={e => setPastedValues(e.target.value)}
+                placeholder="Pega aquí encabezados y filas copiados desde Excel"
+                className="min-h-44 font-mono text-xs"
+              />
+              <Button onClick={onPasteImport} variant="outline" className="w-full">
+                <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Cargar valores pegados
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {parsed && (
