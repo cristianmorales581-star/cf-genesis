@@ -142,14 +142,18 @@ Deno.serve(async (req) => {
       filename: `HOJA_TERMINOS_${simbolo}.html`,
       html: renderHoja(emision, ced, prog),
     });
+    docs.push({ filename: `CDC_${simbolo}.html`, html: renderConfirmacion(emision, ced, 'CDC', r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
+    docs.push({ filename: `CDV_${simbolo}.html`, html: renderConfirmacion(emision, ced, 'CDV', r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
+    docs.push({ filename: `CARTA_BVC_${simbolo}.html`, html: renderCartaBVC(emision, ced, prog) });
+    docs.push({ filename: `CARTA_SUNAVAL_${simbolo}.html`, html: renderCartaSunaval(emision, ced, prog, r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
 
     // Fila vector
     vector.push({
       simbolo_cfb: simbolo,
       cedente: ced.razon_social,
       rif_cedente: ced.rif,
-      deudor_cedido: r.inversionista_label ?? 'Grupo Cashea Ve, C.A.',
-      rif_deudor: r.inversionista_rif ?? 'J-501934070',
+      deudor_cedido: 'GRUPO CASHEA VE, C.A.',
+      rif_deudor: 'J-501934070',
       cantidad_certificados: 1,
       fecha_emision: body.fecha_emision,
       fecha_vencimiento: fechaVencimientoCFB,
@@ -159,7 +163,7 @@ Deno.serve(async (req) => {
       valor_nominal_bs: round2(vnUsd * body.tasa_bcv),
       precio_emision: precio,
       tipo_sociedad: 'COMERCIAL',
-      moneda: 'USD',
+      moneda: 'VES',
       valor_nominal_usd: vnUsd,
       monto_sibe_usd: Math.round(montoUsd),
       tasa_cambio: body.tasa_bcv,
