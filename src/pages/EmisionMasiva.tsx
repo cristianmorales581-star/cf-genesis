@@ -393,14 +393,16 @@ async function htmlToPdfBlob(html: string, filename: string): Promise<Blob> {
   const parsed = new DOMParser().parseFromString(html, "text/html");
   wrapper.innerHTML = `${parsed.head.innerHTML}${parsed.body.innerHTML}`;
   wrapper.querySelectorAll(".actions").forEach((el) => el.remove());
-  wrapper.style.position = "fixed";
-  wrapper.style.left = "0";
-  wrapper.style.top = "0";
+  wrapper.style.position = "absolute";
+  wrapper.style.left = `${window.scrollX}px`;
+  wrapper.style.top = `${window.scrollY}px`;
   wrapper.style.width = "210mm";
   wrapper.style.minHeight = "297mm";
   wrapper.style.background = "#ffffff";
-  wrapper.style.zIndex = "-1";
+  wrapper.style.color = "#000000";
+  wrapper.style.zIndex = "2147483647";
   wrapper.style.pointerEvents = "none";
+  wrapper.style.boxShadow = "none";
   document.body.appendChild(wrapper);
   try {
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -409,10 +411,20 @@ async function htmlToPdfBlob(html: string, filename: string): Promise<Blob> {
         filename: `${filename}.pdf`,
         margin: 0,
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: wrapper.scrollWidth,
+          windowHeight: wrapper.scrollHeight,
+          logging: false,
+        },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       })
       .from(wrapper)
+      .toPdf()
       .outputPdf("blob");
   } finally {
     document.body.removeChild(wrapper);
