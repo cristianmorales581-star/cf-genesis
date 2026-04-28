@@ -14,6 +14,7 @@ import { fmtBs, fmtDate, fmtPct, fmtUSD, todayISO } from "@/lib/format";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import { useAuth } from "@/contexts/AuthContext";
+import html2pdf from "html2pdf.js";
 
 // deno-lint-ignore no-explicit-any
 type Emision = any;
@@ -89,9 +90,7 @@ export default function EmisionDetalle() {
         throw new Error(err?.error ?? "Error generando documento");
       }
       const html = await res.text();
-      const blob = new Blob([html], { type: "text/html" });
-      const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, "_blank");
+      await htmlToPdfDownload(html, `${tipo}_${e.simbolo_cfb}.pdf`);
       await logAudit({ action: "generate_pdf", resource_type: tipo.toLowerCase(), resource_id: e.id });
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Error");
@@ -272,4 +271,28 @@ function DocBtn({ label, onClick, loading }: { label: string; onClick: () => voi
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
     </Button>
   );
+}
+
+async function htmlToPdfDownload(html: string, filename: string) {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = html;
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-10000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "210mm";
+  document.body.appendChild(wrapper);
+  try {
+    await html2pdf()
+      .set({
+        filename,
+        margin: 0,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      })
+      .from(wrapper)
+      .save();
+  } finally {
+    document.body.removeChild(wrapper);
+  }
 }
