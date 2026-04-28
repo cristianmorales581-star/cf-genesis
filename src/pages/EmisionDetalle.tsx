@@ -14,7 +14,8 @@ import { fmtBs, fmtDate, fmtPct, fmtUSD, todayISO } from "@/lib/format";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import { useAuth } from "@/contexts/AuthContext";
-import html2pdf from "html2pdf.js";
+import { htmlToPdfDownload, type PdfDebugSnapshot } from "@/lib/pdfDebug";
+import { PdfDebugPanel } from "@/components/PdfDebugPanel";
 
 // deno-lint-ignore no-explicit-any
 type Emision = any;
@@ -44,6 +45,7 @@ export default function EmisionDetalle() {
   });
   const [busy, setBusy] = useState(false);
   const [genTipo, setGenTipo] = useState<string | null>(null);
+  const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
 
   async function load() {
     if (!id) return;
@@ -90,7 +92,7 @@ export default function EmisionDetalle() {
         throw new Error(err?.error ?? "Error generando documento");
       }
       const html = await res.text();
-      await htmlToPdfDownload(html, `${tipo}_${e.simbolo_cfb}.pdf`);
+      await htmlToPdfDownload(html, `${tipo}_${e.simbolo_cfb}.pdf`, { onDebug: setPdfDebug });
       await logAudit({ action: "generate_pdf", resource_type: tipo.toLowerCase(), resource_id: e.id });
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Error");
@@ -129,6 +131,7 @@ export default function EmisionDetalle() {
         </Button>
         <Pill tone={e.estado === "activa" ? "success" : "default"}>{e.estado}</Pill>
       </PageHeader>
+      {pdfDebug && <PdfDebugPanel snapshot={pdfDebug} onClose={() => setPdfDebug(null)} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Datos */}
@@ -273,44 +276,3 @@ function DocBtn({ label, onClick, loading }: { label: string; onClick: () => voi
   );
 }
 
-async function htmlToPdfDownload(html: string, filename: string) {
-  const wrapper = document.createElement("div");
-  const parsed = new DOMParser().parseFromString(html, "text/html");
-  wrapper.innerHTML = `${parsed.head.innerHTML}${parsed.body.innerHTML}`;
-  wrapper.querySelectorAll(".actions").forEach((el) => el.remove());
-  wrapper.style.position = "absolute";
-  wrapper.style.left = `${window.scrollX}px`;
-  wrapper.style.top = `${window.scrollY}px`;
-  wrapper.style.width = "210mm";
-  wrapper.style.minHeight = "297mm";
-  wrapper.style.background = "#ffffff";
-  wrapper.style.color = "#000000";
-  wrapper.style.zIndex = "2147483647";
-  wrapper.style.pointerEvents = "none";
-  wrapper.style.boxShadow = "none";
-  document.body.appendChild(wrapper);
-  try {
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    await html2pdf()
-      .set({
-        filename,
-        margin: 0,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth: wrapper.scrollWidth,
-          windowHeight: wrapper.scrollHeight,
-          logging: false,
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(wrapper)
-      .save();
-  } finally {
-    document.body.removeChild(wrapper);
-  }
-}

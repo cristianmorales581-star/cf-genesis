@@ -22,7 +22,8 @@ import { fmtUSD, fmtPct, todayISO, fmtDate } from "@/lib/format";
 import { parseCSVText, inferCedenteName, type ParsedRow } from "@/lib/csvParser";
 import JSZip from "jszip";
 import * as XLSX from "xlsx";
-import html2pdf from "html2pdf.js";
+import { htmlToPdfBlob, type PdfDebugSnapshot } from "@/lib/pdfDebug";
+import { PdfDebugPanel } from "@/components/PdfDebugPanel";
 
 /** Normaliza RIF: quita guiones, espacios, uppercase. Clave única verdadera. */
 function normRif(r: string | null | undefined): string {
@@ -51,6 +52,7 @@ export default function EmisionMasiva() {
   const [generating, setGenerating] = useState(false);
   const [filename, setFilename] = useState<string>("");
   const [pastedCsv, setPastedCsv] = useState("");
+  const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -180,11 +182,12 @@ export default function EmisionMasiva() {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Generación falló");
 
+      setPdfDebug(null);
       // Armar ZIP con PDFs + vector .xlsx
       const zip = new JSZip();
       const docFolder = zip.folder("documentos")!;
       for (const d of data.documents as { filename: string; html: string }[]) {
-        const pdf = await htmlToPdfBlob(d.html, d.filename.replace(/\.pdf$/i, ""));
+        const pdf = await htmlToPdfBlob(d.html, d.filename.replace(/\.pdf$/i, ""), { onDebug: setPdfDebug });
         docFolder.file(d.filename.replace(/\.html$/i, ".pdf"), pdf);
       }
       // Vector consolidado .xlsx (formato espejo del modelo SIBE)
@@ -210,6 +213,7 @@ export default function EmisionMasiva() {
   return (
     <>
       <PageHeader title="Emisión Masiva" subtitle="Carga un CSV (Express, Masivo o Paquetizado) y genera todos los CFBs + el vector consolidado del día" />
+      {pdfDebug && <PdfDebugPanel snapshot={pdfDebug} onClose={() => setPdfDebug(null)} />}
 
       {/* Step 1: Configuración */}
       <Card title="1. Parámetros del lote">
@@ -386,49 +390,6 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok
       <div className={`text-base font-semibold ${tone === "ok" ? "text-accent" : "text-foreground"}`}>{value}</div>
     </div>
   );
-}
-
-async function htmlToPdfBlob(html: string, filename: string): Promise<Blob> {
-  const wrapper = document.createElement("div");
-  const parsed = new DOMParser().parseFromString(html, "text/html");
-  wrapper.innerHTML = `${parsed.head.innerHTML}${parsed.body.innerHTML}`;
-  wrapper.querySelectorAll(".actions").forEach((el) => el.remove());
-  wrapper.style.position = "absolute";
-  wrapper.style.left = `${window.scrollX}px`;
-  wrapper.style.top = `${window.scrollY}px`;
-  wrapper.style.width = "210mm";
-  wrapper.style.minHeight = "297mm";
-  wrapper.style.background = "#ffffff";
-  wrapper.style.color = "#000000";
-  wrapper.style.zIndex = "2147483647";
-  wrapper.style.pointerEvents = "none";
-  wrapper.style.boxShadow = "none";
-  document.body.appendChild(wrapper);
-  try {
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    return await html2pdf()
-      .set({
-        filename: `${filename}.pdf`,
-        margin: 0,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth: wrapper.scrollWidth,
-          windowHeight: wrapper.scrollHeight,
-          logging: false,
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(wrapper)
-      .toPdf()
-      .outputPdf("blob");
-  } finally {
-    document.body.removeChild(wrapper);
-  }
 }
 
 /** Construye el .xlsx del vector consolidado, espejo del formato SIBE. */

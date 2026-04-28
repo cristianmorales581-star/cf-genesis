@@ -227,9 +227,11 @@ function baseStyles(): string {
   /* Cierre y firma */
   .cierre { margin: 22px 0 4px; }
   .firma-area {
-    margin-top: 50px;
+    margin-top: 56px;
     text-align: center;
+    page-break-inside: avoid;
   }
+  .espacio-firma { height: 92px; }
   .firma-area .linea-firma {
     border-top: 0;
     width: 220px;
@@ -300,6 +302,13 @@ function baseStyles(): string {
     font-size: 12pt;
     font-weight: bold;
     width: 28px;
+  }
+  table.form tr.firma-form-row td {
+    height: 96px;
+    vertical-align: top;
+  }
+  table.form td.firma-form-cell {
+    min-width: 90px;
   }
   .form-titulo {
     background: #d9d9d9;
@@ -398,7 +407,7 @@ ${actionsBar()}
     Valores.
   </p>
   <div class="firma-area">
-    <div style="margin-bottom: 60px;">&nbsp;</div>
+    <div class="espacio-firma">&nbsp;</div>
     <div class="nombre">${c.cedente_rep_legal ?? '—'}</div>
     <div class="subtitulo">Mandatario de</div>
     <div class="subtitulo"><strong>${c.cedente_razon_social}</strong></div>
@@ -489,7 +498,7 @@ ${actionsBar()}
   </p>
   <div class="cierre">Atentamente,</div>
   <div class="firma-area">
-    <div style="margin-bottom: 60px;">&nbsp;</div>
+    <div class="espacio-firma">&nbsp;</div>
     <div class="nombre">${c.operador_nombre}</div>
     <div class="subtitulo">Firma Autorizada</div>
     <div class="subtitulo">${c.operador_cedula}</div>
@@ -557,7 +566,7 @@ ${actionsBar()}
   <p class="parrafo">Sin otro particular al que hacer referencia,</p>
   <div class="cierre">Atentamente,</div>
   <div class="firma-area">
-    <div style="margin-bottom: 60px;">&nbsp;</div>
+    <div class="espacio-firma">&nbsp;</div>
     <div class="nombre">${c.operador_nombre}</div>
     <div class="subtitulo">Firma Autorizada</div>
   </div>
@@ -926,8 +935,8 @@ ${actionsBar()}
   </table>
   <table class="form">
     <tr><td colspan="4" class="form-titulo-claro">Titular / Representante Legal</td><td class="form-titulo-claro">Huella Dactilar</td></tr>
-    <tr>
-      <td colspan="2" style="height: 50px;">
+    <tr class="firma-form-row">
+      <td colspan="2">
         <span class="label-mini">Nombre(s) y Apellido(s)</span><br/>
         ${repNombre}
       </td>
@@ -935,7 +944,7 @@ ${actionsBar()}
         <span class="label-mini">Cédula de identidad</span><br/>
         ${repCedula}
       </td>
-      <td colspan="1">
+      <td colspan="1" class="firma-form-cell">
         <span class="label-mini">Firma</span>
       </td>
       <td>&nbsp;</td>
