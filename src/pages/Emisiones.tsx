@@ -5,8 +5,10 @@ import { PageHeader, EmptyState, Numeric, Pill } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fmtDate, fmtPct, fmtUSD } from "@/lib/format";
-import { FilePlus2, Search } from "lucide-react";
+import { FilePlus2, Search, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { logAudit } from "@/lib/audit";
 
 interface Row {
   id: string; simbolo_cfb: string; valor_nominal_usd: number; precio: number;
@@ -24,7 +26,7 @@ function daysRemaining(iso: string): number {
 }
 
 export default function Emisiones() {
-  const { isOperador } = useAuth();
+  const { isOperador, isAdmin } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [estado, setEstado] = useState<"todos" | "activa" | "vencida" | "redimida">("todos");
@@ -37,6 +39,18 @@ export default function Emisiones() {
     setRows((data ?? []) as Row[]);
   }
   useEffect(() => { load(); }, []);
+
+  async function deleteEmission(row: Row) {
+    if (!window.confirm(`¿Eliminar definitivamente el certificado ${row.simbolo_cfb}?`)) return;
+    const { error } = await supabase.from("emisiones").delete().eq("id", row.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    await logAudit({ action: "delete", resource_type: "emision", resource_id: row.id, details: { simbolo_cfb: row.simbolo_cfb } });
+    setRows(prev => prev.filter(r => r.id !== row.id));
+    toast.success(`Certificado ${row.simbolo_cfb} eliminado`);
+  }
 
   const filtered = rows.filter(r => {
     if (estado !== "todos" && r.estado !== estado) return false;
@@ -91,6 +105,7 @@ export default function Emisiones() {
                 <th className="text-right px-5 py-3 font-semibold">Rend.</th>
                 <th className="text-left px-5 py-3 font-semibold">Vigencia</th>
                 <th className="text-center px-5 py-3 font-semibold">Estado</th>
+                {isAdmin && <th className="text-right px-5 py-3 font-semibold"></th>}
               </tr>
             </thead>
             <tbody>
@@ -118,6 +133,13 @@ export default function Emisiones() {
                   <td className="px-5 py-3 text-center">
                     <Pill tone={r.estado === "activa" ? "success" : r.estado === "vencida" ? "warning" : "default"}>{r.estado}</Pill>
                   </td>
+                  {isAdmin && (
+                    <td className="px-5 py-3 text-right">
+                      <Button variant="ghost" size="icon" onClick={() => deleteEmission(r)} aria-label={`Eliminar ${r.simbolo_cfb}`}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </td>
+                  )}
                 </tr>;
               })}
             </tbody>

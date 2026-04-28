@@ -29,7 +29,7 @@ function normRif(r: string | null | undefined): string {
 }
 
 interface Cedente { id: string; razon_social: string; rif: string; }
-interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; }
+interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; descuento_base: number; }
 interface Financista { id: string; razon_social: string; rif: string | null; }
 
 type RowMapping = ParsedRow & {
@@ -56,7 +56,7 @@ export default function EmisionMasiva() {
     (async () => {
       const [c, p, f] = await Promise.all([
         supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
-        supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea").eq("activo", true).order("codigo_pcfb"),
+        supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base").eq("activo", true).order("codigo_pcfb"),
         supabase.from("financistas").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
       ]);
       setCedentes((c.data ?? []) as Cedente[]);
@@ -100,7 +100,14 @@ export default function EmisionMasiva() {
       }
       let matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id && p.codigo_pcfb === r.programa_o_inversionista);
       if (!matchedPrograma) matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id);
-      return { ...r, cedente_id: matchedCedente.id, programa_id: matchedPrograma?.id, financista_id: defaultFinancista?.id, include: matchedCedente != null && matchedPrograma != null };
+      return {
+        ...r,
+        descuento_decimal: matchedPrograma ? Number(matchedPrograma.descuento_base) : r.descuento_decimal,
+        cedente_id: matchedCedente.id,
+        programa_id: matchedPrograma?.id,
+        financista_id: defaultFinancista?.id,
+        include: matchedCedente != null && matchedPrograma != null,
+      };
     });
     setRows(mapped);
     toast({ title: `${parsed.length} filas leídas`, description: `Formato: ${detectedFormat}` });
@@ -123,6 +130,14 @@ export default function EmisionMasiva() {
       const copy = [...prev];
       copy[i] = { ...copy[i], ...patch };
       return copy;
+    });
+  }
+
+  function updatePrograma(i: number, programaId: string) {
+    const programa = programas.find(p => p.id === programaId);
+    updateRow(i, {
+      programa_id: programaId,
+      descuento_decimal: programa ? Number(programa.descuento_base) : rows[i].descuento_decimal,
     });
   }
 
@@ -291,7 +306,7 @@ export default function EmisionMasiva() {
                           </Select>
                         </td>
                         <td className="px-2 py-1.5">
-                          <Select value={r.programa_id ?? ""} onValueChange={(v) => updateRow(i, { programa_id: v })} disabled={!r.cedente_id}>
+                          <Select value={r.programa_id ?? ""} onValueChange={(v) => updatePrograma(i, v)} disabled={!r.cedente_id}>
                             <SelectTrigger className="h-7 text-[11px] w-full min-w-[170px]"><SelectValue placeholder="—" /></SelectTrigger>
                             <SelectContent>
                               {progsForCed.map(p => <SelectItem key={p.id} value={p.id}>{p.codigo_pcfb}</SelectItem>)}
@@ -309,7 +324,18 @@ export default function EmisionMasiva() {
                         <td className="px-2 py-1.5 text-muted-foreground">{r.linea}</td>
                         <td className="px-2 py-1.5 text-right font-mono">{fmtUSD(r.monto_total_usd)}</td>
                         <td className="px-2 py-1.5 text-right">{r.plazo_dias}d</td>
-                        <td className="px-2 py-1.5 text-right">{fmtPct(r.descuento_decimal, 2)}</td>
+                        <td className="px-2 py-1.5 text-right">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="20"
+                            step="0.01"
+                            value={Number.isFinite(r.descuento_decimal) ? (r.descuento_decimal * 100).toFixed(2) : ""}
+                            onChange={(e) => updateRow(i, { descuento_decimal: (parseFloat(e.target.value) || 0) / 100 })}
+                            className="h-7 w-20 text-right text-[11px] font-mono"
+                            aria-label="Descuento porcentual"
+                          />
+                        </td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.vencimiento_primera_orden}</td>
                         <td className="px-2 py-1.5 text-right">
                           <Button variant="ghost" size="icon" onClick={() => removeRow(i)} aria-label="Eliminar fila">
