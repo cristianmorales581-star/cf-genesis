@@ -103,29 +103,29 @@ function toISODate(v: any): string {
   return "";
 }
 
-export function parseLatinNumber(v: any): number {
+export function parseAccountingNumber(v: any): number {
   if (v === null || v === undefined || v === "") return 0;
   if (typeof v === "number") return v;
-  const s = String(v).replace(/[^\d.,-]/g, "");
+  const raw = String(v).trim();
+  const negative = /^-/.test(raw) || /^\(.+\)$/.test(raw);
+  const s = raw.replace(/[^\d.,-]/g, "").replace(/^-/, "");
   if (!s) return 0;
-  const lastComma = s.lastIndexOf(",");
-  const lastDot = s.lastIndexOf(".");
+  const parsed = s.includes(".") ? parseFloat(s.replace(/,/g, "")) : parseFloat(s.replace(/,/g, ""));
+  return negative ? -parsed : parsed;
+}
 
-  if (lastComma >= 0 && lastDot >= 0) {
-    const decimalSep = lastComma > lastDot ? "," : ".";
-    const thousandsSep = decimalSep === "," ? "." : ",";
-    return parseFloat(s.split(thousandsSep).join("").replace(decimalSep, "."));
-  }
-
-  if (lastComma >= 0) return parseFloat(s.replace(/\./g, "").replace(",", "."));
-
-  if (lastDot >= 0) {
-    const parts = s.split(".");
-    const looksLikeThousands = parts.length > 1 && parts[0].length <= 3 && parts.slice(1).every(part => part.length === 3);
-    return parseFloat(looksLikeThousands ? s.replace(/\./g, "") : s);
-  }
-
-  return parseFloat(s);
+export function parsePastedValues(text: string): ParsedSheet {
+  const delimiter = text.includes("\t") ? "\t" : ";";
+  const rows = text
+    .replace(/\r/g, "")
+    .split("\n")
+    .map(line => line.trimEnd())
+    .filter(Boolean)
+    .map(line => line.split(delimiter).map(cell => cell.trim()));
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, "Pegado");
+  return parseWorkbook(wb);
 }
 
 function cleanRif(s: string): string {
@@ -232,15 +232,15 @@ export function parseWorkbook(wb: XLSX.WorkBook): ParsedSheet {
       const pcfb = get(row, cols.pcfb);
       let programa: ProgramaRow | undefined;
       if (pcfb && pcfb.toUpperCase() !== "N/A") {
-        const desc = parseLatinNumber(row[cols.desc]);
+        const desc = parseAccountingNumber(row[cols.desc]);
         // Si viene "3" lo interpretamos como 3% → 0.03; si viene 0.03 lo dejamos.
         const descuento = desc > 1 ? desc / 100 : desc;
         programa = {
           codigo_pcfb: pcfb,
           linea: get(row, cols.linea) || undefined,
-          plazo_ejecucion_dias: Math.round(parseLatinNumber(row[cols.plazoEjec])) || 180,
+          plazo_ejecucion_dias: Math.round(parseAccountingNumber(row[cols.plazoEjec])) || 180,
           descuento_base: descuento,
-          plazo_cuotas_dias: Math.round(parseLatinNumber(row[cols.plazoCuotas])) || 14,
+          plazo_cuotas_dias: Math.round(parseAccountingNumber(row[cols.plazoCuotas])) || 14,
           fecha_inicio: toISODate(row[cols.fechaInicio]),
           fecha_vencimiento: toISODate(row[cols.fechaVenc]),
           contrato_cesion: get(row, cols.contrato) || undefined,
