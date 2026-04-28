@@ -22,7 +22,7 @@ import { fmtUSD, fmtPct, todayISO, fmtDate } from "@/lib/format";
 import { parseCSVText, inferCedenteName, type ParsedRow } from "@/lib/csvParser";
 import JSZip from "jszip";
 import * as XLSX from "xlsx";
-import html2pdf from "html2pdf.js";
+import { htmlToPdfBlob, type PdfDebugSnapshot } from "@/lib/pdfDebug";
 
 /** Normaliza RIF: quita guiones, espacios, uppercase. Clave única verdadera. */
 function normRif(r: string | null | undefined): string {
@@ -51,6 +51,7 @@ export default function EmisionMasiva() {
   const [generating, setGenerating] = useState(false);
   const [filename, setFilename] = useState<string>("");
   const [pastedCsv, setPastedCsv] = useState("");
+  const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -180,11 +181,12 @@ export default function EmisionMasiva() {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Generación falló");
 
+      setPdfDebug(null);
       // Armar ZIP con PDFs + vector .xlsx
       const zip = new JSZip();
       const docFolder = zip.folder("documentos")!;
       for (const d of data.documents as { filename: string; html: string }[]) {
-        const pdf = await htmlToPdfBlob(d.html, d.filename.replace(/\.pdf$/i, ""));
+        const pdf = await htmlToPdfBlob(d.html, d.filename.replace(/\.pdf$/i, ""), { onDebug: setPdfDebug });
         docFolder.file(d.filename.replace(/\.html$/i, ".pdf"), pdf);
       }
       // Vector consolidado .xlsx (formato espejo del modelo SIBE)
@@ -210,6 +212,7 @@ export default function EmisionMasiva() {
   return (
     <>
       <PageHeader title="Emisión Masiva" subtitle="Carga un CSV (Express, Masivo o Paquetizado) y genera todos los CFBs + el vector consolidado del día" />
+      {pdfDebug && <PdfDebugPanel snapshot={pdfDebug} onClose={() => setPdfDebug(null)} />}
 
       {/* Step 1: Configuración */}
       <Card title="1. Parámetros del lote">
