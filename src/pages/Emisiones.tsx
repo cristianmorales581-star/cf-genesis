@@ -16,6 +16,13 @@ interface Row {
   financistas?: { razon_social: string } | null;
 }
 
+function daysRemaining(iso: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const end = new Date(`${iso}T00:00:00`);
+  return Math.ceil((end.getTime() - today.getTime()) / 86400000);
+}
+
 export default function Emisiones() {
   const { isOperador } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
