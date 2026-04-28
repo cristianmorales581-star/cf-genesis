@@ -2,10 +2,11 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Trash2, RefreshCw } from "lucide-react";
 import {
   parseExcelFile,
   dedupeCedentes,
@@ -26,12 +27,27 @@ interface ImportSummary {
   programas: { creados: number; actualizados: number; errores: string[] };
 }
 
+type MatchStatus = "nuevo" | "actualiza" | "ok" | "error" | "pendiente";
+
+interface ValidationRow {
+  status: MatchStatus;
+  label: string;
+}
+
+interface ValidationState {
+  cedentes: ValidationRow[];
+  programas: ValidationRow[];
+  financistas: ValidationRow[];
+}
+
 export default function CargaMasiva() {
   const { isOperador } = useAuth();
   const [parsed, setParsed] = useState<ParsedSheet | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [validation, setValidation] = useState<ValidationState | null>(null);
   const [tab, setTab] = useState("cedentes");
 
   if (!isOperador) return <Navigate to="/" replace />;
@@ -47,12 +63,77 @@ export default function CargaMasiva() {
       result.financistas = dedupeFinancistas(result.financistas);
       result.programas = dedupeProgramas(result.programas);
       setParsed(result);
+      setValidation(null);
       const total = result.cedentes.length + result.financistas.length + result.programas.length;
       if (total === 0) toast.error("No se detectaron registros válidos");
-      else toast.success(`Detectados: ${result.cedentes.length} cedentes · ${result.programas.length} programas · ${result.financistas.length} financistas`);
+      else {
+        toast.success(`Detectados: ${result.cedentes.length} cedentes · ${result.programas.length} programas · ${result.financistas.length} financistas`);
+        void validateMatches(result);
+      }
     } catch (err: any) {
       toast.error("Error al leer Excel: " + (err.message ?? String(err)));
     }
+  }
+
+  function replaceRows<K extends keyof Pick<ParsedSheet, "cedentes" | "programas" | "financistas">>(kind: K, rows: ParsedSheet[K]) {
+    setParsed(prev => prev ? { ...prev, [kind]: rows } : prev);
+    setValidation(null);
+    setSummary(null);
+  }
+
+  async function validateMatches(source = parsed) {
+    if (!source) return;
+    setValidating(true);
+    const next: ValidationState = { cedentes: [], programas: [], financistas: [] };
+
+    for (const c of source.cedentes) {
+      if (!c.rif) {
+        next.cedentes.push({ status: "error", label: "Falta RIF" });
+        continue;
+      }
+      const { data } = await supabase.from("cedentes").select("id").eq("rif", c.rif).maybeSingle();
+      next.cedentes.push(data ? { status: "actualiza", label: "Match por RIF · actualizará" } : { status: "nuevo", label: "Sin match · creará" });
+    }
+
+    const cedentesEnCarga = new Set(source.cedentes.map(c => c.rif?.toUpperCase()).filter(Boolean));
+    for (const p of source.programas) {
+      if (!p.codigo_pcfb) {
+        next.programas.push({ status: "error", label: "Falta PCFB" });
+        continue;
+      }
+      if (!p.cedente_rif) {
+        next.programas.push({ status: "error", label: "Falta RIF de cedente" });
+        continue;
+      }
+      let cedenteId: string | undefined;
+      const { data: cedente } = await supabase.from("cedentes").select("id").eq("rif", p.cedente_rif).maybeSingle();
+      if (cedente) cedenteId = cedente.id;
+      if (!cedenteId && cedentesEnCarga.has(p.cedente_rif.toUpperCase())) {
+        next.programas.push({ status: "ok", label: "Cedente en carga · programa nuevo" });
+        continue;
+      }
+      if (!cedenteId) {
+        next.programas.push({ status: "error", label: "Cedente no encontrado" });
+        continue;
+      }
+      const query = supabase.from("programas").select("id").eq("codigo_pcfb", p.codigo_pcfb).eq("cedente_id", cedenteId);
+      const { data: existing } = p.linea ? await query.eq("linea", p.linea).maybeSingle() : await query.is("linea", null).maybeSingle();
+      next.programas.push(existing ? { status: "actualiza", label: "Match por PCFB + cedente + línea" } : { status: "nuevo", label: "Sin match · creará" });
+    }
+
+    for (const f of source.financistas) {
+      if (!f.razon_social) {
+        next.financistas.push({ status: "error", label: "Falta razón social" });
+        continue;
+      }
+      const { data } = f.rif
+        ? await supabase.from("financistas").select("id").eq("rif", f.rif).maybeSingle()
+        : await supabase.from("financistas").select("id").eq("razon_social", f.razon_social).maybeSingle();
+      next.financistas.push(data ? { status: "actualiza", label: f.rif ? "Match por RIF" : "Match por razón social" } : { status: "nuevo", label: "Sin match · creará" });
+    }
+
+    setValidation(next);
+    setValidating(false);
   }
 
   async function importAll() {
