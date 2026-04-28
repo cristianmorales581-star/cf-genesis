@@ -2,10 +2,11 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Trash2, RefreshCw } from "lucide-react";
 import {
   parseExcelFile,
   dedupeCedentes,
@@ -26,12 +27,27 @@ interface ImportSummary {
   programas: { creados: number; actualizados: number; errores: string[] };
 }
 
+type MatchStatus = "nuevo" | "actualiza" | "ok" | "error" | "pendiente";
+
+interface ValidationRow {
+  status: MatchStatus;
+  label: string;
+}
+
+interface ValidationState {
+  cedentes: ValidationRow[];
+  programas: ValidationRow[];
+  financistas: ValidationRow[];
+}
+
 export default function CargaMasiva() {
   const { isOperador } = useAuth();
   const [parsed, setParsed] = useState<ParsedSheet | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [validation, setValidation] = useState<ValidationState | null>(null);
   const [tab, setTab] = useState("cedentes");
 
   if (!isOperador) return <Navigate to="/" replace />;
@@ -47,12 +63,77 @@ export default function CargaMasiva() {
       result.financistas = dedupeFinancistas(result.financistas);
       result.programas = dedupeProgramas(result.programas);
       setParsed(result);
+      setValidation(null);
       const total = result.cedentes.length + result.financistas.length + result.programas.length;
       if (total === 0) toast.error("No se detectaron registros válidos");
-      else toast.success(`Detectados: ${result.cedentes.length} cedentes · ${result.programas.length} programas · ${result.financistas.length} financistas`);
+      else {
+        toast.success(`Detectados: ${result.cedentes.length} cedentes · ${result.programas.length} programas · ${result.financistas.length} financistas`);
+        void validateMatches(result);
+      }
     } catch (err: any) {
       toast.error("Error al leer Excel: " + (err.message ?? String(err)));
     }
+  }
+
+  function replaceRows<K extends keyof Pick<ParsedSheet, "cedentes" | "programas" | "financistas">>(kind: K, rows: ParsedSheet[K]) {
+    setParsed(prev => prev ? { ...prev, [kind]: rows } : prev);
+    setValidation(null);
+    setSummary(null);
+  }
+
+  async function validateMatches(source = parsed) {
+    if (!source) return;
+    setValidating(true);
+    const next: ValidationState = { cedentes: [], programas: [], financistas: [] };
+
+    for (const c of source.cedentes) {
+      if (!c.rif) {
+        next.cedentes.push({ status: "error", label: "Falta RIF" });
+        continue;
+      }
+      const { data } = await supabase.from("cedentes").select("id").eq("rif", c.rif).maybeSingle();
+      next.cedentes.push(data ? { status: "actualiza", label: "Match por RIF · actualizará" } : { status: "nuevo", label: "Sin match · creará" });
+    }
+
+    const cedentesEnCarga = new Set(source.cedentes.map(c => c.rif?.toUpperCase()).filter(Boolean));
+    for (const p of source.programas) {
+      if (!p.codigo_pcfb) {
+        next.programas.push({ status: "error", label: "Falta PCFB" });
+        continue;
+      }
+      if (!p.cedente_rif) {
+        next.programas.push({ status: "error", label: "Falta RIF de cedente" });
+        continue;
+      }
+      let cedenteId: string | undefined;
+      const { data: cedente } = await supabase.from("cedentes").select("id").eq("rif", p.cedente_rif).maybeSingle();
+      if (cedente) cedenteId = cedente.id;
+      if (!cedenteId && cedentesEnCarga.has(p.cedente_rif.toUpperCase())) {
+        next.programas.push({ status: "ok", label: "Cedente en carga · programa nuevo" });
+        continue;
+      }
+      if (!cedenteId) {
+        next.programas.push({ status: "error", label: "Cedente no encontrado" });
+        continue;
+      }
+      const query = supabase.from("programas").select("id").eq("codigo_pcfb", p.codigo_pcfb).eq("cedente_id", cedenteId);
+      const { data: existing } = p.linea ? await query.eq("linea", p.linea).maybeSingle() : await query.is("linea", null).maybeSingle();
+      next.programas.push(existing ? { status: "actualiza", label: "Match por PCFB + cedente + línea" } : { status: "nuevo", label: "Sin match · creará" });
+    }
+
+    for (const f of source.financistas) {
+      if (!f.razon_social) {
+        next.financistas.push({ status: "error", label: "Falta razón social" });
+        continue;
+      }
+      const { data } = f.rif
+        ? await supabase.from("financistas").select("id").eq("rif", f.rif).maybeSingle()
+        : await supabase.from("financistas").select("id").eq("razon_social", f.razon_social).maybeSingle();
+      next.financistas.push(data ? { status: "actualiza", label: f.rif ? "Match por RIF" : "Match por razón social" } : { status: "nuevo", label: "Sin match · creará" });
+    }
+
+    setValidation(next);
+    setValidating(false);
   }
 
   async function importAll() {
@@ -226,9 +307,15 @@ export default function CargaMasiva() {
                   Hojas detectadas: {parsed.detected.map(d => `${d.sheet} (${d.kind})`).join(" · ") || "—"}
                 </p>
               </div>
-              <Button onClick={importAll} disabled={busy} className="bg-gradient-primary">
-                {busy ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Importando…</> : <><CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirmar e importar</>}
-              </Button>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button variant="outline" onClick={() => validateMatches()} disabled={busy || validating}>
+                  {validating ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1.5" />}
+                  Validar matches
+                </Button>
+                <Button onClick={importAll} disabled={busy || validating} className="bg-gradient-primary">
+                  {busy ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Importando…</> : <><CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirmar e importar</>}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Tabs value={tab} onValueChange={setTab}>
@@ -238,13 +325,13 @@ export default function CargaMasiva() {
                   <TabsTrigger value="financistas">Financistas ({parsed.financistas.length})</TabsTrigger>
                 </TabsList>
                 <TabsContent value="cedentes" className="mt-4">
-                  <PreviewCedentes rows={parsed.cedentes} />
+                  <PreviewCedentes rows={parsed.cedentes} matches={validation?.cedentes} onChange={(rows) => replaceRows("cedentes", rows)} />
                 </TabsContent>
                 <TabsContent value="programas" className="mt-4">
-                  <PreviewProgramas rows={parsed.programas} />
+                  <PreviewProgramas rows={parsed.programas} matches={validation?.programas} onChange={(rows) => replaceRows("programas", rows)} />
                 </TabsContent>
                 <TabsContent value="financistas" className="mt-4">
-                  <PreviewFinancistas rows={parsed.financistas} />
+                  <PreviewFinancistas rows={parsed.financistas} matches={validation?.financistas} onChange={(rows) => replaceRows("financistas", rows)} />
                 </TabsContent>
               </Tabs>
             </CardContent>
@@ -290,26 +377,37 @@ function SummaryBox({ title, data }: { title: string; data: { creados: number; a
   );
 }
 
-function PreviewCedentes({ rows }: { rows: CedenteRow[] }) {
+function MatchBadge({ match }: { match?: ValidationRow }) {
+  const cls = match?.status === "error" ? "border-destructive/40 text-destructive" : match?.status === "actualiza" ? "border-primary/30 text-primary" : "border-border text-muted-foreground";
+  return <span className={`inline-flex rounded-md border px-2 py-1 text-[11px] font-medium ${cls}`}>{match?.label ?? "Pendiente"}</span>;
+}
+
+function PreviewCedentes({ rows, matches, onChange }: { rows: CedenteRow[]; matches?: ValidationRow[]; onChange: (rows: CedenteRow[]) => void }) {
   if (!rows.length) return <p className="text-sm text-muted-foreground py-6 text-center">Sin cedentes detectados</p>;
+  const update = (i: number, patch: Partial<CedenteRow>) => onChange(rows.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+  const remove = (i: number) => onChange(rows.filter((_, idx) => idx !== i));
   return (
     <div className="overflow-x-auto rounded border border-border">
       <table className="w-full text-xs">
         <thead className="bg-secondary/60 text-muted-foreground uppercase tracking-wider">
           <tr>
+            <th className="text-left px-3 py-2">Validación</th>
             <th className="text-left px-3 py-2">Razón Social</th>
             <th className="text-left px-3 py-2">RIF</th>
             <th className="text-left px-3 py-2">Representante</th>
             <th className="text-left px-3 py-2">Nombre comercial</th>
+            <th className="px-3 py-2"></th>
           </tr>
         </thead>
         <tbody>
           {rows.map((c, i) => (
             <tr key={i} className="border-t border-border hover:bg-secondary/30">
-              <td className="px-3 py-2 font-medium text-primary">{c.razon_social}</td>
-              <td className="px-3 py-2 font-mono">{c.rif}</td>
-              <td className="px-3 py-2 text-muted-foreground">{c.representante_legal ?? "—"}</td>
-              <td className="px-3 py-2 text-muted-foreground">{c.nombre_comercial ?? "—"}</td>
+              <td className="px-3 py-2"><MatchBadge match={matches?.[i]} /></td>
+              <td className="px-3 py-2 min-w-56"><Input value={c.razon_social} onChange={e => update(i, { razon_social: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2 min-w-32"><Input value={c.rif} onChange={e => update(i, { rif: e.target.value })} className="h-8 font-mono text-xs" /></td>
+              <td className="px-3 py-2 min-w-48"><Input value={c.representante_legal ?? ""} onChange={e => update(i, { representante_legal: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2 min-w-48"><Input value={c.nombre_comercial ?? ""} onChange={e => update(i, { nombre_comercial: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2"><Button variant="ghost" size="icon" onClick={() => remove(i)} aria-label="Eliminar fila"><Trash2 className="h-4 w-4 text-destructive" /></Button></td>
             </tr>
           ))}
         </tbody>
@@ -318,13 +416,16 @@ function PreviewCedentes({ rows }: { rows: CedenteRow[] }) {
   );
 }
 
-function PreviewProgramas({ rows }: { rows: ProgramaRow[] }) {
+function PreviewProgramas({ rows, matches, onChange }: { rows: ProgramaRow[]; matches?: ValidationRow[]; onChange: (rows: ProgramaRow[]) => void }) {
   if (!rows.length) return <p className="text-sm text-muted-foreground py-6 text-center">Sin programas detectados</p>;
+  const update = (i: number, patch: Partial<ProgramaRow>) => onChange(rows.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+  const remove = (i: number) => onChange(rows.filter((_, idx) => idx !== i));
   return (
     <div className="overflow-x-auto rounded border border-border">
       <table className="w-full text-xs">
         <thead className="bg-secondary/60 text-muted-foreground uppercase tracking-wider">
           <tr>
+            <th className="text-left px-3 py-2">Validación</th>
             <th className="text-left px-3 py-2">PCFB</th>
             <th className="text-left px-3 py-2">Cedente (RIF)</th>
             <th className="text-left px-3 py-2">Línea</th>
@@ -332,18 +433,21 @@ function PreviewProgramas({ rows }: { rows: ProgramaRow[] }) {
             <th className="text-right px-3 py-2">Descuento</th>
             <th className="text-right px-3 py-2">Cuotas</th>
             <th className="text-left px-3 py-2">Vigencia</th>
+            <th className="px-3 py-2"></th>
           </tr>
         </thead>
         <tbody>
           {rows.map((p, i) => (
             <tr key={i} className="border-t border-border hover:bg-secondary/30">
-              <td className="px-3 py-2 font-mono text-primary font-medium">{p.codigo_pcfb}</td>
-              <td className="px-3 py-2 font-mono">{p.cedente_rif}</td>
-              <td className="px-3 py-2">{p.linea ?? "—"}</td>
-              <td className="px-3 py-2 text-right">{p.plazo_ejecucion_dias}d</td>
-              <td className="px-3 py-2 text-right font-mono">{(p.descuento_base * 100).toFixed(2)}%</td>
-              <td className="px-3 py-2 text-right">{p.plazo_cuotas_dias}d</td>
-              <td className="px-3 py-2 text-muted-foreground">{p.fecha_inicio} → {p.fecha_vencimiento}</td>
+              <td className="px-3 py-2"><MatchBadge match={matches?.[i]} /></td>
+              <td className="px-3 py-2 min-w-32"><Input value={p.codigo_pcfb} onChange={e => update(i, { codigo_pcfb: e.target.value })} className="h-8 font-mono text-xs" /></td>
+              <td className="px-3 py-2 min-w-32"><Input value={p.cedente_rif ?? ""} onChange={e => update(i, { cedente_rif: e.target.value })} className="h-8 font-mono text-xs" /></td>
+              <td className="px-3 py-2 min-w-28"><Input value={p.linea ?? ""} onChange={e => update(i, { linea: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2 min-w-24"><Input type="number" value={p.plazo_ejecucion_dias} onChange={e => update(i, { plazo_ejecucion_dias: Number(e.target.value) })} className="h-8 text-xs text-right" /></td>
+              <td className="px-3 py-2 min-w-24"><Input type="number" step="0.01" value={(p.descuento_base * 100).toFixed(2)} onChange={e => update(i, { descuento_base: Number(e.target.value) / 100 })} className="h-8 text-xs text-right" /></td>
+              <td className="px-3 py-2 min-w-24"><Input type="number" value={p.plazo_cuotas_dias} onChange={e => update(i, { plazo_cuotas_dias: Number(e.target.value) })} className="h-8 text-xs text-right" /></td>
+              <td className="px-3 py-2 min-w-72"><div className="flex gap-2"><Input type="date" value={p.fecha_inicio} onChange={e => update(i, { fecha_inicio: e.target.value })} className="h-8 text-xs" /><Input type="date" value={p.fecha_vencimiento} onChange={e => update(i, { fecha_vencimiento: e.target.value })} className="h-8 text-xs" /></div></td>
+              <td className="px-3 py-2"><Button variant="ghost" size="icon" onClick={() => remove(i)} aria-label="Eliminar fila"><Trash2 className="h-4 w-4 text-destructive" /></Button></td>
             </tr>
           ))}
         </tbody>
@@ -352,30 +456,39 @@ function PreviewProgramas({ rows }: { rows: ProgramaRow[] }) {
   );
 }
 
-function PreviewFinancistas({ rows }: { rows: FinancistaRow[] }) {
+function PreviewFinancistas({ rows, matches, onChange }: { rows: FinancistaRow[]; matches?: ValidationRow[]; onChange: (rows: FinancistaRow[]) => void }) {
   if (!rows.length) return <p className="text-sm text-muted-foreground py-6 text-center">Sin financistas detectados</p>;
+  const update = (i: number, patch: Partial<FinancistaRow>) => onChange(rows.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+  const remove = (i: number) => onChange(rows.filter((_, idx) => idx !== i));
   return (
     <div className="overflow-x-auto rounded border border-border">
       <table className="w-full text-xs">
         <thead className="bg-secondary/60 text-muted-foreground uppercase tracking-wider">
           <tr>
+            <th className="text-left px-3 py-2">Validación</th>
             <th className="text-left px-3 py-2">Tipo</th>
             <th className="text-left px-3 py-2">Razón Social</th>
             <th className="text-left px-3 py-2">RIF/Cédula</th>
             <th className="text-left px-3 py-2">Correo</th>
             <th className="text-left px-3 py-2">Celular</th>
+            <th className="px-3 py-2"></th>
           </tr>
         </thead>
         <tbody>
           {rows.map((f, i) => (
             <tr key={i} className="border-t border-border hover:bg-secondary/30">
+              <td className="px-3 py-2"><MatchBadge match={matches?.[i]} /></td>
               <td className="px-3 py-2">
-                <span className="pill bg-secondary text-secondary-foreground">{f.tipo}</span>
+                <select value={f.tipo} onChange={e => update(i, { tipo: e.target.value as FinancistaRow["tipo"] })} className="h-8 rounded-md border border-input bg-background px-2 text-xs">
+                  <option value="juridica">juridica</option>
+                  <option value="natural">natural</option>
+                </select>
               </td>
-              <td className="px-3 py-2 font-medium text-primary">{f.razon_social}</td>
-              <td className="px-3 py-2 font-mono">{f.rif ?? f.cedula ?? "—"}</td>
-              <td className="px-3 py-2 text-muted-foreground">{f.correo ?? "—"}</td>
-              <td className="px-3 py-2 text-muted-foreground">{f.celular ?? "—"}</td>
+              <td className="px-3 py-2 min-w-56"><Input value={f.razon_social} onChange={e => update(i, { razon_social: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2 min-w-32"><Input value={f.rif ?? ""} onChange={e => update(i, { rif: e.target.value })} className="h-8 font-mono text-xs" /></td>
+              <td className="px-3 py-2 min-w-48"><Input value={f.correo ?? ""} onChange={e => update(i, { correo: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2 min-w-32"><Input value={f.celular ?? ""} onChange={e => update(i, { celular: e.target.value })} className="h-8 text-xs" /></td>
+              <td className="px-3 py-2"><Button variant="ghost" size="icon" onClick={() => remove(i)} aria-label="Eliminar fila"><Trash2 className="h-4 w-4 text-destructive" /></Button></td>
             </tr>
           ))}
         </tbody>
