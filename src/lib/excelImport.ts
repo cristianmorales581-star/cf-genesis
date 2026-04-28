@@ -114,7 +114,7 @@ export function parseLatinNumber(v: any): number {
   if (lastComma >= 0 && lastDot >= 0) {
     const decimalSep = lastComma > lastDot ? "," : ".";
     const thousandsSep = decimalSep === "," ? "." : ",";
-    return parseFloat(s.replaceAll(thousandsSep, "").replace(decimalSep, "."));
+    return parseFloat(s.split(thousandsSep).join("").replace(decimalSep, "."));
   }
 
   if (lastComma >= 0) return parseFloat(s.replace(/\./g, "").replace(",", "."));
