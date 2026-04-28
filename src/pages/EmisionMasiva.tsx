@@ -149,13 +149,15 @@ export default function EmisionMasiva() {
           simbolo_cfb: r.simbolo_cfb,
           cedente_id: r.cedente_id!,
           programa_id: r.programa_id!,
+          financista_id: r.financista_id ?? null,
           cantidad_ordenes: r.cantidad_ordenes,
           monto_total_usd: r.monto_total_usd,
           vencimiento_primera_orden: r.vencimiento_primera_orden,
           plazo_dias: r.plazo_dias,
           descuento_decimal: r.descuento_decimal,
           linea: r.linea,
-          inversionista_label: r.programa_o_inversionista || r.razon_social_csv,
+          inversionista_label: financistas.find(f => f.id === r.financista_id)?.razon_social || "GRUPO CASHEA VE, C.A.",
+          inversionista_rif: financistas.find(f => f.id === r.financista_id)?.rif || "J-501934070",
         })),
       };
       const { data, error } = await supabase.functions.invoke("generate-batch", { body: payload });
