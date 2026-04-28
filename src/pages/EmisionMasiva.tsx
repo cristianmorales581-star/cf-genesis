@@ -177,7 +177,7 @@ export default function EmisionMasiva() {
       };
       const { data, error } = await supabase.functions.invoke("generate-batch", { body: payload });
       if (error) throw error;
-      if (!data?.success) throw new Error("Generación falló");
+      if (!data?.success) throw new Error(data?.error || "Generación falló");
 
       // Armar ZIP con HTMLs + vector .xlsx
       const zip = new JSZip();
