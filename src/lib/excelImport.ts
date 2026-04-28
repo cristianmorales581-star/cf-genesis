@@ -103,17 +103,28 @@ function toISODate(v: any): string {
   return "";
 }
 
-function toNumber(v: any): number {
+export function parseLatinNumber(v: any): number {
   if (v === null || v === undefined || v === "") return 0;
   if (typeof v === "number") return v;
   const s = String(v).replace(/[^\d.,-]/g, "");
   if (!s) return 0;
-  if (s.includes(",") && s.includes(".")) return parseFloat(s.replace(/,/g, ""));
-  if (s.includes(",") && !s.includes(".")) {
-    const parts = s.split(",");
-    if (parts[parts.length - 1].length <= 2) return parseFloat(s.replace(",", "."));
-    return parseFloat(s.replace(/,/g, ""));
+  const lastComma = s.lastIndexOf(",");
+  const lastDot = s.lastIndexOf(".");
+
+  if (lastComma >= 0 && lastDot >= 0) {
+    const decimalSep = lastComma > lastDot ? "," : ".";
+    const thousandsSep = decimalSep === "," ? "." : ",";
+    return parseFloat(s.split(thousandsSep).join("").replace(decimalSep, "."));
   }
+
+  if (lastComma >= 0) return parseFloat(s.replace(/\./g, "").replace(",", "."));
+
+  if (lastDot >= 0) {
+    const parts = s.split(".");
+    const looksLikeThousands = parts.length > 1 && parts[0].length <= 3 && parts.slice(1).every(part => part.length === 3);
+    return parseFloat(looksLikeThousands ? s.replace(/\./g, "") : s);
+  }
+
   return parseFloat(s);
 }
 
@@ -221,15 +232,15 @@ export function parseWorkbook(wb: XLSX.WorkBook): ParsedSheet {
       const pcfb = get(row, cols.pcfb);
       let programa: ProgramaRow | undefined;
       if (pcfb && pcfb.toUpperCase() !== "N/A") {
-        const desc = toNumber(row[cols.desc]);
+        const desc = parseLatinNumber(row[cols.desc]);
         // Si viene "3" lo interpretamos como 3% → 0.03; si viene 0.03 lo dejamos.
         const descuento = desc > 1 ? desc / 100 : desc;
         programa = {
           codigo_pcfb: pcfb,
           linea: get(row, cols.linea) || undefined,
-          plazo_ejecucion_dias: Math.round(toNumber(row[cols.plazoEjec])) || 180,
+          plazo_ejecucion_dias: Math.round(parseLatinNumber(row[cols.plazoEjec])) || 180,
           descuento_base: descuento,
-          plazo_cuotas_dias: Math.round(toNumber(row[cols.plazoCuotas])) || 14,
+          plazo_cuotas_dias: Math.round(parseLatinNumber(row[cols.plazoCuotas])) || 14,
           fecha_inicio: toISODate(row[cols.fechaInicio]),
           fecha_vencimiento: toISODate(row[cols.fechaVenc]),
           contrato_cesion: get(row, cols.contrato) || undefined,
