@@ -1,4 +1,4 @@
-import html2pdf from "html2pdf.js";
+import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
 export interface PdfDebugSnapshot {
@@ -35,48 +35,18 @@ async function renderHtmlCanvas(html: string, filename: string, options: PdfRend
     await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     const windowWidth = Math.max(wrapper.scrollWidth, wrapper.offsetWidth, 794);
     const windowHeight = Math.max(wrapper.scrollHeight, wrapper.offsetHeight, 1123);
-    const worker = html2pdf()
-      .set({
-        filename: filename.endsWith(".pdf") ? filename : `${filename}.pdf`,
-        margin: 0,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth,
-          windowHeight,
-          logging: true,
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(wrapper)
-      .toContainer();
-
-    const overlay = (await worker.get("overlay")) as HTMLElement | null;
-    if (overlay) {
-      overlay.style.left = "0";
-      overlay.style.top = "0";
-      overlay.style.right = "auto";
-      overlay.style.bottom = "auto";
-      overlay.style.width = `${windowWidth}px`;
-      overlay.style.height = `${windowHeight}px`;
-      overlay.style.overflow = "visible";
-      overlay.style.pointerEvents = "none";
-      overlay.style.zIndex = "2147483647";
-      overlay.style.background = "#ffffff";
-    }
-
-    const container = (await worker.get("container")) as HTMLElement | null;
-    if (container) {
-      container.style.margin = "0";
-      container.style.backgroundColor = "#ffffff";
-    }
-
-    await worker.toCanvas();
-    const canvas = (await worker.get("canvas")) as HTMLCanvasElement;
+    const canvas = await html2canvas(wrapper, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      scrollX: 0,
+      scrollY: 0,
+      width: windowWidth,
+      height: windowHeight,
+      windowWidth,
+      windowHeight,
+      logging: false,
+    });
     const canvasDataUrl = canvas.toDataURL("image/png");
     options.onDebug?.({
       filename: filename.endsWith(".pdf") ? filename : `${filename}.pdf`,
