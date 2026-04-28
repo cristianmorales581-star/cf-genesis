@@ -3,12 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Trash2, RefreshCw } from "lucide-react";
 import {
   parseExcelFile,
+  parsePastedValues,
   dedupeCedentes,
   dedupeFinancistas,
   dedupeProgramas,
@@ -49,29 +51,45 @@ export default function CargaMasiva() {
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [validation, setValidation] = useState<ValidationState | null>(null);
   const [tab, setTab] = useState("cedentes");
+  const [pastedValues, setPastedValues] = useState("");
 
   if (!isOperador) return <Navigate to="/" replace />;
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    setFileName(f.name);
-    setSummary(null);
     try {
-      const result = await parseExcelFile(f);
-      result.cedentes = dedupeCedentes(result.cedentes);
-      result.financistas = dedupeFinancistas(result.financistas);
-      result.programas = dedupeProgramas(result.programas);
-      setParsed(result);
-      setValidation(null);
-      const total = result.cedentes.length + result.financistas.length + result.programas.length;
-      if (total === 0) toast.error("No se detectaron registros válidos");
-      else {
-        toast.success(`Detectados: ${result.cedentes.length} cedentes · ${result.programas.length} programas · ${result.financistas.length} financistas`);
-        void validateMatches(result);
-      }
+      await loadParsed(await parseExcelFile(f), f.name);
     } catch (err: any) {
       toast.error("Error al leer Excel: " + (err.message ?? String(err)));
+    }
+  }
+
+  async function loadParsed(result: ParsedSheet, sourceName: string) {
+    result.cedentes = dedupeCedentes(result.cedentes);
+    result.financistas = dedupeFinancistas(result.financistas);
+    result.programas = dedupeProgramas(result.programas);
+    setFileName(sourceName);
+    setParsed(result);
+    setValidation(null);
+    setSummary(null);
+    const total = result.cedentes.length + result.financistas.length + result.programas.length;
+    if (total === 0) toast.error("No se detectaron registros válidos");
+    else {
+      toast.success(`Detectados: ${result.cedentes.length} cedentes · ${result.programas.length} programas · ${result.financistas.length} financistas`);
+      void validateMatches(result);
+    }
+  }
+
+  function onPasteImport() {
+    if (!pastedValues.trim()) {
+      toast.error("Pega primero el rango copiado desde Excel");
+      return;
+    }
+    try {
+      void loadParsed(parsePastedValues(pastedValues), "Valores pegados");
+    } catch (err: any) {
+      toast.error("Error al leer valores pegados: " + (err.message ?? String(err)));
     }
   }
 
@@ -282,19 +300,37 @@ export default function CargaMasiva() {
       </PageHeader>
 
       {!parsed && (
-        <Card className="bg-gradient-to-br from-card to-secondary/30 border-dashed border-2">
-          <CardContent className="p-12 text-center">
-            <FileSpreadsheet className="h-14 w-14 mx-auto text-primary/40 mb-4" />
-            <h3 className="font-display text-lg font-semibold text-primary mb-2">
-              Sube tu archivo Excel SICEBOP
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Detectamos automáticamente las hojas <span className="font-medium">CEDENTES</span> y{" "}
-              <span className="font-medium">FINANCISTAS</span>. Los programas se crean a partir de las
-              columnas PCFB / Plazo / Descuento de cada cedente.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card className="bg-gradient-to-br from-card to-secondary/30 border-dashed border-2">
+            <CardContent className="p-12 text-center">
+              <FileSpreadsheet className="h-14 w-14 mx-auto text-primary/40 mb-4" />
+              <h3 className="font-display text-lg font-semibold text-primary mb-2">
+                Sube tu archivo Excel SICEBOP
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Detectamos automáticamente las hojas <span className="font-medium">CEDENTES</span> y{" "}
+                <span className="font-medium">FINANCISTAS</span>. Los programas se crean a partir de las
+                columnas PCFB / Plazo / Descuento de cada cedente.
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display text-primary">Pegar rango desde Excel</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Textarea
+                value={pastedValues}
+                onChange={e => setPastedValues(e.target.value)}
+                placeholder="Pega aquí encabezados y filas copiados desde Excel"
+                className="min-h-44 font-mono text-xs"
+              />
+              <Button onClick={onPasteImport} variant="outline" className="w-full">
+                <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Cargar valores pegados
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {parsed && (
