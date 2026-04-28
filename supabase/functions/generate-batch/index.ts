@@ -233,28 +233,34 @@ function baseStyles() {
 }
 
 function renderCFB(e: any, ced: any, prog: any) {
-  const today = new Date().toISOString().slice(0, 10);
   return `<!doctype html><html lang="es-VE"><head><meta charset="utf-8"/><title>CFB ${e.simbolo_cfb}</title>${baseStyles()}</head><body>
   <div class="actions"><button onclick="window.print()">Imprimir / Guardar como PDF</button></div>
-  ${header(e.simbolo_cfb, today, prog)}
-  <h2 class="titulo">CERTIFICADO DE FINANCIAMIENTO BURSÁTIL</h2>
-  <p class="legal">Por el presente <strong>Certificado de Financiamiento Bursátil (CFB)</strong>, identificado con el símbolo <strong>${e.simbolo_cfb}</strong>, emitido bajo el programa <strong>${prog.codigo_pcfb}</strong>, se hace constar que <strong>${ced.razon_social}</strong>, RIF <strong>${ced.rif}</strong>, en su condición de Cedente, ha cedido derechos de cobro por un valor nominal de <strong>${fmtUSD(Number(e.valor_nominal_usd))}</strong> (${fmtBs(Number(e.valor_efectivo_bs))} a la tasa BCV de ${Number(e.tasa_cambio_bs_usd).toFixed(4)} Bs/USD).</p>
+  <div class="symbol">${e.simbolo_cfb}</div>
+  <h1>${ced.razon_social}</h1>
+  <p><strong>Certificado de Financiamiento Bursátil ${fmtUSD(Number(e.valor_nominal_usd))}</strong></p>
+  <p>Expresado en dólares de Los Estados Unidos de América.</p>
+  <p class="legal">Autorizado por la Superintendencia Nacional de Valores, el 16 de agosto de 2023, mediante CIRCULAR DSNV/GCI/00014 sobre lineamientos del segmento:</p>
   <table class="kv">
-    <tr><td class="k">Símbolo CFB</td><td class="v">${e.simbolo_cfb}</td></tr>
+    <tr><td class="k">Programa de CFB</td><td class="v">${prog.codigo_pcfb}</td></tr>
+    <tr><td class="k">Contrato Marco de Cesión de Derechos de Crédito No.</td><td class="v">${prog.contrato_cesion || prog.codigo_pcfb}</td></tr>
+    <tr><td class="k">Estructura del Certificado de Financiamiento Bursátil</td><td class="v">${e.cantidad_ordenes_compra} Ordenes de compra vigentes contenidas en el "Reporte de cuentas por cobrar" anexo (CFB) al contrato suscrito.</td></tr>
+    <tr><td class="k">Fecha de emisión</td><td class="v">${fmtShort(e.fecha_emision)}</td></tr>
+    <tr><td class="k">Fecha de vencimiento</td><td class="v">${fmtShort(e.fecha_vencimiento)}</td></tr>
+    <tr><td class="k">Plazo</td><td class="v">${e.dias_colocados} Días</td></tr>
+    <tr><td class="k">Rendimiento anualizado</td><td class="v">${fmtPct(Number(e.rendimiento_anualizado))} anualizado</td></tr>
+    <tr><td class="k">Base</td><td class="v">ACT/360</td></tr>
+    <tr><td class="k">Precio</td><td class="v">${fmtPct(Number(e.precio))}</td></tr>
+    <tr><td class="k">Modalidad</td><td class="v">A descuento</td></tr>
+    <tr><td class="k">Estructurador</td><td class="v">Grupo Bursatil Venezolano Casa de Bolsa, C.A.</td></tr>
+    <tr><td class="k">Forma de Adquisición</td><td class="v">A través de Bolsa de Valores de Caracas</td></tr>
     <tr><td class="k">Cedente</td><td class="v">${ced.razon_social}</td></tr>
-    <tr><td class="k">Valor Nominal (USD)</td><td class="v">${fmtUSD(Number(e.valor_nominal_usd))}</td></tr>
-    <tr><td class="k">Precio</td><td class="v">${Number(e.precio).toFixed(5)}</td></tr>
-    <tr><td class="k">Descuento aplicado</td><td class="v">${fmtPct(Number(e.descuento), 4)}</td></tr>
-    <tr><td class="k">Monto Efectivo (USD)</td><td class="v">${fmtUSD(Number(e.monto_efectivo_usd))}</td></tr>
-    <tr><td class="k">Tasa BCV (Bs/USD)</td><td class="v">${Number(e.tasa_cambio_bs_usd).toFixed(4)}</td></tr>
-    <tr><td class="k">Valor Efectivo (Bs)</td><td class="v">${fmtBs(Number(e.valor_efectivo_bs))}</td></tr>
-    <tr><td class="k">Fecha de Emisión</td><td class="v">${fmtCaracas(e.fecha_emision)}</td></tr>
-    <tr><td class="k">Fecha de Vencimiento</td><td class="v">${fmtCaracas(e.fecha_vencimiento)}</td></tr>
-    <tr><td class="k">Días colocados</td><td class="v">${e.dias_colocados}</td></tr>
-    <tr><td class="k">Rendimiento Anualizado</td><td class="v">${fmtPct(Number(e.rendimiento_anualizado), 4)}</td></tr>
+    <tr><td class="k">Deudor Cedido</td><td class="v">Grupo Cashea Ve, C.A. en representación de los usuarios de la plataforma Cashea.</td></tr>
+    <tr><td class="k">Asesores Cashea</td><td class="v">Latin Assets Group, C.A. - LAGroup</td></tr>
   </table>
-  <p class="legal">El presente certificado es un instrumento de financiamiento bursátil cero-cupón, regulado por la Superintendencia Nacional de Valores (SUNAVAL) y negociado a través de la Bolsa de Valores de Caracas. Su redención al vencimiento se hará por el valor nominal aquí establecido, conforme a las normas vigentes.</p>
-  ${footer(e.simbolo_cfb, today, ced)}
+  <p><strong>${ced.razon_social}</strong><br/>Cedente</p>
+  <p class="legal">El Financista declara conocer y aceptar expresamente que Grupo Cashea Ve, C.A. actuará en calidad de agente de cobro y pago de los fondos y flujos derivados de la adquisición de los derechos de crédito incorporados en el presente Certificado de Financiamiento Bursátil. En tal carácter, Grupo Cashea Ve, C.A. se limitará a realizar las gestiones de cobro, consolidación y transferencia de dichos fondos, sin asumir obligación de garantía, responsabilidad crediticia ni riesgo distinto al estrictamente operativo.</p>
+  <p class="legal">De conformidad con lo establecido en el Artículo 7 de la CIRCULAR DSNV/GCI/00014, se informa al financista que las inversiones efectuadas en el Mercado de Valores están sujetas a las fluctuaciones propias del mercado, por lo que no se garantiza rendimiento alguno en el futuro.</p>
+  <p class="legal">Los Certificados de Financiamiento Bursátil que sean objeto de negociación a través de las bolsas de valores gozan de las exenciones y exoneraciones previstas en la normativa aplicable.</p>
   </body></html>`;
 }
 
