@@ -3,6 +3,7 @@
 
 export interface ParsedRow {
   nro: number;
+  simbolo_cfb: string;             // Símbolo asignado por la Bolsa para el lote/día
   razon_social_csv: string;       // Nombre tal como aparece en CSV
   rif_csv: string;
   linea: string;                   // Principal / Cotidiana / Cotidiana (2 cuotas)
@@ -123,6 +124,9 @@ export function parseCSVText(text: string): ParseResult {
   // Mapear columnas por nombre (tolerando acentos faltantes por encoding)
   const idx = {
     nro: header.findIndex(h => h.startsWith("NRO")),
+    simbolo: header.findIndex(h =>
+      (h.includes("SIMBOLO") || h.includes("SÍMBOLO")) && h.includes("CFB")
+    ),
     razon: header.findIndex(h => h.includes("RAZON SOCIAL")),
     rif: header.findIndex(h => h === "RIF" || h.includes("R.I.F")),
     linea: header.findIndex(h => h.includes("LINEA") || h.includes("L?NEA") || h.includes("L\uFFFDNEA")),
@@ -153,6 +157,7 @@ export function parseCSVText(text: string): ParseResult {
 
     const row: ParsedRow = {
       nro: parseInt(clean(cols[idx.nro] ?? "0"), 10) || (i),
+      simbolo_cfb: clean(cols[idx.simbolo] ?? ""),
       razon_social_csv: clean(cols[idx.razon] ?? ""),
       rif_csv: clean(cols[idx.rif] ?? "").replace(/\s+/g, ""),
       linea: clean(cols[idx.linea] ?? ""),
@@ -169,6 +174,7 @@ export function parseCSVText(text: string): ParseResult {
 
     if (!row.monto_total_usd) warnings.push(`Fila ${row.nro}: monto inválido`);
     if (!row.vencimiento_primera_orden) warnings.push(`Fila ${row.nro}: fecha inválida`);
+    if (!row.simbolo_cfb) warnings.push(`Fila ${row.nro}: símbolo CFB faltante`);
 
     rows.push(row);
   }
