@@ -1,4 +1,4 @@
-import html2pdf from "html2pdf.js";
+import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
 export interface PdfDebugSnapshot {
@@ -19,12 +19,15 @@ const A4_HEIGHT_MM = 297;
 
 export async function htmlToPdfBlob(html: string, filename: string, options: PdfRenderOptions = {}): Promise<Blob> {
   const { canvas } = await renderHtmlCanvas(html, filename, options);
-  return canvasToPdf(canvas).output("blob");
+  const blob = canvasToPdf(canvas).output("blob");
+  releaseCanvas(canvas);
+  return blob;
 }
 
 export async function htmlToPdfDownload(html: string, filename: string, options: PdfRenderOptions = {}) {
   const { canvas } = await renderHtmlCanvas(html, filename, options);
   canvasToPdf(canvas).save(filename);
+  releaseCanvas(canvas);
 }
 
 async function renderHtmlCanvas(html: string, filename: string, options: PdfRenderOptions) {
@@ -35,57 +38,28 @@ async function renderHtmlCanvas(html: string, filename: string, options: PdfRend
     await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     const windowWidth = Math.max(wrapper.scrollWidth, wrapper.offsetWidth, 794);
     const windowHeight = Math.max(wrapper.scrollHeight, wrapper.offsetHeight, 1123);
-    const worker = html2pdf()
-      .set({
-        filename: filename.endsWith(".pdf") ? filename : `${filename}.pdf`,
-        margin: 0,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth,
-          windowHeight,
-          logging: true,
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(wrapper)
-      .toContainer();
-
-    const overlay = (await worker.get("overlay")) as HTMLElement | null;
-    if (overlay) {
-      overlay.style.left = "0";
-      overlay.style.top = "0";
-      overlay.style.right = "auto";
-      overlay.style.bottom = "auto";
-      overlay.style.width = `${windowWidth}px`;
-      overlay.style.height = `${windowHeight}px`;
-      overlay.style.overflow = "visible";
-      overlay.style.pointerEvents = "none";
-      overlay.style.zIndex = "2147483647";
-      overlay.style.background = "#ffffff";
-    }
-
-    const container = (await worker.get("container")) as HTMLElement | null;
-    if (container) {
-      container.style.margin = "0";
-      container.style.backgroundColor = "#ffffff";
-    }
-
-    await worker.toCanvas();
-    const canvas = (await worker.get("canvas")) as HTMLCanvasElement;
-    const canvasDataUrl = canvas.toDataURL("image/png");
-    options.onDebug?.({
-      filename: filename.endsWith(".pdf") ? filename : `${filename}.pdf`,
-      html: wrapper.innerHTML,
-      canvasDataUrl,
-      canvasWidth: canvas.width,
-      canvasHeight: canvas.height,
-      capturedAt: new Date().toLocaleTimeString(),
+    const canvas = await html2canvas(wrapper, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      scrollX: 0,
+      scrollY: 0,
+      width: windowWidth,
+      height: windowHeight,
+      windowWidth,
+      windowHeight,
+      logging: false,
     });
+    if (options.onDebug) {
+      options.onDebug({
+        filename: filename.endsWith(".pdf") ? filename : `${filename}.pdf`,
+        html: wrapper.innerHTML,
+        canvasDataUrl: canvas.toDataURL("image/png"),
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        capturedAt: new Date().toLocaleTimeString(),
+      });
+    }
     await new Promise((resolve) => window.setTimeout(resolve, 120));
     return { canvas };
   } finally {
@@ -129,4 +103,9 @@ function canvasToPdf(canvas: HTMLCanvasElement) {
   }
 
   return pdf;
+}
+
+function releaseCanvas(canvas: HTMLCanvasElement) {
+  canvas.width = 0;
+  canvas.height = 0;
 }

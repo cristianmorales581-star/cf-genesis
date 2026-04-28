@@ -186,8 +186,14 @@ export default function EmisionMasiva() {
       // Armar ZIP con PDFs + vector .xlsx
       const zip = new JSZip();
       const docFolder = zip.folder("documentos")!;
+      let debugCaptured = false;
       for (const d of data.documents as { filename: string; html: string }[]) {
-        const pdf = await htmlToPdfBlob(d.html, d.filename.replace(/\.pdf$/i, ""), { onDebug: setPdfDebug });
+        const pdf = await htmlToPdfBlob(d.html, d.filename.replace(/\.pdf$/i, ""), {
+          onDebug: debugCaptured ? undefined : (snapshot) => {
+            debugCaptured = true;
+            setPdfDebug(snapshot);
+          },
+        });
         docFolder.file(d.filename.replace(/\.html$/i, ".pdf"), pdf);
       }
       // Vector consolidado .xlsx (formato espejo del modelo SIBE)
