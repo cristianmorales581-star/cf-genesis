@@ -11,6 +11,17 @@
 // montos, texto legal) y el cliente se encarga del render a PDF mediante
 // `window.print()` con CSS @page.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+import {
+  type TemplateContext,
+  renderCFB as renderTemplateCFB,
+  renderCartaSunaval as renderTemplateCartaSunaval,
+  renderCartaBVC as renderTemplateCartaBVC,
+  renderHojaTerminos as renderTemplateHojaTerminos,
+  renderCDC as renderTemplateCDC,
+  renderCDV as renderTemplateCDV,
+  renderODC as renderTemplateODC,
+  renderODV as renderTemplateODV,
+} from '../_shared/templates.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,7 +30,7 @@ const corsHeaders = {
 
 interface Body {
   emision_id: string;
-  tipo: 'CFB' | 'HOJA_TERMINOS' | 'CDC' | 'CDV';
+  tipo: 'CFB' | 'HOJA_TERMINOS' | 'CDC' | 'CDV' | 'CARTA_SUNAVAL' | 'CARTA_BVC' | 'ODC' | 'ODV';
   contraparte?: string;
 }
 
@@ -54,7 +65,18 @@ Deno.serve(async (req) => {
 
   if (eErr || !e) return json({ error: eErr?.message ?? 'Emisión no encontrada' }, 404);
 
-  const html = renderTemplate(body.tipo, e, body.contraparte);
+  const ctx = buildTemplateContext(e, body.contraparte);
+  const renderers: Record<Body['tipo'], (c: TemplateContext) => string> = {
+    CFB: renderTemplateCFB,
+    HOJA_TERMINOS: renderTemplateHojaTerminos,
+    CDC: renderTemplateCDC,
+    CDV: renderTemplateCDV,
+    CARTA_SUNAVAL: renderTemplateCartaSunaval,
+    CARTA_BVC: renderTemplateCartaBVC,
+    ODC: renderTemplateODC,
+    ODV: renderTemplateODV,
+  };
+  const html = renderers[body.tipo](ctx);
   return new Response(html, {
     headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
   });
