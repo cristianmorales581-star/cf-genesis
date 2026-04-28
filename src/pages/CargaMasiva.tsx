@@ -307,9 +307,15 @@ export default function CargaMasiva() {
                   Hojas detectadas: {parsed.detected.map(d => `${d.sheet} (${d.kind})`).join(" · ") || "—"}
                 </p>
               </div>
-              <Button onClick={importAll} disabled={busy} className="bg-gradient-primary">
-                {busy ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Importando…</> : <><CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirmar e importar</>}
-              </Button>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button variant="outline" onClick={() => validateMatches()} disabled={busy || validating}>
+                  {validating ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1.5" />}
+                  Validar matches
+                </Button>
+                <Button onClick={importAll} disabled={busy || validating} className="bg-gradient-primary">
+                  {busy ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Importando…</> : <><CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirmar e importar</>}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Tabs value={tab} onValueChange={setTab}>
@@ -319,13 +325,13 @@ export default function CargaMasiva() {
                   <TabsTrigger value="financistas">Financistas ({parsed.financistas.length})</TabsTrigger>
                 </TabsList>
                 <TabsContent value="cedentes" className="mt-4">
-                  <PreviewCedentes rows={parsed.cedentes} />
+                  <PreviewCedentes rows={parsed.cedentes} matches={validation?.cedentes} onChange={(rows) => replaceRows("cedentes", rows)} />
                 </TabsContent>
                 <TabsContent value="programas" className="mt-4">
-                  <PreviewProgramas rows={parsed.programas} />
+                  <PreviewProgramas rows={parsed.programas} matches={validation?.programas} onChange={(rows) => replaceRows("programas", rows)} />
                 </TabsContent>
                 <TabsContent value="financistas" className="mt-4">
-                  <PreviewFinancistas rows={parsed.financistas} />
+                  <PreviewFinancistas rows={parsed.financistas} matches={validation?.financistas} onChange={(rows) => replaceRows("financistas", rows)} />
                 </TabsContent>
               </Tabs>
             </CardContent>
