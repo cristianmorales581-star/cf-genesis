@@ -58,21 +58,8 @@ export default function CargaMasiva() {
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    setFileName(f.name);
-    setSummary(null);
     try {
-      const result = await parseExcelFile(f);
-      result.cedentes = dedupeCedentes(result.cedentes);
-      result.financistas = dedupeFinancistas(result.financistas);
-      result.programas = dedupeProgramas(result.programas);
-      setParsed(result);
-      setValidation(null);
-      const total = result.cedentes.length + result.financistas.length + result.programas.length;
-      if (total === 0) toast.error("No se detectaron registros válidos");
-      else {
-        toast.success(`Detectados: ${result.cedentes.length} cedentes · ${result.programas.length} programas · ${result.financistas.length} financistas`);
-        void validateMatches(result);
-      }
+      await loadParsed(await parseExcelFile(f), f.name);
     } catch (err: any) {
       toast.error("Error al leer Excel: " + (err.message ?? String(err)));
     }
