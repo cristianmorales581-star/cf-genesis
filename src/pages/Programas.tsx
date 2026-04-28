@@ -58,7 +58,26 @@ export default function Programas() {
       supabase.from("programas").select("*, cedentes(razon_social)").order("codigo_pcfb"),
       supabase.from("cedentes").select("id, razon_social, activo").eq("activo", true).order("razon_social"),
     ]);
-    setRows((progs ?? []) as Programa[]);
+    const today = new Date().toISOString().slice(0, 10);
+    const programas = (progs ?? []) as Programa[];
+    const vencidosActivos = programas.filter(p => p.activo && p.fecha_vencimiento < today);
+
+    if (vencidosActivos.length > 0) {
+      const ids = vencidosActivos.map(p => p.id);
+      const { error } = await supabase.from("programas").update({ activo: false }).in("id", ids);
+      if (error) {
+        toast.error(`No se pudieron inactivar programas vencidos: ${error.message}`);
+      } else {
+        await logAudit({
+          action: "disable",
+          resource_type: "programa",
+          details: { reason: "vencimiento_automatico", ids, count: ids.length },
+        });
+        programas.forEach(p => { if (ids.includes(p.id)) p.activo = false; });
+      }
+    }
+
+    setRows(programas);
     setCedentes(ceds ?? []);
   }
   useEffect(() => { load(); }, []);
