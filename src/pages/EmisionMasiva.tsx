@@ -140,6 +140,7 @@ export default function EmisionMasiva() {
         fecha_emision: fechaEmision,
         tasa_bcv: tasaBcv,
         rows: rows.filter(r => r.include).map(r => ({
+          simbolo_cfb: r.simbolo_cfb,
           cedente_id: r.cedente_id!,
           programa_id: r.programa_id!,
           cantidad_ordenes: r.cantidad_ordenes,
@@ -229,6 +230,7 @@ export default function EmisionMasiva() {
                 <thead className="bg-muted/40 text-muted-foreground uppercase tracking-wider">
                   <tr>
                     <th className="px-2 py-2 text-left">Inc.</th>
+                    <th className="px-2 py-2 text-left">Símbolo CFB</th>
                     <th className="px-2 py-2 text-left">CSV - Cedente</th>
                     <th className="px-2 py-2 text-left">Cedente BD</th>
                     <th className="px-2 py-2 text-left">Programa BD</th>
@@ -248,6 +250,7 @@ export default function EmisionMasiva() {
                         <td className="px-2 py-1.5">
                           <input type="checkbox" checked={r.include} onChange={(e) => updateRow(i, { include: e.target.checked })} disabled={!ok} />
                         </td>
+                        <td className="px-2 py-1.5 font-mono text-xs">{r.simbolo_cfb || "—"}</td>
                         <td className="px-2 py-1.5">
                           <div className="font-medium">{inferCedenteName(r)}</div>
                           <div className="text-[10px] text-muted-foreground">{r.rif_csv} · {r.tipo}</div>
