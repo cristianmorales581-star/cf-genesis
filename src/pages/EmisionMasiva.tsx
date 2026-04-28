@@ -390,11 +390,14 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok
 
 async function htmlToPdfBlob(html: string, filename: string): Promise<Blob> {
   const wrapper = document.createElement("div");
-  wrapper.innerHTML = html;
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  wrapper.innerHTML = `${parsed.head.innerHTML}${parsed.body.innerHTML}`;
+  wrapper.querySelectorAll(".actions").forEach((el) => el.remove());
   wrapper.style.position = "fixed";
   wrapper.style.left = "-10000px";
   wrapper.style.top = "0";
   wrapper.style.width = "210mm";
+  wrapper.style.background = "#ffffff";
   document.body.appendChild(wrapper);
   try {
     return await html2pdf()
