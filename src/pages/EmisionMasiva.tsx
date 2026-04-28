@@ -133,6 +133,14 @@ export default function EmisionMasiva() {
     });
   }
 
+  function updatePrograma(i: number, programaId: string) {
+    const programa = programas.find(p => p.id === programaId);
+    updateRow(i, {
+      programa_id: programaId,
+      descuento_decimal: programa ? Number(programa.descuento_base) : rows[i].descuento_decimal,
+    });
+  }
+
   const stats = useMemo(() => {
     const inc = rows.filter(r => r.include);
     return {
@@ -298,7 +306,7 @@ export default function EmisionMasiva() {
                           </Select>
                         </td>
                         <td className="px-2 py-1.5">
-                          <Select value={r.programa_id ?? ""} onValueChange={(v) => updateRow(i, { programa_id: v })} disabled={!r.cedente_id}>
+                          <Select value={r.programa_id ?? ""} onValueChange={(v) => updatePrograma(i, v)} disabled={!r.cedente_id}>
                             <SelectTrigger className="h-7 text-[11px] w-full min-w-[170px]"><SelectValue placeholder="—" /></SelectTrigger>
                             <SelectContent>
                               {progsForCed.map(p => <SelectItem key={p.id} value={p.id}>{p.codigo_pcfb}</SelectItem>)}
@@ -316,7 +324,18 @@ export default function EmisionMasiva() {
                         <td className="px-2 py-1.5 text-muted-foreground">{r.linea}</td>
                         <td className="px-2 py-1.5 text-right font-mono">{fmtUSD(r.monto_total_usd)}</td>
                         <td className="px-2 py-1.5 text-right">{r.plazo_dias}d</td>
-                        <td className="px-2 py-1.5 text-right">{fmtPct(r.descuento_decimal, 2)}</td>
+                        <td className="px-2 py-1.5 text-right">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="20"
+                            step="0.01"
+                            value={Number.isFinite(r.descuento_decimal) ? (r.descuento_decimal * 100).toFixed(2) : ""}
+                            onChange={(e) => updateRow(i, { descuento_decimal: (parseFloat(e.target.value) || 0) / 100 })}
+                            className="h-7 w-20 text-right text-[11px] font-mono"
+                            aria-label="Descuento porcentual"
+                          />
+                        </td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.vencimiento_primera_orden}</td>
                         <td className="px-2 py-1.5 text-right">
                           <Button variant="ghost" size="icon" onClick={() => removeRow(i)} aria-label="Eliminar fila">
