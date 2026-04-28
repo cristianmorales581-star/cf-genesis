@@ -65,9 +65,34 @@ Deno.serve(async (req) => {
   const cedById = new Map(cedRes.data!.map(c => [c.id, c]));
   const progById = new Map(progRes.data!.map(p => [p.id, p]));
 
+  const requestedSymbols = body.rows.map(r => String(r.simbolo_cfb ?? '').trim()).filter(Boolean);
+  const duplicateSymbolsInFile = requestedSymbols.filter((s, i) => requestedSymbols.indexOf(s) !== i);
+  if (duplicateSymbolsInFile.length) {
+    return json({
+      success: false,
+      error: `Hay símbolos CFB repetidos en la carga: ${[...new Set(duplicateSymbolsInFile)].join(', ')}`,
+    });
+  }
+
+  const existingSymbolsRes = await supabase
+    .from('emisiones')
+    .select('simbolo_cfb')
+    .in('simbolo_cfb', requestedSymbols);
+  if (existingSymbolsRes.error) {
+    return json({ success: false, error: 'No se pudo validar si los símbolos CFB ya existen' });
+  }
+  const existingSymbols = [...new Set((existingSymbolsRes.data ?? []).map(e => e.simbolo_cfb))];
+  if (existingSymbols.length) {
+    return json({
+      success: false,
+      error: `Estos símbolos CFB ya fueron emitidos: ${existingSymbols.slice(0, 12).join(', ')}${existingSymbols.length > 12 ? '…' : ''}. Elimina esos certificados de prueba o cambia el símbolo antes de generar.`,
+    });
+  }
+
   const created: any[] = [];
   const docs: { filename: string; html: string }[] = [];
   const vector: any[] = [];
+  const failedRows: string[] = [];
 
   for (const r of body.rows) {
     const ced = cedById.get(r.cedente_id);
@@ -119,6 +144,7 @@ Deno.serve(async (req) => {
 
     if (insErr || !emision) {
       console.error('Insert error:', insErr);
+      failedRows.push(`${simbolo}: ${insErr?.message ?? 'error desconocido'}`);
       continue;
     }
     created.push(emision);
@@ -171,11 +197,16 @@ Deno.serve(async (req) => {
     });
   }
 
+  if (!created.length) {
+    return json({ success: false, error: failedRows[0] ?? 'No se pudo crear ninguna emisión' });
+  }
+
   return json({
     success: true,
     count: created.length,
     documents: docs,
     vector,
+    warnings: failedRows,
     metadata: {
       fecha_emision: body.fecha_emision,
       tasa_bcv: body.tasa_bcv,
