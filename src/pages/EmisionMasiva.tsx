@@ -22,6 +22,7 @@ import { fmtUSD, fmtPct, todayISO, fmtDate } from "@/lib/format";
 import { parseCSVText, inferCedenteName, type ParsedRow } from "@/lib/csvParser";
 import JSZip from "jszip";
 import * as XLSX from "xlsx";
+import html2pdf from "html2pdf.js";
 
 /** Normaliza RIF: quita guiones, espacios, uppercase. Clave única verdadera. */
 function normRif(r: string | null | undefined): string {
@@ -179,11 +180,12 @@ export default function EmisionMasiva() {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Generación falló");
 
-      // Armar ZIP con HTMLs + vector .xlsx
+      // Armar ZIP con PDFs + vector .xlsx
       const zip = new JSZip();
       const docFolder = zip.folder("documentos")!;
       for (const d of data.documents as { filename: string; html: string }[]) {
-        docFolder.file(d.filename, d.html);
+        const pdf = await htmlToPdfBlob(d.html, d.filename.replace(/\.pdf$/i, ""));
+        docFolder.file(d.filename.replace(/\.html$/i, ".pdf"), pdf);
       }
       // Vector consolidado .xlsx (formato espejo del modelo SIBE)
       const vectorXlsx = buildVectorXlsx(data.vector, fechaEmision);
@@ -353,7 +355,7 @@ export default function EmisionMasiva() {
           <Card title="3. Generar lote">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="text-sm text-muted-foreground">
-                Se crearán <strong className="text-foreground">{stats.included}</strong> emisiones, {stats.included * 6} documentos HTML imprimibles y un archivo Vector consolidado .xlsx.
+                Se crearán <strong className="text-foreground">{stats.included}</strong> emisiones, {stats.included * 6} documentos PDF y un archivo Vector consolidado .xlsx.
               </div>
               <Button onClick={generate} disabled={generating || stats.included === 0} className="bg-gradient-gold text-accent-foreground hover:opacity-95">
                 {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
