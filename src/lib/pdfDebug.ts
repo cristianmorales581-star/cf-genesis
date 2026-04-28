@@ -19,12 +19,15 @@ const A4_HEIGHT_MM = 297;
 
 export async function htmlToPdfBlob(html: string, filename: string, options: PdfRenderOptions = {}): Promise<Blob> {
   const { canvas } = await renderHtmlCanvas(html, filename, options);
-  return canvasToPdf(canvas).output("blob");
+  const blob = canvasToPdf(canvas).output("blob");
+  releaseCanvas(canvas);
+  return blob;
 }
 
 export async function htmlToPdfDownload(html: string, filename: string, options: PdfRenderOptions = {}) {
   const { canvas } = await renderHtmlCanvas(html, filename, options);
   canvasToPdf(canvas).save(filename);
+  releaseCanvas(canvas);
 }
 
 async function renderHtmlCanvas(html: string, filename: string, options: PdfRenderOptions) {
@@ -47,15 +50,16 @@ async function renderHtmlCanvas(html: string, filename: string, options: PdfRend
       windowHeight,
       logging: false,
     });
-    const canvasDataUrl = canvas.toDataURL("image/png");
-    options.onDebug?.({
-      filename: filename.endsWith(".pdf") ? filename : `${filename}.pdf`,
-      html: wrapper.innerHTML,
-      canvasDataUrl,
-      canvasWidth: canvas.width,
-      canvasHeight: canvas.height,
-      capturedAt: new Date().toLocaleTimeString(),
-    });
+    if (options.onDebug) {
+      options.onDebug({
+        filename: filename.endsWith(".pdf") ? filename : `${filename}.pdf`,
+        html: wrapper.innerHTML,
+        canvasDataUrl: canvas.toDataURL("image/png"),
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        capturedAt: new Date().toLocaleTimeString(),
+      });
+    }
     await new Promise((resolve) => window.setTimeout(resolve, 120));
     return { canvas };
   } finally {
@@ -99,4 +103,9 @@ function canvasToPdf(canvas: HTMLCanvasElement) {
   }
 
   return pdf;
+}
+
+function releaseCanvas(canvas: HTMLCanvasElement) {
+  canvas.width = 0;
+  canvas.height = 0;
 }
