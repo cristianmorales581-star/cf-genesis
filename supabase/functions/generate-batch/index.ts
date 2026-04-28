@@ -4,6 +4,15 @@
 // El frontend arma el ZIP final (JSZip) y descarga el .xlsx (xlsx lib).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import {
+  type TemplateContext,
+  renderCFB as renderTemplateCFB,
+  renderCartaSunaval as renderTemplateCartaSunaval,
+  renderCartaBVC as renderTemplateCartaBVC,
+  renderHojaTerminos as renderTemplateHojaTerminos,
+  renderODC as renderTemplateODC,
+  renderODV as renderTemplateODV,
+} from '../_shared/templates.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -159,19 +168,15 @@ Deno.serve(async (req) => {
       details: { simbolo, programa: prog.codigo_pcfb, vn_usd: vnUsd },
     });
 
-    // HTML del CFB
-    docs.push({
-      filename: `CFB_${simbolo}.html`,
-      html: renderCFB(emision, ced, prog),
-    });
-    docs.push({
-      filename: `HOJA_TERMINOS_${simbolo}.html`,
-      html: renderHoja(emision, ced, prog),
-    });
-    docs.push({ filename: `CDC_${simbolo}.html`, html: renderConfirmacion(emision, ced, 'CDC', r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
-    docs.push({ filename: `CDV_${simbolo}.html`, html: renderConfirmacion(emision, ced, 'CDV', r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
-    docs.push({ filename: `CARTA_BVC_${simbolo}.html`, html: renderCartaBVC(emision, ced, prog) });
-    docs.push({ filename: `CARTA_SUNAVAL_${simbolo}.html`, html: renderCartaSunaval(emision, ced, prog, r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.') });
+    const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif);
+    docs.push(
+      { filename: `CFB_${simbolo}.pdf`, html: renderTemplateCFB(ctx) },
+      { filename: `CARTA_SUNAVAL_${simbolo}.pdf`, html: renderTemplateCartaSunaval(ctx) },
+      { filename: `CARTA_BVC_${simbolo}.pdf`, html: renderTemplateCartaBVC(ctx) },
+      { filename: `HOJA_TERMINOS_${simbolo}.pdf`, html: renderTemplateHojaTerminos(ctx) },
+      { filename: `ODC_${simbolo}.pdf`, html: renderTemplateODC(ctx) },
+      { filename: `ODV_${simbolo}.pdf`, html: renderTemplateODV(ctx) },
+    );
 
     // Fila vector
     vector.push({
