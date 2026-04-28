@@ -407,7 +407,7 @@ ${actionsBar()}
     Valores.
   </p>
   <div class="firma-area">
-    <div style="margin-bottom: 60px;">&nbsp;</div>
+    <div class="espacio-firma">&nbsp;</div>
     <div class="nombre">${c.cedente_rep_legal ?? '—'}</div>
     <div class="subtitulo">Mandatario de</div>
     <div class="subtitulo"><strong>${c.cedente_razon_social}</strong></div>
@@ -498,7 +498,7 @@ ${actionsBar()}
   </p>
   <div class="cierre">Atentamente,</div>
   <div class="firma-area">
-    <div style="margin-bottom: 60px;">&nbsp;</div>
+    <div class="espacio-firma">&nbsp;</div>
     <div class="nombre">${c.operador_nombre}</div>
     <div class="subtitulo">Firma Autorizada</div>
     <div class="subtitulo">${c.operador_cedula}</div>
@@ -566,7 +566,7 @@ ${actionsBar()}
   <p class="parrafo">Sin otro particular al que hacer referencia,</p>
   <div class="cierre">Atentamente,</div>
   <div class="firma-area">
-    <div style="margin-bottom: 60px;">&nbsp;</div>
+    <div class="espacio-firma">&nbsp;</div>
     <div class="nombre">${c.operador_nombre}</div>
     <div class="subtitulo">Firma Autorizada</div>
   </div>
