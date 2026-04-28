@@ -388,6 +388,31 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok
   );
 }
 
+async function htmlToPdfBlob(html: string, filename: string): Promise<Blob> {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = html;
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-10000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "210mm";
+  document.body.appendChild(wrapper);
+  try {
+    return await html2pdf()
+      .set({
+        filename: `${filename}.pdf`,
+        margin: 0,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] },
+      })
+      .from(wrapper)
+      .outputPdf("blob");
+  } finally {
+    document.body.removeChild(wrapper);
+  }
+}
+
 /** Construye el .xlsx del vector consolidado, espejo del formato SIBE. */
 function buildVectorXlsx(rows: any[], _fechaEmision: string): ArrayBuffer {
   const wb = XLSX.utils.book_new();
