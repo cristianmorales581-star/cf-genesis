@@ -227,9 +227,11 @@ function baseStyles(): string {
   /* Cierre y firma */
   .cierre { margin: 22px 0 4px; }
   .firma-area {
-    margin-top: 50px;
+    margin-top: 56px;
     text-align: center;
+    page-break-inside: avoid;
   }
+  .espacio-firma { height: 92px; }
   .firma-area .linea-firma {
     border-top: 0;
     width: 220px;
@@ -300,6 +302,13 @@ function baseStyles(): string {
     font-size: 12pt;
     font-weight: bold;
     width: 28px;
+  }
+  table.form tr.firma-form-row td {
+    height: 96px;
+    vertical-align: top;
+  }
+  table.form td.firma-form-cell {
+    min-width: 90px;
   }
   .form-titulo {
     background: #d9d9d9;
