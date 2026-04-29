@@ -38,6 +38,7 @@ type RowMapping = ParsedRow & {
   cedente_id?: string;
   programa_id?: string;
   financista_id?: string;
+  fecha_emision?: string;
   include: boolean;
 };
 
@@ -185,6 +186,7 @@ export default function EmisionMasiva() {
           financista_id: r.financista_id ?? null,
           cantidad_ordenes: r.cantidad_ordenes,
           monto_total_usd: r.monto_total_usd,
+          fecha_emision: r.fecha_emision || fechaEmision,
           vencimiento_primera_orden: r.vencimiento_primera_orden,
           plazo_dias: r.plazo_dias,
           descuento_decimal: r.descuento_decimal,
@@ -293,6 +295,7 @@ export default function EmisionMasiva() {
                     <th className="px-2 py-2 text-left">Programa BD</th>
                     <th className="px-2 py-2 text-left">Financista</th>
                     <th className="px-2 py-2 text-left">Línea</th>
+                    <th className="px-2 py-2 text-left">Fecha emisión</th>
                     <th className="px-2 py-2 text-right">VN USD</th>
                     <th className="px-2 py-2 text-right">Plazo</th>
                     <th className="px-2 py-2 text-right">Desc.</th>
@@ -347,6 +350,15 @@ export default function EmisionMasiva() {
                           </Select>
                         </td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.linea}</td>
+                        <td className="px-2 py-1.5">
+                          <Input
+                            type="date"
+                            value={r.fecha_emision || fechaEmision}
+                            onChange={(e) => updateRow(i, { fecha_emision: e.target.value || undefined })}
+                            className="h-7 w-32 text-[11px]"
+                            aria-label="Fecha de emisión individual"
+                          />
+                        </td>
                         <td className="px-2 py-1.5 text-right font-mono">{fmtUSD(r.monto_total_usd)}</td>
                         <td className="px-2 py-1.5 text-right">{r.plazo_dias}d</td>
                         <td className="px-2 py-1.5 text-right">
