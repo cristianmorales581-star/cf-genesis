@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
       tipo_sociedad: 'COMERCIAL',
       moneda: 'VES',
       valor_nominal_usd: vnUsd,
-      monto_sibe_usd: Math.round(montoUsd),
+      monto_sibe_usd: Math.round(vnUsd),
       tasa_cambio: body.tasa_bcv,
       inversionista: r.inversionista_label ?? 'Grupo Cashea Ve, C.A.',
     });
