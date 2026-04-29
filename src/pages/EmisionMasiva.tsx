@@ -302,7 +302,7 @@ export default function EmisionMasiva() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {rows.map((r, i) => {
-                    const ok = r.cedente_id && r.programa_id;
+                    const ok = Boolean(r.cedente_id);
                     const progsForCed = programas.filter(p => p.cedente_id === r.cedente_id);
                     return (
                       <tr key={i} className={!ok ? "bg-destructive/5" : ""}>
@@ -334,6 +334,9 @@ export default function EmisionMasiva() {
                               {progsForCed.map(p => <SelectItem key={p.id} value={p.id}>{p.codigo_pcfb}</SelectItem>)}
                             </SelectContent>
                           </Select>
+                          {r.cedente_id && !r.programa_id && (
+                            <div className="text-[10px] text-muted-foreground mt-1">Sin programa · se procesará sin id</div>
+                          )}
                         </td>
                         <td className="px-2 py-1.5">
                           <Select value={r.financista_id ?? ""} onValueChange={(v) => updateRow(i, { financista_id: v })}>
