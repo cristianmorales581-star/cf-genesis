@@ -144,7 +144,7 @@ export type Database = {
           monto_efectivo_usd: number
           operador_id: string | null
           precio: number
-          programa_id: string
+          programa_id: string | null
           rendimiento_anualizado: number
           simbolo_cfb: string
           tasa_cambio_bs_usd: number
@@ -164,7 +164,7 @@ export type Database = {
           monto_efectivo_usd: number
           operador_id?: string | null
           precio: number
-          programa_id: string
+          programa_id?: string | null
           rendimiento_anualizado: number
           simbolo_cfb: string
           tasa_cambio_bs_usd: number
@@ -184,7 +184,7 @@ export type Database = {
           monto_efectivo_usd?: number
           operador_id?: string | null
           precio?: number
-          programa_id?: string
+          programa_id?: string | null
           rendimiento_anualizado?: number
           simbolo_cfb?: string
           tasa_cambio_bs_usd?: number
