@@ -24,6 +24,7 @@ interface BatchRow {
   cedente_id: string;
   programa_id?: string | null;
   financista_id?: string | null;
+  fecha_emision?: string;
   cantidad_ordenes: number;
   monto_total_usd: number;          // Valor nominal USD
   vencimiento_primera_orden: string; // ISO
@@ -107,6 +108,7 @@ Deno.serve(async (req) => {
     const ced = cedById.get(r.cedente_id);
     const prog = r.programa_id ? progById.get(r.programa_id) : null;
     if (!ced) continue;
+    const fechaEmisionFila = r.fecha_emision || body.fecha_emision;
 
     // Cálculos zero-coupon
     const precio = round5(1 - r.descuento_decimal);
@@ -119,7 +121,7 @@ Deno.serve(async (req) => {
     const simbolo = String(r.simbolo_cfb ?? '').trim();
 
     // Bug 2: fecha de vencimiento real del CFB = fecha_emision + plazo_dias
-    const fechaVencimientoCFB = addDaysISO(body.fecha_emision, r.plazo_dias);
+    const fechaVencimientoCFB = addDaysISO(fechaEmisionFila, r.plazo_dias);
     if (r.vencimiento_primera_orden && fechaVencimientoCFB > r.vencimiento_primera_orden) {
       console.warn(`⚠️ Emisión ${prog?.codigo_pcfb ?? simbolo}: CFB vence ${fechaVencimientoCFB} pero primera orden vence ${r.vencimiento_primera_orden}`);
     }
@@ -137,7 +139,7 @@ Deno.serve(async (req) => {
         cedente_id: r.cedente_id,
         financista_id: r.financista_id ?? null,
         operador_id: user.id,
-        fecha_emision: body.fecha_emision,
+        fecha_emision: fechaEmisionFila,
         fecha_vencimiento: fechaVencimientoCFB,
         dias_colocados: r.plazo_dias,
         valor_nominal_usd: vnUsd,
@@ -188,7 +190,7 @@ Deno.serve(async (req) => {
       deudor_cedido: 'GRUPO CASHEA VE, C.A.',
       rif_deudor: 'J-501934070',
       cantidad_certificados: 1,
-      fecha_emision: body.fecha_emision,
+      fecha_emision: fechaEmisionFila,
       fecha_vencimiento: fechaVencimientoCFB,
       dias_colocados: r.plazo_dias,
       rendimiento,

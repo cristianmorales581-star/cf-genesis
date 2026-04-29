@@ -38,6 +38,7 @@ type RowMapping = ParsedRow & {
   cedente_id?: string;
   programa_id?: string;
   financista_id?: string;
+  fecha_emision?: string;
   include: boolean;
 };
 
@@ -185,6 +186,7 @@ export default function EmisionMasiva() {
           financista_id: r.financista_id ?? null,
           cantidad_ordenes: r.cantidad_ordenes,
           monto_total_usd: r.monto_total_usd,
+          fecha_emision: r.fecha_emision || fechaEmision,
           vencimiento_primera_orden: r.vencimiento_primera_orden,
           plazo_dias: r.plazo_dias,
           descuento_decimal: r.descuento_decimal,
@@ -293,6 +295,7 @@ export default function EmisionMasiva() {
                     <th className="px-2 py-2 text-left">Programa BD</th>
                     <th className="px-2 py-2 text-left">Financista</th>
                     <th className="px-2 py-2 text-left">Línea</th>
+                    <th className="px-2 py-2 text-left">Fecha emisión</th>
                     <th className="px-2 py-2 text-right">VN USD</th>
                     <th className="px-2 py-2 text-right">Plazo</th>
                     <th className="px-2 py-2 text-right">Desc.</th>
@@ -347,6 +350,15 @@ export default function EmisionMasiva() {
                           </Select>
                         </td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.linea}</td>
+                        <td className="px-2 py-1.5">
+                          <Input
+                            type="date"
+                            value={r.fecha_emision || fechaEmision}
+                            onChange={(e) => updateRow(i, { fecha_emision: e.target.value || undefined })}
+                            className="h-7 w-32 text-[11px]"
+                            aria-label="Fecha de emisión individual"
+                          />
+                        </td>
                         <td className="px-2 py-1.5 text-right font-mono">{fmtUSD(r.monto_total_usd)}</td>
                         <td className="px-2 py-1.5 text-right">{r.plazo_dias}d</td>
                         <td className="px-2 py-1.5 text-right">
@@ -430,6 +442,7 @@ function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financist
   return rows.map(r => {
     const cedente = cedentes.find(c => c.id === r.cedente_id);
     const financista = financistas.find(f => f.id === r.financista_id);
+    const rowFechaEmision = r.fecha_emision || fechaEmision;
     const precio = Math.round((1 - r.descuento_decimal) * 100000) / 100000;
     const vnUsd = Math.round(r.monto_total_usd * 100) / 100;
     const montoUsd = Math.round(vnUsd * precio * 100) / 100;
@@ -440,8 +453,8 @@ function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financist
       deudor_cedido: "GRUPO CASHEA VE, C.A.",
       rif_deudor: "J-501934070",
       cantidad_certificados: 1,
-      fecha_emision: fechaEmision,
-      fecha_vencimiento: addDaysISO(fechaEmision, r.plazo_dias),
+      fecha_emision: rowFechaEmision,
+      fecha_vencimiento: addDaysISO(rowFechaEmision, r.plazo_dias),
       dias_colocados: r.plazo_dias,
       rendimiento: ((1 - precio) / precio) * (360 / r.plazo_dias),
       volumen_ordenes: r.cantidad_ordenes,
