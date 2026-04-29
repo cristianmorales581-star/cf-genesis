@@ -414,6 +414,52 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok
   );
 }
 
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financistas: Financista[], fechaEmision: string, tasaBcv: number) {
+  return rows.map(r => {
+    const cedente = cedentes.find(c => c.id === r.cedente_id);
+    const financista = financistas.find(f => f.id === r.financista_id);
+    const precio = Math.round((1 - r.descuento_decimal) * 100000) / 100000;
+    const vnUsd = Math.round(r.monto_total_usd * 100) / 100;
+    const montoUsd = Math.round(vnUsd * precio * 100) / 100;
+    return {
+      simbolo_cfb: r.simbolo_cfb,
+      cedente: cedente?.razon_social ?? inferCedenteName(r),
+      rif_cedente: cedente?.rif ?? r.rif_csv,
+      deudor_cedido: "GRUPO CASHEA VE, C.A.",
+      rif_deudor: "J-501934070",
+      cantidad_certificados: 1,
+      fecha_emision: fechaEmision,
+      fecha_vencimiento: addDaysISO(fechaEmision, r.plazo_dias),
+      dias_colocados: r.plazo_dias,
+      rendimiento: ((1 - precio) / precio) * (360 / r.plazo_dias),
+      volumen_ordenes: r.cantidad_ordenes,
+      valor_nominal_bs: Math.round(vnUsd * tasaBcv * 100) / 100,
+      precio_emision: precio,
+      tipo_sociedad: "COMERCIAL",
+      moneda: "VES",
+      valor_nominal_usd: vnUsd,
+      monto_sibe_usd: Math.round(montoUsd),
+      tasa_cambio: tasaBcv,
+      inversionista: financista?.razon_social ?? "Grupo Cashea Ve, C.A.",
+    };
+  });
+}
+
+function addDaysISO(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Construye el .xlsx del vector consolidado, espejo del formato SIBE. */
 function buildVectorXlsx(rows: any[], _fechaEmision: string): ArrayBuffer {
   const wb = XLSX.utils.book_new();
