@@ -49,7 +49,7 @@ export default function EmisionMasiva() {
   const [fechaEmision, setFechaEmision] = useState(todayISO());
   const [tasaBcv, setTasaBcv] = useState<number>(0);
   const [loadingBcv, setLoadingBcv] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [generating, setGenerating] = useState<"vector" | "zip" | null>(null);
   const [filename, setFilename] = useState<string>("");
   const [pastedCsv, setPastedCsv] = useState("");
   const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
@@ -154,11 +154,26 @@ export default function EmisionMasiva() {
     };
   }, [rows]);
 
+  function generateVectorOnly() {
+    if (!stats.included) { toast({ title: "Nada que generar", variant: "destructive" }); return; }
+    if (!tasaBcv || tasaBcv <= 0) { toast({ title: "Tasa BCV requerida", variant: "destructive" }); return; }
+
+    setGenerating("vector");
+    try {
+      const vectorXlsx = buildVectorXlsx(buildLocalVectorRows(rows.filter(r => r.include), cedentes, financistas, fechaEmision, tasaBcv), fechaEmision);
+      downloadBlob(new Blob([vectorXlsx], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `VECTOR_${fechaEmision}_CONSOLIDADO.xlsx`);
+      toast({ title: "Vector consolidado generado", description: `Descargado · ${fmtUSD(stats.totalUsd)}` });
+    } catch (e: any) {
+      toast({ title: "Error generando vector", description: e.message, variant: "destructive" });
+    }
+    setGenerating(null);
+  }
+
   async function generate() {
     if (!stats.included) { toast({ title: "Nada que generar", variant: "destructive" }); return; }
     if (!tasaBcv || tasaBcv <= 0) { toast({ title: "Tasa BCV requerida", variant: "destructive" }); return; }
 
-    setGenerating(true);
+    setGenerating("zip");
     try {
       const payload = {
         fecha_emision: fechaEmision,
@@ -201,19 +216,14 @@ export default function EmisionMasiva() {
       zip.file(`VECTOR_${fechaEmision}_CONSOLIDADO.xlsx`, vectorXlsx);
 
       const blob = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `LOTE_CFB_${fechaEmision}.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `LOTE_CFB_${fechaEmision}.zip`);
 
       toast({ title: `${data.count} certificados generados`, description: `Lote descargado · ${fmtUSD(data.metadata.total_usd)}` });
       setRows([]); setFilename("");
     } catch (e: any) {
       toast({ title: "Error generando lote", description: e.message, variant: "destructive" });
     }
-    setGenerating(false);
+    setGenerating(null);
   }
 
   return (
@@ -367,10 +377,16 @@ export default function EmisionMasiva() {
               <div className="text-sm text-muted-foreground">
                 Se crearán <strong className="text-foreground">{stats.included}</strong> emisiones, {stats.included * 6} documentos PDF y un archivo Vector consolidado .xlsx.
               </div>
-              <Button onClick={generate} disabled={generating || stats.included === 0} className="bg-gradient-gold text-accent-foreground hover:opacity-95">
-                {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                Generar y descargar ZIP
-              </Button>
+              <div className="flex gap-2 flex-wrap">
+                <Button onClick={generateVectorOnly} disabled={generating !== null || stats.included === 0} variant="outline">
+                  {generating === "vector" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-2" />}
+                  Generar vector
+                </Button>
+                <Button onClick={generate} disabled={generating !== null || stats.included === 0} className="bg-gradient-gold text-accent-foreground hover:opacity-95">
+                  {generating === "zip" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                  Generar ZIP
+                </Button>
+              </div>
             </div>
           </Card>
         </>
@@ -396,6 +412,52 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok
       <div className={`text-base font-semibold ${tone === "ok" ? "text-accent" : "text-foreground"}`}>{value}</div>
     </div>
   );
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financistas: Financista[], fechaEmision: string, tasaBcv: number) {
+  return rows.map(r => {
+    const cedente = cedentes.find(c => c.id === r.cedente_id);
+    const financista = financistas.find(f => f.id === r.financista_id);
+    const precio = Math.round((1 - r.descuento_decimal) * 100000) / 100000;
+    const vnUsd = Math.round(r.monto_total_usd * 100) / 100;
+    const montoUsd = Math.round(vnUsd * precio * 100) / 100;
+    return {
+      simbolo_cfb: r.simbolo_cfb,
+      cedente: cedente?.razon_social ?? inferCedenteName(r),
+      rif_cedente: cedente?.rif ?? r.rif_csv,
+      deudor_cedido: "GRUPO CASHEA VE, C.A.",
+      rif_deudor: "J-501934070",
+      cantidad_certificados: 1,
+      fecha_emision: fechaEmision,
+      fecha_vencimiento: addDaysISO(fechaEmision, r.plazo_dias),
+      dias_colocados: r.plazo_dias,
+      rendimiento: ((1 - precio) / precio) * (360 / r.plazo_dias),
+      volumen_ordenes: r.cantidad_ordenes,
+      valor_nominal_bs: Math.round(vnUsd * tasaBcv * 100) / 100,
+      precio_emision: precio,
+      tipo_sociedad: "COMERCIAL",
+      moneda: "VES",
+      valor_nominal_usd: vnUsd,
+      monto_sibe_usd: Math.round(montoUsd),
+      tasa_cambio: tasaBcv,
+      inversionista: financista?.razon_social ?? "Grupo Cashea Ve, C.A.",
+    };
+  });
+}
+
+function addDaysISO(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
 /** Construye el .xlsx del vector consolidado, espejo del formato SIBE. */
