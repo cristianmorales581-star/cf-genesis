@@ -22,7 +22,7 @@ const corsHeaders = {
 interface BatchRow {
   simbolo_cfb: string;
   cedente_id: string;
-  programa_id: string;
+  programa_id?: string | null;
   financista_id?: string | null;
   cantidad_ordenes: number;
   monto_total_usd: number;          // Valor nominal USD
@@ -63,10 +63,10 @@ Deno.serve(async (req) => {
 
   // Cargar cedentes y programas referenciados (para PDFs y vector)
   const cedIds = [...new Set(body.rows.map(r => r.cedente_id))];
-  const progIds = [...new Set(body.rows.map(r => r.programa_id))];
+  const progIds = [...new Set(body.rows.map(r => r.programa_id).filter(Boolean))];
   const [cedRes, progRes] = await Promise.all([
     supabase.from('cedentes').select('*').in('id', cedIds),
-    supabase.from('programas').select('*').in('id', progIds),
+    progIds.length ? supabase.from('programas').select('*').in('id', progIds) : Promise.resolve({ data: [], error: null }),
   ]);
   if (cedRes.error || progRes.error) {
     return json({ error: 'Error cargando maestros' }, 500);
@@ -105,8 +105,8 @@ Deno.serve(async (req) => {
 
   for (const r of body.rows) {
     const ced = cedById.get(r.cedente_id);
-    const prog = progById.get(r.programa_id);
-    if (!ced || !prog) continue;
+    const prog = r.programa_id ? progById.get(r.programa_id) : null;
+    if (!ced) continue;
 
     // Cálculos zero-coupon
     const precio = round5(1 - r.descuento_decimal);
@@ -116,13 +116,14 @@ Deno.serve(async (req) => {
     const montoUsd = round2(vnUsd * precio);
     const valorBs = round2(montoUsd * body.tasa_bcv);
 
+    const simbolo = String(r.simbolo_cfb ?? '').trim();
+
     // Bug 2: fecha de vencimiento real del CFB = fecha_emision + plazo_dias
     const fechaVencimientoCFB = addDaysISO(body.fecha_emision, r.plazo_dias);
     if (r.vencimiento_primera_orden && fechaVencimientoCFB > r.vencimiento_primera_orden) {
-      console.warn(`⚠️ Emisión ${prog.codigo_pcfb}: CFB vence ${fechaVencimientoCFB} pero primera orden vence ${r.vencimiento_primera_orden}`);
+      console.warn(`⚠️ Emisión ${prog?.codigo_pcfb ?? simbolo}: CFB vence ${fechaVencimientoCFB} pero primera orden vence ${r.vencimiento_primera_orden}`);
     }
 
-    const simbolo = String(r.simbolo_cfb ?? '').trim();
     if (!simbolo) {
       console.error('Fila omitida: símbolo CFB faltante', { programa_id: r.programa_id, cedente_id: r.cedente_id });
       continue;
@@ -132,7 +133,8 @@ Deno.serve(async (req) => {
       .from('emisiones')
       .insert({
         simbolo_cfb: simbolo,
-        programa_id: r.programa_id,
+        programa_id: r.programa_id ?? null,
+        cedente_id: r.cedente_id,
         financista_id: r.financista_id ?? null,
         operador_id: user.id,
         fecha_emision: body.fecha_emision,
@@ -165,7 +167,7 @@ Deno.serve(async (req) => {
       action: 'batch_issue',
       resource_type: 'emision',
       resource_id: emision.id,
-      details: { simbolo, programa: prog.codigo_pcfb, vn_usd: vnUsd },
+      details: { simbolo, programa: prog?.codigo_pcfb ?? null, vn_usd: vnUsd },
     });
 
     const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif);

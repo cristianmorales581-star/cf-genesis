@@ -133,6 +133,7 @@ export type Database = {
       emisiones: {
         Row: {
           cantidad_ordenes_compra: number
+          cedente_id: string | null
           created_at: string
           descuento: number
           dias_colocados: number
@@ -144,7 +145,7 @@ export type Database = {
           monto_efectivo_usd: number
           operador_id: string | null
           precio: number
-          programa_id: string
+          programa_id: string | null
           rendimiento_anualizado: number
           simbolo_cfb: string
           tasa_cambio_bs_usd: number
@@ -153,6 +154,7 @@ export type Database = {
         }
         Insert: {
           cantidad_ordenes_compra?: number
+          cedente_id?: string | null
           created_at?: string
           descuento: number
           dias_colocados: number
@@ -164,7 +166,7 @@ export type Database = {
           monto_efectivo_usd: number
           operador_id?: string | null
           precio: number
-          programa_id: string
+          programa_id?: string | null
           rendimiento_anualizado: number
           simbolo_cfb: string
           tasa_cambio_bs_usd: number
@@ -173,6 +175,7 @@ export type Database = {
         }
         Update: {
           cantidad_ordenes_compra?: number
+          cedente_id?: string | null
           created_at?: string
           descuento?: number
           dias_colocados?: number
@@ -184,7 +187,7 @@ export type Database = {
           monto_efectivo_usd?: number
           operador_id?: string | null
           precio?: number
-          programa_id?: string
+          programa_id?: string | null
           rendimiento_anualizado?: number
           simbolo_cfb?: string
           tasa_cambio_bs_usd?: number
@@ -192,6 +195,13 @@ export type Database = {
           valor_nominal_usd?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "emisiones_cedente_id_fkey"
+            columns: ["cedente_id"]
+            isOneToOne: false
+            referencedRelation: "cedentes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "emisiones_financista_id_fkey"
             columns: ["financista_id"]
