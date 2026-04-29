@@ -49,7 +49,7 @@ export default function EmisionMasiva() {
   const [fechaEmision, setFechaEmision] = useState(todayISO());
   const [tasaBcv, setTasaBcv] = useState<number>(0);
   const [loadingBcv, setLoadingBcv] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [generating, setGenerating] = useState<"vector" | "zip" | null>(null);
   const [filename, setFilename] = useState<string>("");
   const [pastedCsv, setPastedCsv] = useState("");
   const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
@@ -154,11 +154,26 @@ export default function EmisionMasiva() {
     };
   }, [rows]);
 
+  function generateVectorOnly() {
+    if (!stats.included) { toast({ title: "Nada que generar", variant: "destructive" }); return; }
+    if (!tasaBcv || tasaBcv <= 0) { toast({ title: "Tasa BCV requerida", variant: "destructive" }); return; }
+
+    setGenerating("vector");
+    try {
+      const vectorXlsx = buildVectorXlsx(buildLocalVectorRows(rows.filter(r => r.include), cedentes, financistas, fechaEmision, tasaBcv), fechaEmision);
+      downloadBlob(new Blob([vectorXlsx], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `VECTOR_${fechaEmision}_CONSOLIDADO.xlsx`);
+      toast({ title: "Vector consolidado generado", description: `Descargado · ${fmtUSD(stats.totalUsd)}` });
+    } catch (e: any) {
+      toast({ title: "Error generando vector", description: e.message, variant: "destructive" });
+    }
+    setGenerating(null);
+  }
+
   async function generate() {
     if (!stats.included) { toast({ title: "Nada que generar", variant: "destructive" }); return; }
     if (!tasaBcv || tasaBcv <= 0) { toast({ title: "Tasa BCV requerida", variant: "destructive" }); return; }
 
-    setGenerating(true);
+    setGenerating("zip");
     try {
       const payload = {
         fecha_emision: fechaEmision,
@@ -201,19 +216,14 @@ export default function EmisionMasiva() {
       zip.file(`VECTOR_${fechaEmision}_CONSOLIDADO.xlsx`, vectorXlsx);
 
       const blob = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `LOTE_CFB_${fechaEmision}.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `LOTE_CFB_${fechaEmision}.zip`);
 
       toast({ title: `${data.count} certificados generados`, description: `Lote descargado · ${fmtUSD(data.metadata.total_usd)}` });
       setRows([]); setFilename("");
     } catch (e: any) {
       toast({ title: "Error generando lote", description: e.message, variant: "destructive" });
     }
-    setGenerating(false);
+    setGenerating(null);
   }
 
   return (
