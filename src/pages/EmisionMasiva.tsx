@@ -377,10 +377,16 @@ export default function EmisionMasiva() {
               <div className="text-sm text-muted-foreground">
                 Se crearán <strong className="text-foreground">{stats.included}</strong> emisiones, {stats.included * 6} documentos PDF y un archivo Vector consolidado .xlsx.
               </div>
-              <Button onClick={generate} disabled={generating || stats.included === 0} className="bg-gradient-gold text-accent-foreground hover:opacity-95">
-                {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                Generar y descargar ZIP
-              </Button>
+              <div className="flex gap-2 flex-wrap">
+                <Button onClick={generateVectorOnly} disabled={generating !== null || stats.included === 0} variant="outline">
+                  {generating === "vector" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-2" />}
+                  Generar vector
+                </Button>
+                <Button onClick={generate} disabled={generating !== null || stats.included === 0} className="bg-gradient-gold text-accent-foreground hover:opacity-95">
+                  {generating === "zip" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                  Generar ZIP
+                </Button>
+              </div>
             </div>
           </Card>
         </>
