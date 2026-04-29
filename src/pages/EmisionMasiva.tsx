@@ -442,6 +442,7 @@ function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financist
   return rows.map(r => {
     const cedente = cedentes.find(c => c.id === r.cedente_id);
     const financista = financistas.find(f => f.id === r.financista_id);
+    const rowFechaEmision = r.fecha_emision || fechaEmision;
     const precio = Math.round((1 - r.descuento_decimal) * 100000) / 100000;
     const vnUsd = Math.round(r.monto_total_usd * 100) / 100;
     const montoUsd = Math.round(vnUsd * precio * 100) / 100;
@@ -452,8 +453,8 @@ function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financist
       deudor_cedido: "GRUPO CASHEA VE, C.A.",
       rif_deudor: "J-501934070",
       cantidad_certificados: 1,
-      fecha_emision: fechaEmision,
-      fecha_vencimiento: addDaysISO(fechaEmision, r.plazo_dias),
+      fecha_emision: rowFechaEmision,
+      fecha_vencimiento: addDaysISO(rowFechaEmision, r.plazo_dias),
       dias_colocados: r.plazo_dias,
       rendimiento: ((1 - precio) / precio) * (360 / r.plazo_dias),
       volumen_ordenes: r.cantidad_ordenes,
