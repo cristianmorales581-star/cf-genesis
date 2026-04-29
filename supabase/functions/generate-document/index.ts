@@ -57,7 +57,8 @@ Deno.serve(async (req) => {
   const { data: e, error: eErr } = await supabase
     .from('emisiones')
     .select(`*,
-      programas!inner(*, cedentes!inner(*)),
+      programas(*, cedentes(*)),
+      cedentes(*),
       financistas(*)
     `)
     .eq('id', body.emision_id)
@@ -101,7 +102,7 @@ function fmtBs(n: number) {
 function fmtPct(n: number, d = 4) { return (n * 100).toFixed(d) + ' %'; }
 
 function buildTemplateContext(e: any, contraparte?: string): TemplateContext {
-  const ced = e.programas?.cedentes ?? {};
+  const ced = e.cedentes ?? e.programas?.cedentes ?? {};
   const prog = e.programas ?? {};
   const fin = e.financistas ?? {};
   return {
