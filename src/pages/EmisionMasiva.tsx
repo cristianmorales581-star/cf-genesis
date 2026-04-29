@@ -450,7 +450,7 @@ function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financist
       tipo_sociedad: "COMERCIAL",
       moneda: "VES",
       valor_nominal_usd: vnUsd,
-      monto_sibe_usd: Math.round(montoUsd),
+      monto_sibe_usd: Math.round(vnUsd),
       tasa_cambio: tasaBcv,
       inversionista: financista?.razon_social ?? "Grupo Cashea Ve, C.A.",
     };
