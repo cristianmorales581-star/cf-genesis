@@ -17,6 +17,7 @@ export default function Dashboard() {
   const { isOperador } = useAuth();
   const [emisiones, setEmisiones] = useState<Emision[]>([]);
   const [vencimientos, setVencimientos] = useState<Emision[]>([]);
+  const [programasAlerta, setProgramasAlerta] = useState<{ id: string; codigo_pcfb: string; fecha_vencimiento: string; estado: string; cedentes?: { razon_social: string } }[]>([]);
   const [activity, setActivity] = useState<{ id: string; action: string; resource_type: string; user_email: string | null; created_at: string }[]>([]);
   const [totalUsd, setTotalUsd] = useState(0);
   const [byCedente, setByCedente] = useState<{ name: string; total: number }[]>([]);
@@ -26,15 +27,21 @@ export default function Dashboard() {
     (async () => {
       const today = todayISO();
       const in30 = addDaysISO(today, 30);
-      const [{ data: live }, { data: vto }, { data: acts }, { data: byCed }] = await Promise.all([
+      const in7 = addDaysISO(today, 7);
+      await (supabase.rpc as never as (fn: string) => Promise<unknown>)("refresh_programas_estado").catch(() => {});
+      const [{ data: live }, { data: vto }, { data: acts }, { data: byCed }, { data: progsAlert }] = await Promise.all([
         supabase.from("emisiones").select("*").eq("estado", "activa").gte("fecha_vencimiento", today).order("fecha_emision", { ascending: false }).limit(8),
         supabase.from("emisiones").select("*").gte("fecha_vencimiento", today).lte("fecha_vencimiento", in30).order("fecha_vencimiento", { ascending: true }).limit(10),
         supabase.from("audit_log").select("id,action,resource_type,user_email,created_at").order("created_at", { ascending: false }).limit(8),
         supabase.from("emisiones").select("valor_nominal_usd, programas!inner(cedentes!inner(razon_social))").eq("estado", "activa").gte("fecha_vencimiento", today),
+        supabase.from("programas").select("id, codigo_pcfb, fecha_vencimiento, estado, cedentes(razon_social)")
+          .or(`estado.eq.vencida,and(estado.eq.activa,fecha_vencimiento.lte.${in7})`)
+          .order("fecha_vencimiento", { ascending: true }).limit(20),
       ]);
       setEmisiones((live ?? []) as Emision[]);
       setVencimientos((vto ?? []) as Emision[]);
       setActivity(acts ?? []);
+      setProgramasAlerta((progsAlert ?? []) as typeof programasAlerta);
       const total = (byCed ?? []).reduce((s, r: { valor_nominal_usd: number }) => s + Number(r.valor_nominal_usd), 0);
       setTotalUsd(total);
       const grouped = new Map<string, number>();
