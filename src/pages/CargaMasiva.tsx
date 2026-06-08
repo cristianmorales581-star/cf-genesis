@@ -54,6 +54,25 @@ function programStatus(fechaVencimiento: string) {
     : { estado: "activa", activo: true };
 }
 
+function normalizeRif(rif?: string | null) {
+  return (rif ?? "").toUpperCase().replace(/[-\s]/g, "").trim();
+}
+
+function rifVariants(rif?: string | null) {
+  const clean = normalizeRif(rif);
+  if (!clean) return [];
+  const withDash = /^[VEJPG]\d+$/i.test(clean) ? `${clean[0]}-${clean.slice(1)}` : clean;
+  return [...new Set([clean, withDash, rif?.toUpperCase().trim()].filter(Boolean) as string[])];
+}
+
+async function findCedenteIdByRif(rif?: string | null) {
+  const variants = rifVariants(rif);
+  if (!variants.length) return undefined;
+  const { data, error } = await supabase.from("cedentes").select("id").in("rif", variants).limit(1).maybeSingle();
+  if (error) throw error;
+  return data?.id as string | undefined;
+}
+
 async function ensureBaseDiscount(programaId: string, descuento: number) {
   const { data, error } = await supabase
     .from("programa_descuentos")
@@ -153,11 +172,11 @@ export default function CargaMasiva() {
         next.cedentes.push({ status: "error", label: "Falta RIF" });
         continue;
       }
-      const { data } = await supabase.from("cedentes").select("id").eq("rif", c.rif).maybeSingle();
+      const { data } = await supabase.from("cedentes").select("id").in("rif", rifVariants(c.rif)).limit(1).maybeSingle();
       next.cedentes.push(data ? { status: "actualiza", label: "Match por RIF · actualizará" } : { status: "nuevo", label: "Sin match · creará" });
     }
 
-    const cedentesEnCarga = new Set(source.cedentes.map(c => c.rif?.toUpperCase()).filter(Boolean));
+    const cedentesEnCarga = new Set(source.cedentes.map(c => normalizeRif(c.rif)).filter(Boolean));
     for (const p of source.programas) {
       if (!p.codigo_pcfb) {
         next.programas.push({ status: "error", label: "Falta PCFB" });
@@ -167,10 +186,8 @@ export default function CargaMasiva() {
         next.programas.push({ status: "error", label: "Falta RIF de cedente" });
         continue;
       }
-      let cedenteId: string | undefined;
-      const { data: cedente } = await supabase.from("cedentes").select("id").eq("rif", p.cedente_rif).maybeSingle();
-      if (cedente) cedenteId = cedente.id;
-      if (!cedenteId && cedentesEnCarga.has(p.cedente_rif.toUpperCase())) {
+      const cedenteId = await findCedenteIdByRif(p.cedente_rif);
+      if (!cedenteId && cedentesEnCarga.has(normalizeRif(p.cedente_rif))) {
         next.programas.push({ status: "ok", label: "Cedente en carga · programa nuevo" });
         continue;
       }
@@ -206,12 +223,14 @@ export default function CargaMasiva() {
       programas: { creados: 0, actualizados: 0, errores: [] },
     };
 
-    // 1) CEDENTES — upsert por RIF
+    // 1) CEDENTES — upsert por RIF normalizado
     const cedenteMap = new Map<string, string>(); // rif → id
     for (const c of parsed.cedentes) {
       try {
+        const rif = normalizeRif(c.rif);
+        if (!rif) throw new Error("Falta RIF");
         const { data: existing } = await supabase
-          .from("cedentes").select("id").eq("rif", c.rif).maybeSingle();
+          .from("cedentes").select("id").in("rif", rifVariants(rif)).limit(1).maybeSingle();
         if (existing) {
           const { error } = await supabase.from("cedentes").update({
             razon_social: c.razon_social,
@@ -221,18 +240,18 @@ export default function CargaMasiva() {
             nombre_comercial: c.nombre_comercial ?? null,
           }).eq("id", existing.id);
           if (error) throw error;
-          cedenteMap.set(c.rif.toUpperCase(), existing.id);
+          cedenteMap.set(rif, existing.id);
           result.cedentes.actualizados++;
         } else {
           const { data, error } = await supabase.from("cedentes").insert({
-            razon_social: c.razon_social, rif: c.rif,
+            razon_social: c.razon_social, rif,
             representante_legal: c.representante_legal ?? null,
             cargo: c.cargo ?? null,
             cedula: c.cedula ?? null,
             nombre_comercial: c.nombre_comercial ?? null,
           }).select("id").single();
           if (error) throw error;
-          cedenteMap.set(c.rif.toUpperCase(), data.id);
+          cedenteMap.set(rif, data.id);
           result.cedentes.creados++;
         }
       } catch (e: any) {
@@ -241,14 +260,13 @@ export default function CargaMasiva() {
     }
 
     // 2) PROGRAMAS — upsert por (codigo_pcfb + linea)
+    const savedProgramIds: string[] = [];
     for (const p of parsed.programas) {
       try {
+        const cedenteRif = normalizeRif(p.cedente_rif);
         let cedenteId: string | undefined;
-        if (p.cedente_rif) cedenteId = cedenteMap.get(p.cedente_rif.toUpperCase());
-        if (!cedenteId && p.cedente_rif) {
-          const { data } = await supabase.from("cedentes").select("id").eq("rif", p.cedente_rif).maybeSingle();
-          if (data) cedenteId = data.id;
-        }
+        if (cedenteRif) cedenteId = cedenteMap.get(cedenteRif);
+        if (!cedenteId && cedenteRif) cedenteId = await findCedenteIdByRif(cedenteRif);
         if (!cedenteId) {
           result.programas.errores.push(`${p.codigo_pcfb}: cedente con RIF ${p.cedente_rif} no encontrado`);
           continue;
@@ -281,10 +299,20 @@ export default function CargaMasiva() {
           programaId = data.id;
           result.programas.creados++;
         }
+        savedProgramIds.push(programaId);
         await ensureBaseDiscount(programaId, p.descuento_base);
       } catch (e: any) {
         result.programas.errores.push(`${p.codigo_pcfb}: ${e.message ?? e}`);
       }
+    }
+
+    if (savedProgramIds.length > 0) {
+      const { data: verified, error: verifyError } = await supabase
+        .from("programas")
+        .select("id")
+        .in("id", [...new Set(savedProgramIds)]);
+      if (verifyError) result.programas.errores.push(`Verificación de programas falló: ${verifyError.message}`);
+      else if ((verified ?? []).length === 0) result.programas.errores.push("La carga procesó programas, pero la app no pudo leerlos después de guardarlos.");
     }
 
     // 3) FINANCISTAS — upsert por RIF (o razón social si no hay RIF)
@@ -330,7 +358,8 @@ export default function CargaMasiva() {
     setSummary(result);
     setBusy(false);
     const totErr = result.cedentes.errores.length + result.programas.errores.length + result.financistas.errores.length;
-    if (totErr === 0) toast.success("Importación completada sin errores");
+    if (totErr === 0 && parsed.programas.length === 0) toast.warning("Importación procesada, pero no se detectó ningún programa en el archivo");
+    else if (totErr === 0) toast.success("Importación completada sin errores");
     else toast.warning(`Importación con ${totErr} errores — revisa el resumen`);
   }
 
