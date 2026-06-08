@@ -343,7 +343,7 @@ function actionsBar(): string {
 // Esta es la carta que el cedente firma dirigida al Presidente de GBV
 // solicitando la emisión del CFB. Incluye los términos y referencia
 // al programa registrado en SUNAVAL.
-export function renderCFB(c: TemplateContext): string {
+function renderSolicitudEmision(c: TemplateContext): string {
   return `<!doctype html>
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>CFB ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
@@ -580,7 +580,7 @@ ${actionsBar()}
 // Diferencia clave con el sistema actual: incluye 3 párrafos legales
 // regulatorios al final (artículo 7 de la Circular SUNAVAL, exoneraciones
 // de IGTF, agencia de cobro de Cashea Ve).
-export function renderHojaTerminos(c: TemplateContext): string {
+export function renderCFB(c: TemplateContext): string {
   return `<!doctype html>
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>Hoja de Términos ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
@@ -591,6 +591,10 @@ ${actionsBar()}
   <div class="doc-header">
     ${logoBlock()}
     <div class="doc-fecha"><strong>${c.simbolo_cfb}</strong></div>
+  </div>
+  <div class="cfb-title">
+    <div class="cfb-cedente">${c.cedente_razon_social}</div>
+    <div class="cfb-subtitle">Certificado de Financiamiento Bursátil ${fmtUSD(c.valor_nominal_usd)}</div>
   </div>
   <p class="parrafo" style="text-align: justify;">
     Autorizado por la Superintendencia Nacional de Valores, el ${c.circular_sunaval_fecha}, mediante CIRCULAR
@@ -634,6 +638,13 @@ ${actionsBar()}
         <td class="v"><strong>${c.cedente_razon_social}</strong> ${fmtUSD(c.valor_nominal_usd)}</td></tr>
   </table>
   <p class="legal-pie">
+    El Financista declara conocer y aceptar expresamente que ${c.deudor_razon_social} actuará en calidad de agente de cobro y pago de los fondos y
+    flujos derivados de la adquisición de los derechos de crédito incorporados en el presente Certificado de Financiamiento Bursátil. En tal carácter,
+    ${c.deudor_razon_social} se limitará a realizar las gestiones de cobro, consolidación y transferencia de dichos fondos, sin asumir obligación de
+    garantía, responsabilidad crediticia ni riesgo distinto al estrictamente operativo, procediendo al pago de los montos que correspondan al
+    Financista en la fecha de vencimiento del Certificado, conforme a los términos y condiciones aquí establecidos.
+  </p>
+  <p class="legal-pie">
     De conformidad con lo establecido en el Artículo 7 de la CIRCULAR ${c.circular_sunaval}, se informa al financistas que las inversiones efectuadas en
     el Mercado de Valores están sujetas a las fluctuaciones propias del mercado, por lo que no se garantiza rendimiento alguno en el futuro.
     Asimismo, los recursos invertidos en cualquier operación realizada a través del mercado de valores no cuentan con garantía, aval o respaldo por
@@ -650,15 +661,12 @@ ${actionsBar()}
     Presidencial No. 4924, publicado en la Gaceta Oficial de la República Bolivariana de Venezuela No. 42823 en fecha 21 de febrero de 2024
     relativo a exoneraciones del pago del impuesto a las grandes transacciones financieras.
   </p>
-  <p class="legal-pie">
-    El Financista declara conocer y aceptar expresamente que ${c.deudor_razon_social} actuará en calidad de agente de cobro y pago de los fondos y
-    flujos derivados de la adquisición de los derechos de crédito incorporados en el presente Certificado de Financiamiento Bursátil. En tal carácter,
-    ${c.deudor_razon_social} se limitará a realizar las gestiones de cobro, consolidación y transferencia de dichos fondos, sin asumir obligación de
-    garantía, responsabilidad crediticia ni riesgo distinto al estrictamente operativo, procediendo al pago de los montos que correspondan al
-    Financista en la fecha de vencimiento del Certificado, conforme a los términos y condiciones aquí establecidos.
-  </p>
 </div>
 </body></html>`;
+}
+
+export function renderHojaTerminos(c: TemplateContext): string {
+  return renderSolicitudEmision(c);
 }
 // ============================================================
 // 5. CDC — Confirmación de Compra
