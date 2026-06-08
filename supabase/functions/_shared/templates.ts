@@ -421,12 +421,9 @@ ${actionsBar()}
   <div class="firma-area">
     <div class="espacio-firma">&nbsp;</div>
     <div class="nombre">${c.cedente_rep_legal ?? '—'}</div>
+    <div class="subtitulo">Por ${c.deudor_razon_social}</div>
     <div class="subtitulo">Mandatario de</div>
     <div class="subtitulo"><strong>${c.cedente_razon_social}</strong></div>
-    <div style="margin-top: 26px; font-size: 9.5pt;">
-      Por <strong>${c.deudor_razon_social}</strong><br/>
-      ${c.deudor_rep_legal}
-    </div>
   </div>
 </div>
 </body></html>`;
