@@ -28,7 +28,7 @@ export default function Dashboard() {
       const today = todayISO();
       const in30 = addDaysISO(today, 30);
       const in7 = addDaysISO(today, 7);
-      await (supabase.rpc as never as (fn: string) => Promise<unknown>)("refresh_programas_estado").catch(() => {});
+      try { await supabase.rpc("refresh_programas_estado"); } catch { /* no bloquea el dashboard */ }
       const [{ data: live }, { data: vto }, { data: acts }, { data: byCed }, { data: progsAlert }] = await Promise.all([
         supabase.from("emisiones").select("*").eq("estado", "activa").gte("fecha_vencimiento", today).order("fecha_emision", { ascending: false }).limit(8),
         supabase.from("emisiones").select("*").gte("fecha_vencimiento", today).lte("fecha_vencimiento", in30).order("fecha_vencimiento", { ascending: true }).limit(10),
