@@ -31,7 +31,8 @@ function normRif(r: string | null | undefined): string {
 }
 
 interface Cedente { id: string; razon_social: string; rif: string; }
-interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; descuento_base: number; }
+interface Descuento { id: string; descuento: number; etiqueta: string | null; es_default: boolean; activo: boolean; }
+interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; descuento_base: number; programa_descuentos?: Descuento[]; }
 interface Financista { id: string; razon_social: string; rif: string | null; representante_legal?: string | null; cedula?: string | null; }
 
 type RowMapping = ParsedRow & {
@@ -58,9 +59,11 @@ export default function EmisionMasiva() {
 
   useEffect(() => {
     (async () => {
+      await (supabase.rpc as never as (fn: string) => Promise<unknown>)("refresh_programas_estado").catch(() => {});
       const [c, p, f] = await Promise.all([
         supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
-        supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base").eq("activo", true).order("codigo_pcfb"),
+        supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base, programa_descuentos(id, descuento, etiqueta, es_default, activo)")
+          .eq("activo", true).eq("estado", "activa").order("codigo_pcfb"),
         supabase.from("financistas").select("id, razon_social, rif, representante_legal, cedula").eq("activo", true).order("razon_social"),
       ]);
       setCedentes((c.data ?? []) as Cedente[]);
@@ -139,9 +142,11 @@ export default function EmisionMasiva() {
 
   function updatePrograma(i: number, programaId: string) {
     const programa = programas.find(p => p.id === programaId);
+    const def = programa?.programa_descuentos?.find(d => d.es_default && d.activo)
+      ?? programa?.programa_descuentos?.find(d => d.activo);
     updateRow(i, {
       programa_id: programaId,
-      descuento_decimal: programa ? Number(programa.descuento_base) : rows[i].descuento_decimal,
+      descuento_decimal: def ? Number(def.descuento) : (programa ? Number(programa.descuento_base) : rows[i].descuento_decimal),
     });
   }
 
@@ -367,16 +372,36 @@ export default function EmisionMasiva() {
                         <td className="px-2 py-1.5 text-right font-mono">{fmtUSD(r.monto_total_usd)}</td>
                         <td className="px-2 py-1.5 text-right">{r.plazo_dias}d</td>
                         <td className="px-2 py-1.5 text-right">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="20"
-                            step="0.01"
-                            value={Number.isFinite(r.descuento_decimal) ? (r.descuento_decimal * 100).toFixed(2) : ""}
-                            onChange={(e) => updateRow(i, { descuento_decimal: (parseFloat(e.target.value) || 0) / 100 })}
-                            className="h-7 w-20 text-right text-[11px] font-mono"
-                            aria-label="Descuento porcentual"
-                          />
+                          {(() => {
+                            const prog = programas.find(p => p.id === r.programa_id);
+                            const descs = (prog?.programa_descuentos ?? []).filter(d => d.activo);
+                            if (descs.length > 1) {
+                              return (
+                                <Select
+                                  value={String(r.descuento_decimal)}
+                                  onValueChange={(v) => updateRow(i, { descuento_decimal: parseFloat(v) })}
+                                >
+                                  <SelectTrigger className="h-7 w-28 text-[11px]"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {descs.sort((a, b) => a.descuento - b.descuento).map(d => (
+                                      <SelectItem key={d.id} value={String(d.descuento)}>
+                                        {(d.descuento * 100).toFixed(2)}%{d.etiqueta ? ` ${d.etiqueta}` : ""}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              );
+                            }
+                            return (
+                              <Input
+                                type="number" min="0" max="20" step="0.01"
+                                value={Number.isFinite(r.descuento_decimal) ? (r.descuento_decimal * 100).toFixed(2) : ""}
+                                onChange={(e) => updateRow(i, { descuento_decimal: (parseFloat(e.target.value) || 0) / 100 })}
+                                className="h-7 w-20 text-right text-[11px] font-mono"
+                                aria-label="Descuento porcentual"
+                              />
+                            );
+                          })()}
                         </td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.vencimiento_primera_orden}</td>
                         <td className="px-2 py-1.5 text-right">

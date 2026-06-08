@@ -17,6 +17,7 @@ export default function Dashboard() {
   const { isOperador } = useAuth();
   const [emisiones, setEmisiones] = useState<Emision[]>([]);
   const [vencimientos, setVencimientos] = useState<Emision[]>([]);
+  const [programasAlerta, setProgramasAlerta] = useState<{ id: string; codigo_pcfb: string; fecha_vencimiento: string; estado: string; cedentes?: { razon_social: string } }[]>([]);
   const [activity, setActivity] = useState<{ id: string; action: string; resource_type: string; user_email: string | null; created_at: string }[]>([]);
   const [totalUsd, setTotalUsd] = useState(0);
   const [byCedente, setByCedente] = useState<{ name: string; total: number }[]>([]);
@@ -26,15 +27,21 @@ export default function Dashboard() {
     (async () => {
       const today = todayISO();
       const in30 = addDaysISO(today, 30);
-      const [{ data: live }, { data: vto }, { data: acts }, { data: byCed }] = await Promise.all([
+      const in7 = addDaysISO(today, 7);
+      await (supabase.rpc as never as (fn: string) => Promise<unknown>)("refresh_programas_estado").catch(() => {});
+      const [{ data: live }, { data: vto }, { data: acts }, { data: byCed }, { data: progsAlert }] = await Promise.all([
         supabase.from("emisiones").select("*").eq("estado", "activa").gte("fecha_vencimiento", today).order("fecha_emision", { ascending: false }).limit(8),
         supabase.from("emisiones").select("*").gte("fecha_vencimiento", today).lte("fecha_vencimiento", in30).order("fecha_vencimiento", { ascending: true }).limit(10),
         supabase.from("audit_log").select("id,action,resource_type,user_email,created_at").order("created_at", { ascending: false }).limit(8),
         supabase.from("emisiones").select("valor_nominal_usd, programas!inner(cedentes!inner(razon_social))").eq("estado", "activa").gte("fecha_vencimiento", today),
+        supabase.from("programas").select("id, codigo_pcfb, fecha_vencimiento, estado, cedentes(razon_social)")
+          .or(`estado.eq.vencida,and(estado.eq.activa,fecha_vencimiento.lte.${in7})`)
+          .order("fecha_vencimiento", { ascending: true }).limit(20),
       ]);
       setEmisiones((live ?? []) as Emision[]);
       setVencimientos((vto ?? []) as Emision[]);
       setActivity(acts ?? []);
+      setProgramasAlerta((progsAlert ?? []) as typeof programasAlerta);
       const total = (byCed ?? []).reduce((s, r: { valor_nominal_usd: number }) => s + Number(r.valor_nominal_usd), 0);
       setTotalUsd(total);
       const grouped = new Map<string, number>();
@@ -124,6 +131,51 @@ export default function Dashboard() {
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+
+        {/* Programas a vencer / vencidos */}
+        <div className="lg:col-span-3 rounded-lg border border-warning/40 bg-card shadow-sm-elegant overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold text-primary">
+              Programas vencidos o por vencer (7 días)
+            </h2>
+            <Link to="/programas" className="text-xs text-accent hover:underline flex items-center gap-1">
+              Gestionar <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          {programasAlerta.length === 0 ? (
+            <div className="p-6 text-sm text-muted-foreground text-center">Sin programas en alerta.</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left px-5 py-2 font-semibold">Código</th>
+                  <th className="text-left px-5 py-2 font-semibold">Cedente</th>
+                  <th className="text-left px-5 py-2 font-semibold">Vence</th>
+                  <th className="text-center px-5 py-2 font-semibold">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {programasAlerta.map(p => {
+                  const days = Math.ceil((new Date(`${p.fecha_vencimiento}T00:00:00`).getTime() - Date.now()) / 86400000);
+                  return (
+                    <tr key={p.id} className="border-t border-border hover:bg-secondary/20">
+                      <td className="px-5 py-2 font-mono text-xs text-primary">{p.codigo_pcfb}</td>
+                      <td className="px-5 py-2 text-xs">{p.cedentes?.razon_social ?? "—"}</td>
+                      <td className="px-5 py-2 text-xs text-muted-foreground">
+                        {fmtDate(p.fecha_vencimiento)} · {days < 0 ? `vencido hace ${Math.abs(days)}d` : `en ${days}d`}
+                      </td>
+                      <td className="px-5 py-2 text-center">
+                        <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded ${p.estado === "vencida" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning"}`}>
+                          {p.estado === "vencida" ? "VENCIDO" : "POR VENCER"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
 

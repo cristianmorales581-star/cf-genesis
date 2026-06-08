@@ -15,11 +15,14 @@ import {
 import { Loader2, RefreshCw, ArrowRight } from "lucide-react";
 import { z } from "zod";
 
+interface Descuento { id: string; descuento: number; etiqueta: string | null; es_default: boolean; activo: boolean; }
 interface Programa {
   id: string; codigo_pcfb: string; descuento_base: number;
   plazo_ejecucion_dias: number; plazo_cuotas_dias: number;
   fecha_inicio: string; fecha_vencimiento: string; activo: boolean;
+  estado?: string;
   cedentes?: { razon_social: string; rif: string };
+  programa_descuentos?: Descuento[];
 }
 
 interface Financista {
@@ -59,8 +62,11 @@ export default function NuevaEmision() {
 
   useEffect(() => {
     (async () => {
+      await (supabase.rpc as never as (fn: string) => Promise<unknown>)("refresh_programas_estado").catch(() => {});
       const [{ data: progs }, { data: fins }] = await Promise.all([
-        supabase.from("programas").select("*, cedentes(razon_social, rif)").eq("activo", true).order("codigo_pcfb"),
+        supabase.from("programas")
+          .select("*, cedentes(razon_social, rif), programa_descuentos(id, descuento, etiqueta, es_default, activo)")
+          .eq("activo", true).eq("estado", "activa").order("codigo_pcfb"),
         supabase.from("financistas").select("id, razon_social, tipo, activo").eq("activo", true).order("razon_social"),
       ]);
       setProgramas((progs ?? []) as Programa[]);
@@ -70,16 +76,22 @@ export default function NuevaEmision() {
   }, []);
 
   const programa = useMemo(() => programas.find(p => p.id === form.programa_id), [programas, form.programa_id]);
+  const descuentosDisponibles = useMemo(
+    () => (programa?.programa_descuentos ?? []).filter(d => d.activo).sort((a, b) => a.descuento - b.descuento),
+    [programa]
+  );
 
-  // Preselect descuento_base when programa changes
+  // Preselect default descuento when programa changes
   useEffect(() => {
     if (programa) {
+      const def = (programa.programa_descuentos ?? []).find(d => d.es_default && d.activo)
+        ?? (programa.programa_descuentos ?? []).find(d => d.activo);
+      const descPct = def ? Number(def.descuento) * 100 : Number(programa.descuento_base) * 100;
       setForm(f => ({
         ...f,
-        descuento_pct: Number(programa.descuento_base) * 100,
+        descuento_pct: descPct,
         dias_colocados: programa.plazo_cuotas_dias,
       }));
-      // Preview symbol
       supabase.rpc("next_simbolo_for_programa", { _programa_id: programa.id })
         .then(({ data }) => setSimboloPreview(data ?? ""));
     } else {
@@ -229,8 +241,27 @@ export default function NuevaEmision() {
               </div>
               <div>
                 <Label>Descuento (%) *</Label>
-                <Input type="number" min={0} max={20} step="0.01" value={form.descuento_pct}
-                  onChange={e => setForm({ ...form, descuento_pct: parseFloat(e.target.value || "0") })} />
+                {descuentosDisponibles.length > 1 ? (
+                  <Select
+                    value={String(form.descuento_pct)}
+                    onValueChange={(v) => setForm({ ...form, descuento_pct: parseFloat(v) })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {descuentosDisponibles.map(d => {
+                        const pct = Number(d.descuento) * 100;
+                        return (
+                          <SelectItem key={d.id} value={String(pct)}>
+                            {pct.toFixed(4)}%{d.etiqueta ? ` · ${d.etiqueta}` : ""}{d.es_default ? " (default)" : ""}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input type="number" min={0} max={20} step="0.01" value={form.descuento_pct}
+                    onChange={e => setForm({ ...form, descuento_pct: parseFloat(e.target.value || "0") })} />
+                )}
               </div>
               <div>
                 <Label>Cantidad órdenes de compra</Label>
