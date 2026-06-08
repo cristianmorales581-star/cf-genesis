@@ -32,7 +32,7 @@ function normRif(r: string | null | undefined): string {
 
 interface Cedente { id: string; razon_social: string; rif: string; }
 interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; descuento_base: number; }
-interface Financista { id: string; razon_social: string; rif: string | null; }
+interface Financista { id: string; razon_social: string; rif: string | null; representante_legal?: string | null; cedula?: string | null; }
 
 type RowMapping = ParsedRow & {
   cedente_id?: string;
@@ -61,7 +61,7 @@ export default function EmisionMasiva() {
       const [c, p, f] = await Promise.all([
         supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
         supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base").eq("activo", true).order("codigo_pcfb"),
-        supabase.from("financistas").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
+        supabase.from("financistas").select("id, razon_social, rif, representante_legal, cedula").eq("activo", true).order("razon_social"),
       ]);
       setCedentes((c.data ?? []) as Cedente[]);
       setProgramas((p.data ?? []) as Programa[]);
@@ -179,21 +179,26 @@ export default function EmisionMasiva() {
       const payload = {
         fecha_emision: fechaEmision,
         tasa_bcv: tasaBcv,
-        rows: rows.filter(r => r.include).map(r => ({
-          simbolo_cfb: r.simbolo_cfb,
-          cedente_id: r.cedente_id!,
-          programa_id: r.programa_id ?? null,
-          financista_id: r.financista_id ?? null,
-          cantidad_ordenes: r.cantidad_ordenes,
-          monto_total_usd: r.monto_total_usd,
-          fecha_emision: r.fecha_emision || fechaEmision,
-          vencimiento_primera_orden: r.vencimiento_primera_orden,
-          plazo_dias: r.plazo_dias,
-          descuento_decimal: r.descuento_decimal,
-          linea: r.linea,
-          inversionista_label: financistas.find(f => f.id === r.financista_id)?.razon_social || "GRUPO CASHEA VE, C.A.",
-          inversionista_rif: financistas.find(f => f.id === r.financista_id)?.rif || "J-501934070",
-        })),
+        rows: rows.filter(r => r.include).map(r => {
+          const fin = financistas.find(f => f.id === r.financista_id);
+          return {
+            simbolo_cfb: r.simbolo_cfb,
+            cedente_id: r.cedente_id!,
+            programa_id: r.programa_id ?? null,
+            financista_id: r.financista_id ?? null,
+            cantidad_ordenes: r.cantidad_ordenes,
+            monto_total_usd: r.monto_total_usd,
+            fecha_emision: r.fecha_emision || fechaEmision,
+            vencimiento_primera_orden: r.vencimiento_primera_orden,
+            plazo_dias: r.plazo_dias,
+            descuento_decimal: r.descuento_decimal,
+            linea: r.linea,
+            inversionista_label: fin?.razon_social || "GRUPO CASHEA VE, C.A.",
+            inversionista_rif: fin?.rif || "J-501934070",
+            inversionista_rep_legal: fin?.representante_legal || null,
+            inversionista_cedula: fin?.cedula || null,
+          };
+        }),
       };
       const { data, error } = await supabase.functions.invoke("generate-batch", { body: payload });
       if (error) throw error;
