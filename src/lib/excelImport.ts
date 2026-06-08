@@ -132,7 +132,7 @@ export function parsePastedValues(text: string): ParsedSheet {
 }
 
 function cleanRif(s: string): string {
-  return (s ?? "").toString().toUpperCase().replace(/\s+/g, "").trim();
+  return (s ?? "").toString().toUpperCase().replace(/[-\s]/g, "").trim();
 }
 
 function detectKind(headers: string[]): ImportKind | "mixto" | null {
@@ -203,7 +203,9 @@ export function parseWorkbook(wb: XLSX.WorkBook): ParsedSheet {
       const row = aoa[i];
       if (!row || row.every(v => !String(v ?? "").trim())) continue;
       const denom = get(row, cols.denom);
-      if (!denom) continue;
+      const pcfb = get(row, cols.pcfb);
+
+      if (kind !== "programas" && !denom) continue;
 
       if (kind === "financistas") {
         const tipoRaw = norm(get(row, cols.tipo));
@@ -232,7 +234,6 @@ export function parseWorkbook(wb: XLSX.WorkBook): ParsedSheet {
         nombre_comercial: get(row, cols.nombreCom) || undefined,
       };
 
-      const pcfb = get(row, cols.pcfb);
       let programa: ProgramaRow | undefined;
       if (pcfb && pcfb.toUpperCase() !== "N/A") {
         const desc = parseAccountingNumber(row[cols.desc]);
@@ -248,13 +249,13 @@ export function parseWorkbook(wb: XLSX.WorkBook): ParsedSheet {
           fecha_vencimiento: toISODate(row[cols.fechaVenc]),
           contrato_cesion: get(row, cols.contrato) || undefined,
           cedente_rif: rif || undefined,
-          cedente_razon_social: denom,
+          cedente_razon_social: denom || undefined,
         };
         cedente.programa = programa;
         out.programas.push(programa);
       }
 
-      if (kind !== "programas") out.cedentes.push(cedente);
+      if (kind !== "programas" && denom) out.cedentes.push(cedente);
     }
   }
 
