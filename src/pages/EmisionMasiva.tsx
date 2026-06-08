@@ -592,7 +592,7 @@ function applyVectorFormats(ws: XLSX.WorkSheet, firstDataRow: number, rowCount: 
 
 function applyResumenFormats(ws: XLSX.WorkSheet, firstDataRow: number, rowCount: number) {
   for (let r = firstDataRow; r < firstDataRow + rowCount; r++) {
-    setCellFormat(ws, `D${r}`, "m/d/yy");
+    setCellFormat(ws, `D${r}`, "dd/mm/yyyy");
     setCellFormat(ws, `E${r}`, "0.0000%");
     setCellFormat(ws, `F${r}`, '[$$-540A]#,##0_ ;\\-[$$-540A]#,##0\\ ');
   }
