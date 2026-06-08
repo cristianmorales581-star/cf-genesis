@@ -241,8 +241,27 @@ export default function NuevaEmision() {
               </div>
               <div>
                 <Label>Descuento (%) *</Label>
-                <Input type="number" min={0} max={20} step="0.01" value={form.descuento_pct}
-                  onChange={e => setForm({ ...form, descuento_pct: parseFloat(e.target.value || "0") })} />
+                {descuentosDisponibles.length > 1 ? (
+                  <Select
+                    value={String(form.descuento_pct)}
+                    onValueChange={(v) => setForm({ ...form, descuento_pct: parseFloat(v) })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {descuentosDisponibles.map(d => {
+                        const pct = Number(d.descuento) * 100;
+                        return (
+                          <SelectItem key={d.id} value={String(pct)}>
+                            {pct.toFixed(4)}%{d.etiqueta ? ` · ${d.etiqueta}` : ""}{d.es_default ? " (default)" : ""}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input type="number" min={0} max={20} step="0.01" value={form.descuento_pct}
+                    onChange={e => setForm({ ...form, descuento_pct: parseFloat(e.target.value || "0") })} />
+                )}
               </div>
               <div>
                 <Label>Cantidad órdenes de compra</Label>

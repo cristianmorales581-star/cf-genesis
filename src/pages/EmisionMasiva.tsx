@@ -31,7 +31,8 @@ function normRif(r: string | null | undefined): string {
 }
 
 interface Cedente { id: string; razon_social: string; rif: string; }
-interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; descuento_base: number; }
+interface Descuento { id: string; descuento: number; etiqueta: string | null; es_default: boolean; activo: boolean; }
+interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; descuento_base: number; programa_descuentos?: Descuento[]; }
 interface Financista { id: string; razon_social: string; rif: string | null; representante_legal?: string | null; cedula?: string | null; }
 
 type RowMapping = ParsedRow & {
@@ -58,9 +59,11 @@ export default function EmisionMasiva() {
 
   useEffect(() => {
     (async () => {
+      await (supabase.rpc as never as (fn: string) => Promise<unknown>)("refresh_programas_estado").catch(() => {});
       const [c, p, f] = await Promise.all([
         supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
-        supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base").eq("activo", true).order("codigo_pcfb"),
+        supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base, programa_descuentos(id, descuento, etiqueta, es_default, activo)")
+          .eq("activo", true).eq("estado", "activa").order("codigo_pcfb"),
         supabase.from("financistas").select("id, razon_social, rif, representante_legal, cedula").eq("activo", true).order("razon_social"),
       ]);
       setCedentes((c.data ?? []) as Cedente[]);
@@ -139,9 +142,11 @@ export default function EmisionMasiva() {
 
   function updatePrograma(i: number, programaId: string) {
     const programa = programas.find(p => p.id === programaId);
+    const def = programa?.programa_descuentos?.find(d => d.es_default && d.activo)
+      ?? programa?.programa_descuentos?.find(d => d.activo);
     updateRow(i, {
       programa_id: programaId,
-      descuento_decimal: programa ? Number(programa.descuento_base) : rows[i].descuento_decimal,
+      descuento_decimal: def ? Number(def.descuento) : (programa ? Number(programa.descuento_base) : rows[i].descuento_decimal),
     });
   }
 
