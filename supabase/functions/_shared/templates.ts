@@ -57,6 +57,8 @@ export interface TemplateContext {
   // Financista (puede ser persona natural o jurídica, o el mismo deudor cedido en operaciones masivas)
   financista_razon_social: string;          // Para masivos = "Grupo Cashea Ve, C.A."
   financista_rif: string;
+  financista_rep_legal: string | null;
+  financista_cedula: string | null;
   financista_es_persona_natural: boolean;
 
   // Constantes del sistema (de app_config)
@@ -84,7 +86,7 @@ export interface TemplateContext {
 // las edge functions de Deno no pueden importar del frontend)
 // ============================================================
 
-const MES_ABBR = ['Ene','Feb','Mar','Apr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 export function fmtFechaCaracas(iso: string): string {
   const d = new Date(iso + 'T12:00:00');
@@ -147,6 +149,18 @@ function baseStyles(): string {
     font-size: 11pt;
     text-align: right;
     padding-top: 6px;
+  }
+  .cfb-title {
+    text-align: center;
+    margin: 2px 0 10px;
+    font-weight: bold;
+  }
+  .cfb-title .cfb-cedente {
+    font-size: 12pt;
+    margin-bottom: 4px;
+  }
+  .cfb-title .cfb-subtitle {
+    font-size: 11pt;
   }
   /* Bloque destinatario */
   .destinatario {
@@ -343,10 +357,10 @@ function actionsBar(): string {
 // Esta es la carta que el cedente firma dirigida al Presidente de GBV
 // solicitando la emisión del CFB. Incluye los términos y referencia
 // al programa registrado en SUNAVAL.
-export function renderCFB(c: TemplateContext): string {
+function renderSolicitudEmision(c: TemplateContext): string {
   return `<!doctype html>
 <html lang="es-VE"><head><meta charset="utf-8"/>
-<title>CFB ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
+<title>Hoja de Términos ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
 </head><body>
 ${actionsBar()}
@@ -409,12 +423,9 @@ ${actionsBar()}
   <div class="firma-area">
     <div class="espacio-firma">&nbsp;</div>
     <div class="nombre">${c.cedente_rep_legal ?? '—'}</div>
+    <div class="subtitulo">Por ${c.deudor_razon_social}</div>
     <div class="subtitulo">Mandatario de</div>
     <div class="subtitulo"><strong>${c.cedente_razon_social}</strong></div>
-    <div style="margin-top: 26px; font-size: 9.5pt;">
-      Por <strong>${c.deudor_razon_social}</strong><br/>
-      ${c.deudor_rep_legal}
-    </div>
   </div>
 </div>
 </body></html>`;
@@ -580,10 +591,10 @@ ${actionsBar()}
 // Diferencia clave con el sistema actual: incluye 3 párrafos legales
 // regulatorios al final (artículo 7 de la Circular SUNAVAL, exoneraciones
 // de IGTF, agencia de cobro de Cashea Ve).
-export function renderHojaTerminos(c: TemplateContext): string {
+export function renderCFB(c: TemplateContext): string {
   return `<!doctype html>
 <html lang="es-VE"><head><meta charset="utf-8"/>
-<title>Hoja de Términos ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
+<title>CFB ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
 </head><body>
 ${actionsBar()}
@@ -591,6 +602,10 @@ ${actionsBar()}
   <div class="doc-header">
     ${logoBlock()}
     <div class="doc-fecha"><strong>${c.simbolo_cfb}</strong></div>
+  </div>
+  <div class="cfb-title">
+    <div class="cfb-cedente">${c.cedente_razon_social}</div>
+    <div class="cfb-subtitle">Certificado de Financiamiento Bursátil ${fmtUSD(c.valor_nominal_usd)}</div>
   </div>
   <p class="parrafo" style="text-align: justify;">
     Autorizado por la Superintendencia Nacional de Valores, el ${c.circular_sunaval_fecha}, mediante CIRCULAR
@@ -633,6 +648,16 @@ ${actionsBar()}
     <tr><td class="k">Cedente</td>
         <td class="v"><strong>${c.cedente_razon_social}</strong> ${fmtUSD(c.valor_nominal_usd)}</td></tr>
   </table>
+  <p class="parrafo" style="text-align: center; font-weight: bold; margin: 16px 0 10px;">
+    ${c.cedente_razon_social}<br/><span style="font-weight: normal;">Cedente</span>
+  </p>
+  <p class="legal-pie">
+    El Financista declara conocer y aceptar expresamente que ${c.deudor_razon_social} actuará en calidad de agente de cobro y pago de los fondos y
+    flujos derivados de la adquisición de los derechos de crédito incorporados en el presente Certificado de Financiamiento Bursátil. En tal carácter,
+    ${c.deudor_razon_social} se limitará a realizar las gestiones de cobro, consolidación y transferencia de dichos fondos, sin asumir obligación de
+    garantía, responsabilidad crediticia ni riesgo distinto al estrictamente operativo, procediendo al pago de los montos que correspondan al
+    Financista en la fecha de vencimiento del Certificado, conforme a los términos y condiciones aquí establecidos.
+  </p>
   <p class="legal-pie">
     De conformidad con lo establecido en el Artículo 7 de la CIRCULAR ${c.circular_sunaval}, se informa al financistas que las inversiones efectuadas en
     el Mercado de Valores están sujetas a las fluctuaciones propias del mercado, por lo que no se garantiza rendimiento alguno en el futuro.
@@ -650,15 +675,12 @@ ${actionsBar()}
     Presidencial No. 4924, publicado en la Gaceta Oficial de la República Bolivariana de Venezuela No. 42823 en fecha 21 de febrero de 2024
     relativo a exoneraciones del pago del impuesto a las grandes transacciones financieras.
   </p>
-  <p class="legal-pie">
-    El Financista declara conocer y aceptar expresamente que ${c.deudor_razon_social} actuará en calidad de agente de cobro y pago de los fondos y
-    flujos derivados de la adquisición de los derechos de crédito incorporados en el presente Certificado de Financiamiento Bursátil. En tal carácter,
-    ${c.deudor_razon_social} se limitará a realizar las gestiones de cobro, consolidación y transferencia de dichos fondos, sin asumir obligación de
-    garantía, responsabilidad crediticia ni riesgo distinto al estrictamente operativo, procediendo al pago de los montos que correspondan al
-    Financista en la fecha de vencimiento del Certificado, conforme a los términos y condiciones aquí establecidos.
-  </p>
 </div>
 </body></html>`;
+}
+
+export function renderHojaTerminos(c: TemplateContext): string {
+  return renderSolicitudEmision(c);
 }
 // ============================================================
 // 5. CDC — Confirmación de Compra
@@ -685,8 +707,7 @@ function renderConfirmacion(c: TemplateContext, tipo: 'CDC' | 'CDV'): string {
   // Vendedor es siempre el cedente, comprador es siempre el financista
   const vendedor = c.cedente_razon_social;
   const comprador = c.financista_razon_social;
-  // Fecha del documento típicamente es 1 día después de la emisión (fecha de confirmación)
-  const fechaConfirmacion = c.fecha_documento;
+  const fechaConfirmacion = addDaysISO(c.fecha_emision, 1);
   return `<!doctype html>
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>${tipo} ${c.simbolo_cfb} — ${destinatario}</title>
@@ -769,16 +790,14 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
   // En ODC el cliente es el financista (comprador). En ODV el cliente es el cedente (vendedor).
   const clienteNombre = esCompra ? c.financista_razon_social : c.cedente_razon_social;
   const clienteRif = esCompra ? c.financista_rif : c.cedente_rif;
-  const repNombre = esCompra ? c.deudor_rep_legal : (c.cedente_rep_legal ?? c.deudor_rep_legal);
-  const repCedula = esCompra ? c.deudor_cedula : (c.cedente_cedula ?? c.deudor_cedula);
+  const repNombre = esCompra ? (c.financista_rep_legal ?? c.deudor_rep_legal) : (c.cedente_rep_legal ?? c.deudor_rep_legal);
+  const repCedula = esCompra ? (c.financista_cedula ?? c.deudor_cedula) : (c.cedente_cedula ?? c.deudor_cedula);
   const repCorreo = c.deudor_correo ?? 'jesusrojas@cashea.app';
   const repTelefono = c.deudor_telefono ?? '+58 424-1885202';
   // Numeración: ODC = -2, ODV = -1 (convención observada en los PDFs reales)
   const numeroOrden = esCompra ? `${c.simbolo_cfb}-2` : `${c.simbolo_cfb}-1`;
-  // Fecha de solicitud típicamente es 1 día antes de la emisión, vencimiento 1 día después
-  const fechaSolicitud = fmtFechaDDMMYYYY(c.fecha_documento);
-  // Fecha de vencimiento de la orden (no la del CFB) — típicamente 2 días después de la solicitud
-  const fechaVtoOrden = fmtFechaDDMMYYYY(addDaysISO(c.fecha_documento, 2));
+  const fechaSolicitud = fmtFechaDDMMYYYY(addDaysISO(c.fecha_emision, -1));
+  const fechaVtoOrden = fmtFechaDDMMYYYY(addDaysISO(c.fecha_emision, 1));
   return `<!doctype html>
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>${esCompra ? 'ODC' : 'ODV'} ${c.simbolo_cfb} — ${clienteNombre}</title>

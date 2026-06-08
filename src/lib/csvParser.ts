@@ -109,8 +109,12 @@ function parseNumber(s: string): number {
 function parseDescuentoDecimal(raw: string, tipo: "Express" | "Masivo" | "Paquetizado"): number {
   const n = parseNumber(raw);
   if (!isFinite(n) || n === 0) return 0;
-  if (tipo === "Express") return n / 10000;   // 300 → 0.03
-  return n / 100;                              // 0.92 → 0.0092
+  // Los CSV históricos han venido en 3 escalas distintas:
+  // 300 → 3.00%, 3 → 3.00%, 0.92 → 0.92%, 0.03 → 3.00%.
+  if (n >= 100) return n / 10000;
+  if (n > 1) return n / 100;
+  if (tipo === "Express") return n;
+  return n >= 0.2 ? n / 100 : n;
 }
 
 export function parseCSVText(text: string): ParseResult {

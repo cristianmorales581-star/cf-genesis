@@ -87,20 +87,6 @@ function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 
-// ---------- Plantillas ----------
-function fmtCaracas(d: string) {
-  const date = new Date(d + 'T12:00:00');
-  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  return `${date.getDate()} de ${meses[date.getMonth()]}. de ${date.getFullYear()}`;
-}
-function fmtUSD(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
-}
-function fmtBs(n: number) {
-  return new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' Bs.';
-}
-function fmtPct(n: number, d = 4) { return (n * 100).toFixed(d) + ' %'; }
-
 function buildTemplateContext(e: any, contraparte?: string): TemplateContext {
   const ced = e.cedentes ?? e.programas?.cedentes ?? {};
   const prog = e.programas ?? {};
@@ -109,7 +95,7 @@ function buildTemplateContext(e: any, contraparte?: string): TemplateContext {
     simbolo_cfb: e.simbolo_cfb,
     fecha_emision: e.fecha_emision,
     fecha_vencimiento: e.fecha_vencimiento,
-    fecha_documento: e.fecha_emision,
+    fecha_documento: new Date().toISOString().slice(0, 10),
     valor_nominal_usd: Number(e.valor_nominal_usd),
     cantidad_ordenes_compra: Number(e.cantidad_ordenes_compra),
     precio: Number(e.precio),
@@ -136,6 +122,8 @@ function buildTemplateContext(e: any, contraparte?: string): TemplateContext {
     deudor_telefono: prog.deudor_cedido_telefono ?? null,
     financista_razon_social: contraparte || fin.razon_social || 'Grupo Cashea Ve, C.A.',
     financista_rif: fin.rif ?? 'J-501934070',
+    financista_rep_legal: fin.representante_legal ?? null,
+    financista_cedula: fin.cedula ?? null,
     financista_es_persona_natural: false,
     gbv_razon_social: 'Grupo Bursatil Venezolano Casa de Bolsa, C.A.',
     gbv_rif: 'J-502409831',
@@ -155,165 +143,4 @@ function buildTemplateContext(e: any, contraparte?: string): TemplateContext {
     circular_bvc_fecha: '01 de septiembre de 2023',
     texto_activo_subyacente: 'Ordenes de compra vigentes contenidas en el "Reporte de cuentas por cobrar" anexo al contrato suscrito.',
   };
-}
-
-// deno-lint-ignore no-explicit-any
-function renderTemplate(tipo: string, e: any, contraparte?: string) {
-  const cedente = e.programas?.cedentes;
-  const programa = e.programas;
-  const today = new Date().toISOString().slice(0, 10);
-  const titulo = ({
-    CFB: 'CERTIFICADO DE FINANCIAMIENTO BURSÁTIL',
-    HOJA_TERMINOS: 'HOJA DE TÉRMINOS Y CONDICIONES',
-    CDC: 'CONFIRMACIÓN DE COMPRA',
-    CDV: 'CONFIRMACIÓN DE VENTA',
-  } as Record<string,string>)[tipo] ?? tipo;
-
-  return `<!doctype html>
-<html lang="es-VE"><head>
-<meta charset="utf-8"/>
-<title>${titulo} — ${e.simbolo_cfb}</title>
-<style>
-  @page { size: A4; margin: 18mm 16mm 22mm 16mm; }
-  * { box-sizing: border-box; }
-  body { font-family: 'Source Serif 4', Georgia, serif; color: #15151a; margin: 0; font-size: 11pt; line-height: 1.55; }
-  .hdr { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0c2a52; padding-bottom: 12px; margin-bottom: 18px; }
-  .brand { font-family: 'Montserrat', sans-serif; }
-  .brand h1 { margin: 0; font-size: 16pt; color: #0c2a52; letter-spacing: 1px; }
-  .brand p { margin: 2px 0 0; font-size: 8pt; color: #555; text-transform: uppercase; letter-spacing: 2px; }
-  .meta { text-align: right; font-family: 'Montserrat', sans-serif; font-size: 8pt; color: #555; text-transform: uppercase; letter-spacing: 1.5px; }
-  .meta strong { display: block; color: #0c2a52; font-size: 10pt; letter-spacing: 1px; margin-bottom: 4px; }
-  h2.titulo { font-family: 'Montserrat', sans-serif; text-align: center; font-size: 13pt; color: #0c2a52; letter-spacing: 2px; margin: 18px 0 4px; }
-  .sub { text-align: center; font-size: 9pt; color: #555; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 18px; }
-  table.kv { width: 100%; border-collapse: collapse; margin: 10px 0 16px; }
-  table.kv td { padding: 6px 8px; border-bottom: 1px solid #ddd; font-size: 10pt; vertical-align: top; }
-  table.kv td.k { width: 38%; font-family: 'Montserrat', sans-serif; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 1px; color: #555; }
-  table.kv td.v { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: #0c2a52; }
-  p.legal { text-align: justify; margin: 10px 0; }
-  .firma { margin-top: 50px; display: flex; justify-content: space-between; gap: 40px; }
-  .firma .box { flex: 1; border-top: 1px solid #333; padding-top: 6px; text-align: center; font-size: 9pt; }
-  .ftr { position: fixed; bottom: 8mm; left: 16mm; right: 16mm; border-top: 1px solid #ccc; padding-top: 6px; font-family: 'Montserrat', sans-serif; font-size: 7.5pt; color: #777; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 1px; }
-  .actions { text-align: center; margin: 24px 0; }
-  .actions button { font-family: 'Montserrat', sans-serif; padding: 10px 24px; background: #0c2a52; color: #fff; border: 0; cursor: pointer; letter-spacing: 1px; font-size: 10pt; }
-  @media print { .actions { display: none; } }
-</style>
-</head>
-<body>
-  <div class="actions"><button onclick="window.print()">Imprimir / Guardar como PDF</button></div>
-
-  <div class="hdr">
-    <div class="brand">
-      <h1>GRUPO BURSÁTIL VENEZOLANO</h1>
-      <p>Casa de Bolsa · SUNAVAL · Bolsa de Valores de Caracas</p>
-    </div>
-    <div class="meta">
-      <strong>${e.simbolo_cfb}</strong>
-      Caracas, ${fmtCaracas(today)}
-    </div>
-  </div>
-
-  <h2 class="titulo">${titulo}</h2>
-  <p class="sub">Programa ${programa.codigo_pcfb} · Línea ${programa.linea ?? '—'}</p>
-
-  ${tipo === 'CFB' ? cfbBody(e, cedente) : ''}
-  ${tipo === 'HOJA_TERMINOS' ? hojaBody(e, cedente, programa) : ''}
-  ${tipo === 'CDC' || tipo === 'CDV' ? confirmBody(e, cedente, tipo, contraparte ?? '') : ''}
-
-  <div class="firma">
-    <div class="box">Por el Cedente<br/><small>${cedente?.representante_legal ?? '—'}<br/>${cedente?.cargo ?? ''}</small></div>
-    <div class="box">Por Grupo Bursátil Venezolano<br/><small>Operador autorizado</small></div>
-  </div>
-
-  <div class="ftr">
-    <span>SICEBOP · ${e.simbolo_cfb}</span>
-    <span>Documento generado el ${fmtCaracas(today)}</span>
-  </div>
-</body></html>`;
-}
-
-// deno-lint-ignore no-explicit-any
-function cfbBody(e: any, cedente: any) {
-  return `
-  <p class="legal">
-    Por el presente <strong>Certificado de Financiamiento Bursátil (CFB)</strong>, identificado con el símbolo
-    <strong>${e.simbolo_cfb}</strong>, emitido bajo el programa <strong>${e.programas.codigo_pcfb}</strong>, se hace constar
-    que <strong>${cedente?.razon_social ?? '—'}</strong>, RIF <strong>${cedente?.rif ?? '—'}</strong>, en su condición de
-    Cedente, ha cedido derechos de cobro por un valor nominal de <strong>${fmtUSD(Number(e.valor_nominal_usd))}</strong>
-    (${fmtBs(Number(e.valor_efectivo_bs))} a la tasa BCV de ${Number(e.tasa_cambio_bs_usd).toFixed(4)} Bs/USD).
-  </p>
-  <table class="kv">
-    <tr><td class="k">Símbolo CFB</td><td class="v">${e.simbolo_cfb}</td></tr>
-    <tr><td class="k">Cedente</td><td class="v">${cedente?.razon_social ?? '—'}</td></tr>
-    <tr><td class="k">Valor Nominal (USD)</td><td class="v">${fmtUSD(Number(e.valor_nominal_usd))}</td></tr>
-    <tr><td class="k">Precio</td><td class="v">${Number(e.precio).toFixed(5)}</td></tr>
-    <tr><td class="k">Descuento aplicado</td><td class="v">${fmtPct(Number(e.descuento), 4)}</td></tr>
-    <tr><td class="k">Monto Efectivo (USD)</td><td class="v">${fmtUSD(Number(e.monto_efectivo_usd))}</td></tr>
-    <tr><td class="k">Tasa BCV (Bs/USD)</td><td class="v">${Number(e.tasa_cambio_bs_usd).toFixed(4)}</td></tr>
-    <tr><td class="k">Valor Efectivo (Bs)</td><td class="v">${fmtBs(Number(e.valor_efectivo_bs))}</td></tr>
-    <tr><td class="k">Fecha de Emisión</td><td class="v">${fmtCaracas(e.fecha_emision)}</td></tr>
-    <tr><td class="k">Fecha de Vencimiento</td><td class="v">${fmtCaracas(e.fecha_vencimiento)}</td></tr>
-    <tr><td class="k">Días colocados</td><td class="v">${e.dias_colocados}</td></tr>
-    <tr><td class="k">Rendimiento Anualizado</td><td class="v">${fmtPct(Number(e.rendimiento_anualizado), 4)}</td></tr>
-  </table>
-  <p class="legal">
-    El presente certificado es un instrumento de financiamiento bursátil cero-cupón, regulado por la Superintendencia
-    Nacional de Valores (SUNAVAL) y negociado a través de la Bolsa de Valores de Caracas. Su redención al vencimiento
-    se hará por el valor nominal aquí establecido, conforme a las normas vigentes.
-  </p>`;
-}
-
-// deno-lint-ignore no-explicit-any
-function hojaBody(e: any, cedente: any, p: any) {
-  return `
-  <table class="kv">
-    <tr><td class="k">Emisor / Cedente</td><td class="v">${cedente?.razon_social ?? '—'} (RIF ${cedente?.rif ?? '—'})</td></tr>
-    <tr><td class="k">Programa</td><td class="v">${p.codigo_pcfb}</td></tr>
-    <tr><td class="k">Símbolo del CFB</td><td class="v">${e.simbolo_cfb}</td></tr>
-    <tr><td class="k">Tipo de instrumento</td><td class="v">Certificado de Financiamiento Bursátil (cero cupón)</td></tr>
-    <tr><td class="k">Moneda de denominación</td><td class="v">USD (liquidación en Bs. al BCV)</td></tr>
-    <tr><td class="k">Valor Nominal</td><td class="v">${fmtUSD(Number(e.valor_nominal_usd))}</td></tr>
-    <tr><td class="k">Precio de colocación</td><td class="v">${Number(e.precio).toFixed(5)}</td></tr>
-    <tr><td class="k">Descuento</td><td class="v">${fmtPct(Number(e.descuento), 4)}</td></tr>
-    <tr><td class="k">Rendimiento anualizado</td><td class="v">${fmtPct(Number(e.rendimiento_anualizado), 4)}</td></tr>
-    <tr><td class="k">Plazo</td><td class="v">${e.dias_colocados} días</td></tr>
-    <tr><td class="k">Fecha de Emisión</td><td class="v">${fmtCaracas(e.fecha_emision)}</td></tr>
-    <tr><td class="k">Fecha de Vencimiento</td><td class="v">${fmtCaracas(e.fecha_vencimiento)}</td></tr>
-    <tr><td class="k">Tasa de cambio (BCV)</td><td class="v">${Number(e.tasa_cambio_bs_usd).toFixed(4)} Bs/USD</td></tr>
-    <tr><td class="k">Monto Efectivo</td><td class="v">${fmtUSD(Number(e.monto_efectivo_usd))} (${fmtBs(Number(e.valor_efectivo_bs))})</td></tr>
-    <tr><td class="k">Régimen regulatorio</td><td class="v">SUNAVAL · Bolsa de Valores de Caracas</td></tr>
-  </table>
-  <p class="legal">
-    Esta Hoja de Términos resume las condiciones financieras de la emisión identificada con el símbolo
-    <strong>${e.simbolo_cfb}</strong>. La presente operación se rige por el Contrato Marco de Cesión
-    ${p.contrato_cesion ? '<strong>N° ' + p.contrato_cesion + '</strong>' : ''} suscrito entre el Cedente y Grupo Bursátil
-    Venezolano, así como por las normas dictadas por SUNAVAL.
-  </p>`;
-}
-
-// deno-lint-ignore no-explicit-any
-function confirmBody(e: any, cedente: any, tipo: string, contraparte: string) {
-  const accion = tipo === 'CDC' ? 'COMPRADO' : 'VENDIDO';
-  return `
-  <p class="legal">
-    Por la presente confirmación, se hace constar que <strong>${contraparte || '________________'}</strong> ha
-    <strong>${accion}</strong> a través de Grupo Bursátil Venezolano el siguiente Certificado de Financiamiento Bursátil
-    emitido por <strong>${cedente?.razon_social ?? '—'}</strong>:
-  </p>
-  <table class="kv">
-    <tr><td class="k">Contraparte</td><td class="v">${contraparte || '—'}</td></tr>
-    <tr><td class="k">Símbolo</td><td class="v">${e.simbolo_cfb}</td></tr>
-    <tr><td class="k">Valor Nominal</td><td class="v">${fmtUSD(Number(e.valor_nominal_usd))}</td></tr>
-    <tr><td class="k">Precio</td><td class="v">${Number(e.precio).toFixed(5)}</td></tr>
-    <tr><td class="k">Monto Efectivo (USD)</td><td class="v">${fmtUSD(Number(e.monto_efectivo_usd))}</td></tr>
-    <tr><td class="k">Valor Efectivo (Bs)</td><td class="v">${fmtBs(Number(e.valor_efectivo_bs))}</td></tr>
-    <tr><td class="k">Tasa BCV</td><td class="v">${Number(e.tasa_cambio_bs_usd).toFixed(4)} Bs/USD</td></tr>
-    <tr><td class="k">Fecha de Operación</td><td class="v">${fmtCaracas(e.fecha_emision)}</td></tr>
-    <tr><td class="k">Fecha Valor</td><td class="v">${fmtCaracas(e.fecha_emision)}</td></tr>
-    <tr><td class="k">Fecha de Vencimiento</td><td class="v">${fmtCaracas(e.fecha_vencimiento)}</td></tr>
-    <tr><td class="k">Rendimiento</td><td class="v">${fmtPct(Number(e.rendimiento_anualizado), 4)}</td></tr>
-  </table>
-  <p class="legal">
-    La presente confirmación se emite a efectos contables y de liquidación bursátil, conforme a las normas
-    vigentes de SUNAVAL y la Bolsa de Valores de Caracas.
-  </p>`;
 }

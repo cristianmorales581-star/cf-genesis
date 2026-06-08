@@ -18,7 +18,7 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
     </section>
   );
 }
-import { fmtUSD, fmtPct, todayISO, fmtDate } from "@/lib/format";
+import { fmtUSD, fmtPct, todayISO } from "@/lib/format";
 import { parseCSVText, inferCedenteName, type ParsedRow } from "@/lib/csvParser";
 import JSZip from "jszip";
 import * as XLSX from "xlsx";
@@ -32,7 +32,7 @@ function normRif(r: string | null | undefined): string {
 
 interface Cedente { id: string; razon_social: string; rif: string; }
 interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; descuento_base: number; }
-interface Financista { id: string; razon_social: string; rif: string | null; }
+interface Financista { id: string; razon_social: string; rif: string | null; representante_legal?: string | null; cedula?: string | null; }
 
 type RowMapping = ParsedRow & {
   cedente_id?: string;
@@ -61,7 +61,7 @@ export default function EmisionMasiva() {
       const [c, p, f] = await Promise.all([
         supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
         supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base").eq("activo", true).order("codigo_pcfb"),
-        supabase.from("financistas").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
+        supabase.from("financistas").select("id, razon_social, rif, representante_legal, cedula").eq("activo", true).order("razon_social"),
       ]);
       setCedentes((c.data ?? []) as Cedente[]);
       setProgramas((p.data ?? []) as Programa[]);
@@ -179,21 +179,26 @@ export default function EmisionMasiva() {
       const payload = {
         fecha_emision: fechaEmision,
         tasa_bcv: tasaBcv,
-        rows: rows.filter(r => r.include).map(r => ({
-          simbolo_cfb: r.simbolo_cfb,
-          cedente_id: r.cedente_id!,
-          programa_id: r.programa_id ?? null,
-          financista_id: r.financista_id ?? null,
-          cantidad_ordenes: r.cantidad_ordenes,
-          monto_total_usd: r.monto_total_usd,
-          fecha_emision: r.fecha_emision || fechaEmision,
-          vencimiento_primera_orden: r.vencimiento_primera_orden,
-          plazo_dias: r.plazo_dias,
-          descuento_decimal: r.descuento_decimal,
-          linea: r.linea,
-          inversionista_label: financistas.find(f => f.id === r.financista_id)?.razon_social || "GRUPO CASHEA VE, C.A.",
-          inversionista_rif: financistas.find(f => f.id === r.financista_id)?.rif || "J-501934070",
-        })),
+        rows: rows.filter(r => r.include).map(r => {
+          const fin = financistas.find(f => f.id === r.financista_id);
+          return {
+            simbolo_cfb: r.simbolo_cfb,
+            cedente_id: r.cedente_id!,
+            programa_id: r.programa_id ?? null,
+            financista_id: r.financista_id ?? null,
+            cantidad_ordenes: r.cantidad_ordenes,
+            monto_total_usd: r.monto_total_usd,
+            fecha_emision: r.fecha_emision || fechaEmision,
+            vencimiento_primera_orden: r.vencimiento_primera_orden,
+            plazo_dias: r.plazo_dias,
+            descuento_decimal: r.descuento_decimal,
+            linea: r.linea,
+            inversionista_label: fin?.razon_social || "GRUPO CASHEA VE, C.A.",
+            inversionista_rif: fin?.rif || "J-501934070",
+            inversionista_rep_legal: fin?.representante_legal || null,
+            inversionista_cedula: fin?.cedula || null,
+          };
+        }),
       };
       const { data, error } = await supabase.functions.invoke("generate-batch", { body: payload });
       if (error) throw error;
@@ -456,7 +461,7 @@ function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financist
       fecha_emision: rowFechaEmision,
       fecha_vencimiento: addDaysISO(rowFechaEmision, r.plazo_dias),
       dias_colocados: r.plazo_dias,
-      rendimiento: ((1 - precio) / precio) * (360 / r.plazo_dias),
+      rendimiento: Math.round(((1 - precio) / precio) * (360 / r.plazo_dias) * 100000) / 100000,
       volumen_ordenes: r.cantidad_ordenes,
       valor_nominal_bs: Math.round(vnUsd * tasaBcv * 100) / 100,
       precio_emision: precio,
@@ -465,7 +470,8 @@ function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financist
       valor_nominal_usd: vnUsd,
       monto_sibe_usd: Math.round(vnUsd),
       tasa_cambio: tasaBcv,
-      inversionista: financista?.razon_social ?? "Grupo Cashea Ve, C.A.",
+      inversionista: financista?.razon_social ?? "GRUPO CASHEA VE, C.A.",
+      rif_inversionista: financista?.rif ?? "J-501934070",
     };
   });
 }
@@ -479,7 +485,7 @@ function addDaysISO(iso: string, days: number): string {
 /** Construye el .xlsx del vector consolidado, espejo del formato SIBE. */
 function buildVectorXlsx(rows: any[], _fechaEmision: string): ArrayBuffer {
   const wb = XLSX.utils.book_new();
-  const vectorDate = (date: string | null | undefined) => (date ? fmtDate(date) : "");
+  const vectorDate = (date: string | null | undefined) => (date ? excelSerialDate(date) : "");
 
   // Hoja 1: Vector
   const headers = [
@@ -492,6 +498,7 @@ function buildVectorXlsx(rows: any[], _fechaEmision: string): ArrayBuffer {
   const data = [
     ["", `Identificador del Estructurador: Grupo Bursatil Venezolano Casa de Bolsa, C.A.`, "", "", "", "T+0"],
     [],
+    [],
     headers,
     ...rows.map(r => [
       r.simbolo_cfb, r.cedente, r.rif_cedente, r.deudor_cedido, r.rif_deudor,
@@ -503,6 +510,7 @@ function buildVectorXlsx(rows: any[], _fechaEmision: string): ArrayBuffer {
   const ws1 = XLSX.utils.aoa_to_sheet(data);
   // Anchos
   ws1["!cols"] = headers.map(h => ({ wch: Math.max(h.length, 14) }));
+  applyVectorFormats(ws1, 5, rows.length);
   XLSX.utils.book_append_sheet(wb, ws1, "Vector");
 
   // Hoja 2: Resumen
@@ -510,12 +518,57 @@ function buildVectorXlsx(rows: any[], _fechaEmision: string): ArrayBuffer {
   const data2 = [
     ["", `Identificador del Estructurador: Grupo Bursatil Venezolano Casa de Bolsa, C.A.`],
     [],
+    [],
     headers2,
-    ...rows.map(r => [r.simbolo_cfb, r.cedente, r.rif_cedente, vectorDate(r.fecha_emision), r.precio_emision, r.monto_sibe_usd, r.inversionista, r.rif_deudor]),
+    ...rows.map(r => [r.simbolo_cfb, r.cedente, r.rif_cedente, vectorDate(r.fecha_emision), r.precio_emision, r.monto_sibe_usd, r.inversionista, r.rif_inversionista ?? r.rif_deudor]),
   ];
   const ws2 = XLSX.utils.aoa_to_sheet(data2);
   ws2["!cols"] = headers2.map(h => ({ wch: Math.max(h.length, 14) }));
+  applyResumenFormats(ws2, 5, rows.length);
   XLSX.utils.book_append_sheet(wb, ws2, "Resumen");
 
   return XLSX.write(wb, { bookType: "xlsx", type: "array" });
+}
+
+function excelSerialDate(iso: string): number {
+  const [y, m, d] = iso.split("-").map(Number);
+  return Date.UTC(y, m - 1, d) / 86400000 + 25569;
+}
+
+function setCellFormat(ws: XLSX.WorkSheet, address: string, z: string) {
+  if (!ws[address]) return;
+  ws[address].z = z;
+}
+
+function applyVectorFormats(ws: XLSX.WorkSheet, firstDataRow: number, rowCount: number) {
+  const fmt = {
+    date: "m/d/yy",
+    int: '_ * #,##0_ ;_ * \\-#,##0_ ;_ * "-"??_ ;_ @_ ',
+    num2: '_(* #,##0.00_);_(* \\(#,##0.00\\);_(* "-"??_);_(@_)',
+    pct2: "0.00%",
+    pct4: "0.0000%",
+    usd2: '[$$-540A]#,##0.00_ ;\\-[$$-540A]#,##0.00\\ ',
+    usd0: '[$$-540A]#,##0_ ;\\-[$$-540A]#,##0\\ ',
+    tasa: '_ [$Bs.S-200A]* #,##0.0000_ ;_ [$Bs.S-200A]* \\-#,##0.0000_ ;_ [$Bs.S-200A]* "-"??_ ;_ @_ ',
+  };
+  for (let r = firstDataRow; r < firstDataRow + rowCount; r++) {
+    setCellFormat(ws, `G${r}`, fmt.date);
+    setCellFormat(ws, `H${r}`, fmt.date);
+    setCellFormat(ws, `I${r}`, fmt.int);
+    setCellFormat(ws, `J${r}`, fmt.pct2);
+    setCellFormat(ws, `K${r}`, fmt.int);
+    setCellFormat(ws, `L${r}`, fmt.num2);
+    setCellFormat(ws, `M${r}`, fmt.pct4);
+    setCellFormat(ws, `P${r}`, fmt.usd2);
+    setCellFormat(ws, `Q${r}`, fmt.usd0);
+    setCellFormat(ws, `R${r}`, fmt.tasa);
+  }
+}
+
+function applyResumenFormats(ws: XLSX.WorkSheet, firstDataRow: number, rowCount: number) {
+  for (let r = firstDataRow; r < firstDataRow + rowCount; r++) {
+    setCellFormat(ws, `D${r}`, "m/d/yy");
+    setCellFormat(ws, `E${r}`, "0.0000%");
+    setCellFormat(ws, `F${r}`, '[$$-540A]#,##0_ ;\\-[$$-540A]#,##0\\ ');
+  }
 }
