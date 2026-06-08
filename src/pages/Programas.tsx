@@ -65,11 +65,24 @@ export default function Programas() {
     // Refresca estados automáticamente (marca vencidos)
     await (supabase.rpc as never as (fn: string) => Promise<unknown>)("refresh_programas_estado").catch(() => {});
 
-    const [{ data: progs }, { data: ceds }] = await Promise.all([
-      supabase.from("programas").select("*, cedentes(razon_social), programa_descuentos(id, descuento, etiqueta, es_default, activo)").order("codigo_pcfb"),
+    const [{ data: progs, error: progsError }, { data: descuentos, error: descError }, { data: ceds, error: cedsError }] = await Promise.all([
+      supabase.from("programas").select("*, cedentes(razon_social)").order("codigo_pcfb"),
+      supabase.from("programa_descuentos").select("id, programa_id, descuento, etiqueta, es_default, activo"),
       supabase.from("cedentes").select("id, razon_social, activo").eq("activo", true).order("razon_social"),
     ]);
-    setRows((progs ?? []) as Programa[]);
+    if (progsError) toast.error(`Error cargando programas: ${progsError.message}`);
+    if (descError) toast.error(`Error cargando descuentos: ${descError.message}`);
+    if (cedsError) toast.error(`Error cargando cedentes: ${cedsError.message}`);
+
+    const descuentosByPrograma = new Map<string, Descuento[]>();
+    (descuentos ?? []).forEach(d => {
+      const item = d as Descuento & { programa_id: string };
+      descuentosByPrograma.set(item.programa_id, [...(descuentosByPrograma.get(item.programa_id) ?? []), item]);
+    });
+    setRows(((progs ?? []) as Programa[]).map(p => ({
+      ...p,
+      programa_descuentos: descuentosByPrograma.get(p.id) ?? [],
+    })));
     setCedentes(ceds ?? []);
   }
   useEffect(() => { load(); }, []);
