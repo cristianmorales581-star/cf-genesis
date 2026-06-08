@@ -57,6 +57,8 @@ export interface TemplateContext {
   // Financista (puede ser persona natural o jurídica, o el mismo deudor cedido en operaciones masivas)
   financista_razon_social: string;          // Para masivos = "Grupo Cashea Ve, C.A."
   financista_rif: string;
+  financista_rep_legal: string | null;
+  financista_cedula: string | null;
   financista_es_persona_natural: boolean;
 
   // Constantes del sistema (de app_config)
@@ -84,7 +86,7 @@ export interface TemplateContext {
 // las edge functions de Deno no pueden importar del frontend)
 // ============================================================
 
-const MES_ABBR = ['Ene','Feb','Mar','Apr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 export function fmtFechaCaracas(iso: string): string {
   const d = new Date(iso + 'T12:00:00');
@@ -788,8 +790,8 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
   // En ODC el cliente es el financista (comprador). En ODV el cliente es el cedente (vendedor).
   const clienteNombre = esCompra ? c.financista_razon_social : c.cedente_razon_social;
   const clienteRif = esCompra ? c.financista_rif : c.cedente_rif;
-  const repNombre = esCompra ? c.deudor_rep_legal : (c.cedente_rep_legal ?? c.deudor_rep_legal);
-  const repCedula = esCompra ? c.deudor_cedula : (c.cedente_cedula ?? c.deudor_cedula);
+  const repNombre = esCompra ? (c.financista_rep_legal ?? c.deudor_rep_legal) : (c.cedente_rep_legal ?? c.deudor_rep_legal);
+  const repCedula = esCompra ? (c.financista_cedula ?? c.deudor_cedula) : (c.cedente_cedula ?? c.deudor_cedula);
   const repCorreo = c.deudor_correo ?? 'jesusrojas@cashea.app';
   const repTelefono = c.deudor_telefono ?? '+58 424-1885202';
   // Numeración: ODC = -2, ODV = -1 (convención observada en los PDFs reales)
