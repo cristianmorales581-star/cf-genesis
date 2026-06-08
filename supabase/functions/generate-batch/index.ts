@@ -120,17 +120,23 @@ Deno.serve(async (req) => {
     const montoUsd = round2(vnUsd * precio);
     const valorBs = round2(montoUsd * body.tasa_bcv);
 
-    const simbolo = String(r.simbolo_cfb ?? '').trim();
+    let simbolo = String(r.simbolo_cfb ?? '').trim();
+
+    // Si la fila no trae símbolo, lo autogeneramos con next_simbolo_cfb()
+    if (!simbolo) {
+      const { data: sym, error: symErr } = await supabase.rpc('next_simbolo_cfb');
+      if (symErr || !sym) {
+        console.error('No se pudo autogenerar símbolo CFB', symErr);
+        failedRows.push(`${prog?.codigo_pcfb ?? r.cedente_id}: no se pudo autogenerar símbolo`);
+        continue;
+      }
+      simbolo = String(sym).trim();
+    }
 
     // Bug 2: fecha de vencimiento real del CFB = fecha_emision + plazo_dias
     const fechaVencimientoCFB = addDaysISO(fechaEmisionFila, r.plazo_dias);
     if (r.vencimiento_primera_orden && fechaVencimientoCFB > r.vencimiento_primera_orden) {
       console.warn(`⚠️ Emisión ${prog?.codigo_pcfb ?? simbolo}: CFB vence ${fechaVencimientoCFB} pero primera orden vence ${r.vencimiento_primera_orden}`);
-    }
-
-    if (!simbolo) {
-      console.error('Fila omitida: símbolo CFB faltante', { programa_id: r.programa_id, cedente_id: r.cedente_id });
-      continue;
     }
 
     const { data: emision, error: insErr } = await supabase
