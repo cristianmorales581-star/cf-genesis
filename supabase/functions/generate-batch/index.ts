@@ -240,19 +240,6 @@ function addDaysISO(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function fmtCaracas(d: string) {
-  const date = new Date(d + 'T12:00:00');
-  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  return `${date.getDate()} de ${meses[date.getMonth()]}. de ${date.getFullYear()}`;
-}
-function fmtShort(d: string) {
-  const date = new Date(d + 'T12:00:00');
-  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-}
-function fmtUSD(n: number) { return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(n); }
-function fmtBs(n: number) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n); }
-function fmtPct(n: number, d = 2) { return (n * 100).toFixed(d) + '%'; }
-
 function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: string, financistaRif?: string, financistaRepLegal?: string | null, financistaCedula?: string | null): TemplateContext {
   return {
     simbolo_cfb: e.simbolo_cfb,
