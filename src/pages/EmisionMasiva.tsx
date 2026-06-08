@@ -59,7 +59,7 @@ export default function EmisionMasiva() {
 
   useEffect(() => {
     (async () => {
-      await (supabase.rpc as never as (fn: string) => Promise<unknown>)("refresh_programas_estado").catch(() => {});
+      try { await supabase.rpc("refresh_programas_estado"); } catch { /* no bloquea la carga */ }
       const [c, p, f] = await Promise.all([
         supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
         supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base, programa_descuentos(id, descuento, etiqueta, es_default, activo)")

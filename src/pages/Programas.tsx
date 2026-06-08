@@ -63,7 +63,7 @@ export default function Programas() {
 
   async function load() {
     // Refresca estados automáticamente (marca vencidos)
-    await (supabase.rpc as never as (fn: string) => Promise<unknown>)("refresh_programas_estado").catch(() => {});
+    try { await supabase.rpc("refresh_programas_estado"); } catch { /* no bloquea la carga */ }
 
     const [{ data: progs, error: progsError }, { data: descuentos, error: descError }, { data: ceds, error: cedsError }] = await Promise.all([
       supabase.from("programas").select("*").order("codigo_pcfb"),

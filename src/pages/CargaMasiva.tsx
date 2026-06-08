@@ -54,6 +54,25 @@ function programStatus(fechaVencimiento: string) {
     : { estado: "activa", activo: true };
 }
 
+function isISODate(value?: string | null) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value ?? "");
+}
+
+function addDaysISO(date: string, days: number) {
+  const d = new Date(`${date}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function normalizeProgramDates(p: ProgramaRow) {
+  const plazo = Number.isFinite(p.plazo_ejecucion_dias) && p.plazo_ejecucion_dias > 0 ? p.plazo_ejecucion_dias : 180;
+  const fechaInicio = isISODate(p.fecha_inicio) ? p.fecha_inicio : new Date().toISOString().slice(0, 10);
+  const fechaVencimiento = isISODate(p.fecha_vencimiento) && p.fecha_vencimiento > fechaInicio
+    ? p.fecha_vencimiento
+    : addDaysISO(fechaInicio, plazo);
+  return { plazo, fechaInicio, fechaVencimiento };
+}
+
 function normalizeRif(rif?: string | null) {
   return (rif ?? "").toUpperCase().replace(/[-\s]/g, "").trim();
 }
@@ -259,10 +278,12 @@ export default function CargaMasiva() {
       }
     }
 
-    // 2) PROGRAMAS — upsert por (codigo_pcfb + linea)
+    // 2) PROGRAMAS — upsert directo por PCFB (la clave única real de la BD)
     const savedProgramIds: string[] = [];
     for (const p of parsed.programas) {
       try {
+        const codigoPcfb = p.codigo_pcfb.trim();
+        if (!codigoPcfb) throw new Error("Falta PCFB");
         const cedenteRif = normalizeRif(p.cedente_rif);
         let cedenteId: string | undefined;
         if (cedenteRif) cedenteId = cedenteMap.get(cedenteRif);
@@ -273,32 +294,30 @@ export default function CargaMasiva() {
         }
         const { data: existing } = await supabase.from("programas")
           .select("id")
-          .eq("codigo_pcfb", p.codigo_pcfb)
+          .eq("codigo_pcfb", codigoPcfb)
           .maybeSingle();
+        const { plazo, fechaInicio, fechaVencimiento } = normalizeProgramDates(p);
         const payload = {
-          codigo_pcfb: p.codigo_pcfb,
+          codigo_pcfb: codigoPcfb,
           cedente_id: cedenteId,
           linea: normalizeProgramLine(p.linea),
-          plazo_ejecucion_dias: p.plazo_ejecucion_dias,
+          plazo_ejecucion_dias: plazo,
           descuento_base: p.descuento_base,
           plazo_cuotas_dias: p.plazo_cuotas_dias,
-          fecha_inicio: p.fecha_inicio,
-          fecha_vencimiento: p.fecha_vencimiento,
+          fecha_inicio: fechaInicio,
+          fecha_vencimiento: fechaVencimiento,
           contrato_cesion: p.contrato_cesion ?? null,
-          ...programStatus(p.fecha_vencimiento),
+          ...programStatus(fechaVencimiento),
         };
-        let programaId: string;
-        if (existing) {
-          const { error } = await supabase.from("programas").update(payload).eq("id", existing.id);
-          if (error) throw error;
-          programaId = existing.id;
-          result.programas.actualizados++;
-        } else {
-          const { data, error } = await supabase.from("programas").insert(payload).select("id").single();
-          if (error) throw error;
-          programaId = data.id;
-          result.programas.creados++;
-        }
+        const { data, error } = await supabase
+          .from("programas")
+          .upsert(payload, { onConflict: "codigo_pcfb" })
+          .select("id")
+          .single();
+        if (error) throw error;
+        const programaId = data.id;
+        if (existing) result.programas.actualizados++;
+        else result.programas.creados++;
         savedProgramIds.push(programaId);
         await ensureBaseDiscount(programaId, p.descuento_base);
       } catch (e: any) {

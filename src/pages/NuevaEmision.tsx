@@ -62,7 +62,7 @@ export default function NuevaEmision() {
 
   useEffect(() => {
     (async () => {
-      await (supabase.rpc as never as (fn: string) => Promise<unknown>)("refresh_programas_estado").catch(() => {});
+      try { await supabase.rpc("refresh_programas_estado"); } catch { /* no bloquea la carga */ }
       const [{ data: progs }, { data: fins }] = await Promise.all([
         supabase.from("programas")
           .select("*, cedentes(razon_social, rif), programa_descuentos(id, descuento, etiqueta, es_default, activo)")
