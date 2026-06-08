@@ -148,6 +148,18 @@ function baseStyles(): string {
     text-align: right;
     padding-top: 6px;
   }
+  .cfb-title {
+    text-align: center;
+    margin: 2px 0 10px;
+    font-weight: bold;
+  }
+  .cfb-title .cfb-cedente {
+    font-size: 12pt;
+    margin-bottom: 4px;
+  }
+  .cfb-title .cfb-subtitle {
+    font-size: 11pt;
+  }
   /* Bloque destinatario */
   .destinatario {
     margin: 14px 0 10px;
@@ -693,8 +705,7 @@ function renderConfirmacion(c: TemplateContext, tipo: 'CDC' | 'CDV'): string {
   // Vendedor es siempre el cedente, comprador es siempre el financista
   const vendedor = c.cedente_razon_social;
   const comprador = c.financista_razon_social;
-  // Fecha del documento típicamente es 1 día después de la emisión (fecha de confirmación)
-  const fechaConfirmacion = c.fecha_documento;
+  const fechaConfirmacion = addDaysISO(c.fecha_emision, 1);
   return `<!doctype html>
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>${tipo} ${c.simbolo_cfb} — ${destinatario}</title>
@@ -783,10 +794,8 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
   const repTelefono = c.deudor_telefono ?? '+58 424-1885202';
   // Numeración: ODC = -2, ODV = -1 (convención observada en los PDFs reales)
   const numeroOrden = esCompra ? `${c.simbolo_cfb}-2` : `${c.simbolo_cfb}-1`;
-  // Fecha de solicitud típicamente es 1 día antes de la emisión, vencimiento 1 día después
-  const fechaSolicitud = fmtFechaDDMMYYYY(c.fecha_documento);
-  // Fecha de vencimiento de la orden (no la del CFB) — típicamente 2 días después de la solicitud
-  const fechaVtoOrden = fmtFechaDDMMYYYY(addDaysISO(c.fecha_documento, 2));
+  const fechaSolicitud = fmtFechaDDMMYYYY(addDaysISO(c.fecha_emision, -1));
+  const fechaVtoOrden = fmtFechaDDMMYYYY(addDaysISO(c.fecha_emision, 1));
   return `<!doctype html>
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>${esCompra ? 'ODC' : 'ODV'} ${c.simbolo_cfb} — ${clienteNombre}</title>
