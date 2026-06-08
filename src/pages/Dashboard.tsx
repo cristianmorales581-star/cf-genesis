@@ -134,6 +134,51 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Programas a vencer / vencidos */}
+        <div className="lg:col-span-3 rounded-lg border border-warning/40 bg-card shadow-sm-elegant overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold text-primary">
+              Programas vencidos o por vencer (7 días)
+            </h2>
+            <Link to="/programas" className="text-xs text-accent hover:underline flex items-center gap-1">
+              Gestionar <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          {programasAlerta.length === 0 ? (
+            <div className="p-6 text-sm text-muted-foreground text-center">Sin programas en alerta.</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left px-5 py-2 font-semibold">Código</th>
+                  <th className="text-left px-5 py-2 font-semibold">Cedente</th>
+                  <th className="text-left px-5 py-2 font-semibold">Vence</th>
+                  <th className="text-center px-5 py-2 font-semibold">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {programasAlerta.map(p => {
+                  const days = Math.ceil((new Date(`${p.fecha_vencimiento}T00:00:00`).getTime() - Date.now()) / 86400000);
+                  return (
+                    <tr key={p.id} className="border-t border-border hover:bg-secondary/20">
+                      <td className="px-5 py-2 font-mono text-xs text-primary">{p.codigo_pcfb}</td>
+                      <td className="px-5 py-2 text-xs">{p.cedentes?.razon_social ?? "—"}</td>
+                      <td className="px-5 py-2 text-xs text-muted-foreground">
+                        {fmtDate(p.fecha_vencimiento)} · {days < 0 ? `vencido hace ${Math.abs(days)}d` : `en ${days}d`}
+                      </td>
+                      <td className="px-5 py-2 text-center">
+                        <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded ${p.estado === "vencida" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning"}`}>
+                          {p.estado === "vencida" ? "VENCIDO" : "POR VENCER"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
         {/* Top cedentes */}
         <div className="rounded-lg border border-border bg-card shadow-sm-elegant overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
