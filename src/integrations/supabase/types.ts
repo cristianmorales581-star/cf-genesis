@@ -281,6 +281,44 @@ export type Database = {
         }
         Relationships: []
       }
+      programa_descuentos: {
+        Row: {
+          activo: boolean
+          created_at: string
+          descuento: number
+          es_default: boolean
+          etiqueta: string | null
+          id: string
+          programa_id: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          descuento: number
+          es_default?: boolean
+          etiqueta?: string | null
+          id?: string
+          programa_id: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          descuento?: number
+          es_default?: boolean
+          etiqueta?: string | null
+          id?: string
+          programa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programa_descuentos_programa_id_fkey"
+            columns: ["programa_id"]
+            isOneToOne: false
+            referencedRelation: "programas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       programas: {
         Row: {
           activo: boolean
@@ -289,6 +327,7 @@ export type Database = {
           contrato_cesion: string | null
           created_at: string
           descuento_base: number
+          estado: string
           fecha_inicio: string
           fecha_vencimiento: string
           id: string
@@ -303,6 +342,7 @@ export type Database = {
           contrato_cesion?: string | null
           created_at?: string
           descuento_base?: number
+          estado?: string
           fecha_inicio: string
           fecha_vencimiento: string
           id?: string
@@ -317,6 +357,7 @@ export type Database = {
           contrato_cesion?: string | null
           created_at?: string
           descuento_base?: number
+          estado?: string
           fecha_inicio?: string
           fecha_vencimiento?: string
           id?: string
@@ -373,6 +414,7 @@ export type Database = {
         Args: { _programa_id: string }
         Returns: string
       }
+      refresh_programas_estado: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "admin" | "operador"
