@@ -66,9 +66,9 @@ export default function Programas() {
     await (supabase.rpc as never as (fn: string) => Promise<unknown>)("refresh_programas_estado").catch(() => {});
 
     const [{ data: progs, error: progsError }, { data: descuentos, error: descError }, { data: ceds, error: cedsError }] = await Promise.all([
-      supabase.from("programas").select("*, cedentes(razon_social)").order("codigo_pcfb"),
+      supabase.from("programas").select("*").order("codigo_pcfb"),
       supabase.from("programa_descuentos").select("id, programa_id, descuento, etiqueta, es_default, activo"),
-      supabase.from("cedentes").select("id, razon_social, activo").eq("activo", true).order("razon_social"),
+      supabase.from("cedentes").select("id, razon_social, activo").order("razon_social"),
     ]);
     if (progsError) toast.error(`Error cargando programas: ${progsError.message}`);
     if (descError) toast.error(`Error cargando descuentos: ${descError.message}`);
@@ -79,11 +79,13 @@ export default function Programas() {
       const item = d as Descuento & { programa_id: string };
       descuentosByPrograma.set(item.programa_id, [...(descuentosByPrograma.get(item.programa_id) ?? []), item]);
     });
+    const cedentesById = new Map((ceds ?? []).map(c => [c.id, c.razon_social]));
     setRows(((progs ?? []) as Programa[]).map(p => ({
       ...p,
+      cedentes: { razon_social: cedentesById.get(p.cedente_id) ?? "—" },
       programa_descuentos: descuentosByPrograma.get(p.id) ?? [],
     })));
-    setCedentes(ceds ?? []);
+    setCedentes((ceds ?? []).filter(c => c.activo));
   }
   useEffect(() => { load(); }, []);
 
