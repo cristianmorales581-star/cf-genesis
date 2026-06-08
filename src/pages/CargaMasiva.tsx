@@ -42,6 +42,50 @@ interface ValidationState {
   financistas: ValidationRow[];
 }
 
+function normalizeProgramLine(line?: string | null) {
+  const trimmed = (line ?? "").trim();
+  return trimmed.length ? trimmed : null;
+}
+
+function programStatus(fechaVencimiento: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  return fechaVencimiento && fechaVencimiento < today
+    ? { estado: "vencida", activo: false }
+    : { estado: "activa", activo: true };
+}
+
+async function ensureBaseDiscount(programaId: string, descuento: number) {
+  const { data, error } = await supabase
+    .from("programa_descuentos")
+    .select("id, descuento, es_default")
+    .eq("programa_id", programaId);
+  if (error) throw error;
+
+  const discounts = data ?? [];
+  const base = discounts.find(d => Number(d.descuento) === Number(descuento));
+  const hasDefault = discounts.some(d => d.es_default);
+
+  if (!base) {
+    const { error: insertError } = await supabase.from("programa_descuentos").insert({
+      programa_id: programaId,
+      descuento,
+      etiqueta: "Base",
+      es_default: !hasDefault,
+      activo: true,
+    });
+    if (insertError) throw insertError;
+    return;
+  }
+
+  if (!hasDefault) {
+    const { error: updateError } = await supabase
+      .from("programa_descuentos")
+      .update({ es_default: true, activo: true })
+      .eq("id", base.id);
+    if (updateError) throw updateError;
+  }
+}
+
 export default function CargaMasiva() {
   const { isOperador } = useAuth();
   const [parsed, setParsed] = useState<ParsedSheet | null>(null);
@@ -134,9 +178,8 @@ export default function CargaMasiva() {
         next.programas.push({ status: "error", label: "Cedente no encontrado" });
         continue;
       }
-      const query = supabase.from("programas").select("id").eq("codigo_pcfb", p.codigo_pcfb).eq("cedente_id", cedenteId);
-      const { data: existing } = p.linea ? await query.eq("linea", p.linea).maybeSingle() : await query.is("linea", null).maybeSingle();
-      next.programas.push(existing ? { status: "actualiza", label: "Match por PCFB + cedente + línea" } : { status: "nuevo", label: "Sin match · creará" });
+      const { data: existing } = await supabase.from("programas").select("id").eq("codigo_pcfb", p.codigo_pcfb).maybeSingle();
+      next.programas.push(existing ? { status: "actualiza", label: "Match por PCFB · actualizará" } : { status: "nuevo", label: "Sin match · creará" });
     }
 
     for (const f of source.financistas) {
@@ -211,28 +254,34 @@ export default function CargaMasiva() {
           continue;
         }
         const { data: existing } = await supabase.from("programas")
-          .select("id").eq("codigo_pcfb", p.codigo_pcfb).eq("cedente_id", cedenteId)
-          .eq("linea", p.linea ?? "").maybeSingle();
+          .select("id")
+          .eq("codigo_pcfb", p.codigo_pcfb)
+          .maybeSingle();
         const payload = {
           codigo_pcfb: p.codigo_pcfb,
           cedente_id: cedenteId,
-          linea: p.linea ?? null,
+          linea: normalizeProgramLine(p.linea),
           plazo_ejecucion_dias: p.plazo_ejecucion_dias,
           descuento_base: p.descuento_base,
           plazo_cuotas_dias: p.plazo_cuotas_dias,
           fecha_inicio: p.fecha_inicio,
           fecha_vencimiento: p.fecha_vencimiento,
           contrato_cesion: p.contrato_cesion ?? null,
+          ...programStatus(p.fecha_vencimiento),
         };
+        let programaId: string;
         if (existing) {
           const { error } = await supabase.from("programas").update(payload).eq("id", existing.id);
           if (error) throw error;
+          programaId = existing.id;
           result.programas.actualizados++;
         } else {
-          const { error } = await supabase.from("programas").insert(payload);
+          const { data, error } = await supabase.from("programas").insert(payload).select("id").single();
           if (error) throw error;
+          programaId = data.id;
           result.programas.creados++;
         }
+        await ensureBaseDiscount(programaId, p.descuento_base);
       } catch (e: any) {
         result.programas.errores.push(`${p.codigo_pcfb}: ${e.message ?? e}`);
       }
