@@ -203,6 +203,7 @@ Deno.serve(async (req) => {
       monto_sibe_usd: Math.round(vnUsd),
       tasa_cambio: body.tasa_bcv,
       inversionista: r.inversionista_label ?? 'Grupo Cashea Ve, C.A.',
+      rif_inversionista: r.inversionista_rif ?? 'J-501934070',
     });
   }
 
