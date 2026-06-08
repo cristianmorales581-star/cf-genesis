@@ -18,7 +18,7 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
     </section>
   );
 }
-import { fmtUSD, fmtPct, todayISO, fmtDate } from "@/lib/format";
+import { fmtUSD, fmtPct, todayISO } from "@/lib/format";
 import { parseCSVText, inferCedenteName, type ParsedRow } from "@/lib/csvParser";
 import JSZip from "jszip";
 import * as XLSX from "xlsx";
