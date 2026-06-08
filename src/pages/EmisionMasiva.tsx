@@ -567,7 +567,7 @@ function setCellFormat(ws: XLSX.WorkSheet, address: string, z: string) {
 
 function applyVectorFormats(ws: XLSX.WorkSheet, firstDataRow: number, rowCount: number) {
   const fmt = {
-    date: "m/d/yy",
+    date: "dd/mm/yyyy",
     int: '_ * #,##0_ ;_ * \\-#,##0_ ;_ * "-"??_ ;_ @_ ',
     num2: '_(* #,##0.00_);_(* \\(#,##0.00\\);_(* "-"??_);_(@_)',
     pct2: "0.00%",
