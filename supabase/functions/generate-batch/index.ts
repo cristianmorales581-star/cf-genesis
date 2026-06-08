@@ -33,6 +33,8 @@ interface BatchRow {
   linea: string;
   inversionista_label?: string;      // Para vector
   inversionista_rif?: string;
+  inversionista_rep_legal?: string | null;
+  inversionista_cedula?: string | null;
 }
 
 interface Body {
@@ -113,7 +115,7 @@ Deno.serve(async (req) => {
     // Cálculos zero-coupon
     const precio = round5(1 - r.descuento_decimal);
     const dias = r.plazo_dias;
-    const rendimiento = ((1 - precio) / precio) * (360 / dias);
+    const rendimiento = round5(((1 - precio) / precio) * (360 / dias));
     const vnUsd = round2(r.monto_total_usd);
     const montoUsd = round2(vnUsd * precio);
     const valorBs = round2(montoUsd * body.tasa_bcv);
@@ -172,7 +174,7 @@ Deno.serve(async (req) => {
       details: { simbolo, programa: prog?.codigo_pcfb ?? null, vn_usd: vnUsd },
     });
 
-    const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif);
+    const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif, r.inversionista_rep_legal, r.inversionista_cedula);
     docs.push(
       { filename: `CFB_${simbolo}.pdf`, html: renderTemplateCFB(ctx) },
       { filename: `CARTA_SUNAVAL_${simbolo}.pdf`, html: renderTemplateCartaSunaval(ctx) },
@@ -202,7 +204,7 @@ Deno.serve(async (req) => {
       valor_nominal_usd: vnUsd,
       monto_sibe_usd: Math.round(vnUsd),
       tasa_cambio: body.tasa_bcv,
-      inversionista: r.inversionista_label ?? 'Grupo Cashea Ve, C.A.',
+      inversionista: r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.',
       rif_inversionista: r.inversionista_rif ?? 'J-501934070',
     });
   }
