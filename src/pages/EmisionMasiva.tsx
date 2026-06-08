@@ -461,7 +461,7 @@ function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financist
       fecha_emision: rowFechaEmision,
       fecha_vencimiento: addDaysISO(rowFechaEmision, r.plazo_dias),
       dias_colocados: r.plazo_dias,
-      rendimiento: ((1 - precio) / precio) * (360 / r.plazo_dias),
+      rendimiento: Math.round(((1 - precio) / precio) * (360 / r.plazo_dias) * 100000) / 100000,
       volumen_ordenes: r.cantidad_ordenes,
       valor_nominal_bs: Math.round(vnUsd * tasaBcv * 100) / 100,
       precio_emision: precio,
@@ -470,7 +470,7 @@ function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financist
       valor_nominal_usd: vnUsd,
       monto_sibe_usd: Math.round(vnUsd),
       tasa_cambio: tasaBcv,
-      inversionista: financista?.razon_social ?? "Grupo Cashea Ve, C.A.",
+      inversionista: financista?.razon_social ?? "GRUPO CASHEA VE, C.A.",
       rif_inversionista: financista?.rif ?? "J-501934070",
     };
   });
