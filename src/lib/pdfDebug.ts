@@ -36,8 +36,8 @@ async function renderHtmlCanvas(html: string, filename: string, options: PdfRend
 
   try {
     await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-    const windowWidth = Math.max(wrapper.scrollWidth, wrapper.offsetWidth, 794);
-    const windowHeight = Math.max(wrapper.scrollHeight, wrapper.offsetHeight, 1123);
+    const windowWidth = wrapper.offsetWidth || 794;
+    const windowHeight = wrapper.scrollHeight || 1123;
     const canvas = await html2canvas(wrapper, {
       scale: 2,
       useCORS: true,
@@ -72,12 +72,12 @@ function createPdfWrapper(html: string) {
   const parsed = new DOMParser().parseFromString(html, "text/html");
   wrapper.innerHTML = `${parsed.head.innerHTML}${parsed.body.innerHTML}`;
   wrapper.querySelectorAll(".actions").forEach((el) => el.remove());
-  wrapper.style.position = "fixed";
-  wrapper.style.left = "0";
+  wrapper.style.position = "absolute";
+  wrapper.style.left = "-9999px";
   wrapper.style.top = "0";
-  wrapper.style.width = "210mm";
-  wrapper.style.minHeight = "297mm";
-  wrapper.style.padding = "18mm";
+  wrapper.style.width = "794px";
+  wrapper.style.minHeight = "1123px";
+  wrapper.style.padding = "68px";
   wrapper.style.boxSizing = "border-box";
   wrapper.style.fontFamily = "Calibri, 'Trebuchet MS', 'Segoe UI', Arial, sans-serif";
   wrapper.style.fontSize = "10.5pt";
@@ -92,19 +92,21 @@ function createPdfWrapper(html: string) {
 
 function canvasToPdf(canvas: HTMLCanvasElement) {
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-  const imgData = canvas.toDataURL("image/jpeg", 0.98);
-  const imgHeight = (canvas.height * A4_WIDTH_MM) / canvas.width;
-  let remainingHeight = imgHeight;
-  let y = 0;
+  const pageHeightPx = Math.round((A4_HEIGHT_MM / A4_WIDTH_MM) * canvas.width);
+  const totalPages = Math.max(1, Math.ceil(canvas.height / pageHeightPx));
 
-  pdf.addImage(imgData, "JPEG", 0, y, A4_WIDTH_MM, imgHeight);
-  remainingHeight -= A4_HEIGHT_MM;
-
-  while (remainingHeight > 0) {
-    y -= A4_HEIGHT_MM;
-    pdf.addPage();
-    pdf.addImage(imgData, "JPEG", 0, y, A4_WIDTH_MM, imgHeight);
-    remainingHeight -= A4_HEIGHT_MM;
+  for (let page = 0; page < totalPages; page++) {
+    if (page > 0) pdf.addPage();
+    const slice = document.createElement("canvas");
+    slice.width = canvas.width;
+    slice.height = Math.min(pageHeightPx, canvas.height - page * pageHeightPx);
+    const ctx = slice.getContext("2d");
+    if (!ctx) continue;
+    ctx.drawImage(canvas, 0, page * pageHeightPx, canvas.width, slice.height, 0, 0, canvas.width, slice.height);
+    const sliceHeightMm = (slice.height * A4_WIDTH_MM) / slice.width;
+    pdf.addImage(slice.toDataURL("image/png"), "PNG", 0, 0, A4_WIDTH_MM, sliceHeightMm);
+    slice.width = 0;
+    slice.height = 0;
   }
 
   return pdf;
