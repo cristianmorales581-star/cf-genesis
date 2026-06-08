@@ -283,11 +283,12 @@ export function dedupeFinancistas(rows: FinancistaRow[]): FinancistaRow[] {
   return Array.from(map.values());
 }
 
-// Deduplicar programas por (codigo_pcfb + linea)
+// Deduplicar programas por (codigo_pcfb + linea + descuento) para conservar
+// múltiples descuentos válidos dentro del mismo programa.
 export function dedupeProgramas(rows: ProgramaRow[]): ProgramaRow[] {
   const map = new Map<string, ProgramaRow>();
   for (const r of rows) {
-    const k = `${r.codigo_pcfb}|${r.linea ?? ""}`.toUpperCase();
+    const k = `${r.codigo_pcfb}|${r.linea ?? ""}|${Number(r.descuento_base).toFixed(6)}`.toUpperCase();
     if (!map.has(k)) map.set(k, r);
   }
   return Array.from(map.values());
