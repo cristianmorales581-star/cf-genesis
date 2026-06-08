@@ -358,7 +358,7 @@ function actionsBar(): string {
 function renderSolicitudEmision(c: TemplateContext): string {
   return `<!doctype html>
 <html lang="es-VE"><head><meta charset="utf-8"/>
-<title>CFB ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
+<title>Hoja de Términos ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
 </head><body>
 ${actionsBar()}
@@ -595,7 +595,7 @@ ${actionsBar()}
 export function renderCFB(c: TemplateContext): string {
   return `<!doctype html>
 <html lang="es-VE"><head><meta charset="utf-8"/>
-<title>Hoja de Términos ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
+<title>CFB ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
 </head><body>
 ${actionsBar()}
