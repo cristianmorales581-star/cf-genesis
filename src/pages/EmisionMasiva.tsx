@@ -372,16 +372,36 @@ export default function EmisionMasiva() {
                         <td className="px-2 py-1.5 text-right font-mono">{fmtUSD(r.monto_total_usd)}</td>
                         <td className="px-2 py-1.5 text-right">{r.plazo_dias}d</td>
                         <td className="px-2 py-1.5 text-right">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="20"
-                            step="0.01"
-                            value={Number.isFinite(r.descuento_decimal) ? (r.descuento_decimal * 100).toFixed(2) : ""}
-                            onChange={(e) => updateRow(i, { descuento_decimal: (parseFloat(e.target.value) || 0) / 100 })}
-                            className="h-7 w-20 text-right text-[11px] font-mono"
-                            aria-label="Descuento porcentual"
-                          />
+                          {(() => {
+                            const prog = programas.find(p => p.id === r.programa_id);
+                            const descs = (prog?.programa_descuentos ?? []).filter(d => d.activo);
+                            if (descs.length > 1) {
+                              return (
+                                <Select
+                                  value={String(r.descuento_decimal)}
+                                  onValueChange={(v) => updateRow(i, { descuento_decimal: parseFloat(v) })}
+                                >
+                                  <SelectTrigger className="h-7 w-28 text-[11px]"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {descs.sort((a, b) => a.descuento - b.descuento).map(d => (
+                                      <SelectItem key={d.id} value={String(d.descuento)}>
+                                        {(d.descuento * 100).toFixed(2)}%{d.etiqueta ? ` ${d.etiqueta}` : ""}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              );
+                            }
+                            return (
+                              <Input
+                                type="number" min="0" max="20" step="0.01"
+                                value={Number.isFinite(r.descuento_decimal) ? (r.descuento_decimal * 100).toFixed(2) : ""}
+                                onChange={(e) => updateRow(i, { descuento_decimal: (parseFloat(e.target.value) || 0) / 100 })}
+                                className="h-7 w-20 text-right text-[11px] font-mono"
+                                aria-label="Descuento porcentual"
+                              />
+                            );
+                          })()}
                         </td>
                         <td className="px-2 py-1.5 text-muted-foreground">{r.vencimiento_primera_orden}</td>
                         <td className="px-2 py-1.5 text-right">
