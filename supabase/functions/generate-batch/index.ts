@@ -253,12 +253,12 @@ function fmtUSD(n: number) { return new Intl.NumberFormat('en-US',{style:'curren
 function fmtBs(n: number) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n); }
 function fmtPct(n: number, d = 2) { return (n * 100).toFixed(d) + '%'; }
 
-function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: string, financistaRif?: string): TemplateContext {
+function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: string, financistaRif?: string, financistaRepLegal?: string | null, financistaCedula?: string | null): TemplateContext {
   return {
     simbolo_cfb: e.simbolo_cfb,
     fecha_emision: e.fecha_emision,
     fecha_vencimiento: e.fecha_vencimiento,
-    fecha_documento: e.fecha_emision,
+    fecha_documento: new Date().toISOString().slice(0, 10),
     valor_nominal_usd: Number(e.valor_nominal_usd),
     cantidad_ordenes_compra: Number(e.cantidad_ordenes_compra),
     precio: Number(e.precio),
@@ -285,6 +285,8 @@ function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: str
     deudor_telefono: prog?.deudor_cedido_telefono ?? null,
     financista_razon_social: financistaLabel ?? 'Grupo Cashea Ve, C.A.',
     financista_rif: financistaRif ?? 'J-501934070',
+    financista_rep_legal: financistaRepLegal ?? null,
+    financista_cedula: financistaCedula ?? null,
     financista_es_persona_natural: false,
     gbv_razon_social: 'Grupo Bursatil Venezolano Casa de Bolsa, C.A.',
     gbv_rif: 'J-502409831',
