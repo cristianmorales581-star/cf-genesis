@@ -77,6 +77,11 @@ function createPdfWrapper(html: string) {
   wrapper.style.top = "0";
   wrapper.style.width = "210mm";
   wrapper.style.minHeight = "297mm";
+  wrapper.style.padding = "18mm";
+  wrapper.style.boxSizing = "border-box";
+  wrapper.style.fontFamily = "Calibri, 'Trebuchet MS', 'Segoe UI', Arial, sans-serif";
+  wrapper.style.fontSize = "10.5pt";
+  wrapper.style.lineHeight = "1.45";
   wrapper.style.background = "#ffffff";
   wrapper.style.color = "#000000";
   wrapper.style.zIndex = "2147483647";
