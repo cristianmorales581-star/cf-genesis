@@ -324,6 +324,16 @@ export default function EmisionMasiva() {
               <Stat label="Total USD" value={fmtUSD(stats.totalUsd)} tone="ok" />
             </div>
 
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <p className="text-[11px] text-muted-foreground max-w-2xl">
+                Edita el símbolo CFB de la primera fila (ej. <span className="font-mono">C1234A</span>) y usa <b>Auto-rellenar símbolos</b> para incrementarlo en el resto, igual que el macro <span className="font-mono">NextTicker()</span>.
+              </p>
+              <Button size="sm" variant="outline" onClick={fillSymbolsFromFirst}>
+                <Wand2 className="h-3.5 w-3.5 mr-1.5" /> Auto-rellenar símbolos
+              </Button>
+            </div>
+
+
             <div className="overflow-x-auto rounded-md border border-border">
               <table className="w-full text-[11.5px]">
                 <thead className="bg-muted/40 text-muted-foreground uppercase tracking-wider">
