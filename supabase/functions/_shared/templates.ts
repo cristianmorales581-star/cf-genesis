@@ -669,7 +669,7 @@ ${actionsBar()}
     <tr><td class="k">Cedente</td>
         <td class="v"><strong>${c.cedente_razon_social}</strong></td></tr>
   </table>
-  <p class="parrafo" style="text-align: center; font-weight: bold; margin: 16px 0 10px;">
+  <p class="parrafo firma-cedente" style="text-align: center; font-weight: bold;">
     ${c.cedente_razon_social}<br/><span style="font-weight: normal;">Cedente</span>
   </p>
   <p class="legal-pie">
