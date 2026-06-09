@@ -11,13 +11,13 @@
   :root {
     /* Surfaces — GBV deep navy */
     --background: 215 55% 7%;
-    --foreground: 200 25% 94%;
+    --foreground: 0 0% 100%;
 
     --card: 215 50% 10%;
-    --card-foreground: 200 25% 94%;
+    --card-foreground: 0 0% 100%;
 
     --popover: 215 52% 9%;
-    --popover-foreground: 200 25% 94%;
+    --popover-foreground: 0 0% 100%;
 
     /* Brand: GBV cyan/teal */
     --primary: 188 70% 52%;
@@ -30,10 +30,10 @@
     --accent-soft: 188 40% 18%;
 
     --secondary: 215 35% 15%;
-    --secondary-foreground: 200 25% 94%;
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 215 32% 13%;
-    --muted-foreground: 210 15% 62%;
+    --muted-foreground: 0 0% 92%;
 
     --success: 152 56% 48%;
     --success-foreground: 152 60% 8%;
@@ -63,11 +63,11 @@
 
     /* Sidebar — deepest navy tone */
     --sidebar-background: 215 60% 5%;
-    --sidebar-foreground: 210 18% 72%;
+    --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 188 70% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 215 40% 12%;
-    --sidebar-accent-foreground: 200 28% 96%;
+    --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 215 36% 13%;
     --sidebar-ring: 188 70% 52%;
 
