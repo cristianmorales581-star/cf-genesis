@@ -364,9 +364,20 @@ function renderSolicitudEmision(c: TemplateContext): string {
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>Hoja de Términos ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
+<style>
+  @page { size: A4; margin: 10mm 18mm 12mm 18mm; }
+  html, body { height: auto; }
+  body { font-size: 10pt; line-height: 1.35; }
+  .cfb-compact .doc-header { margin-bottom: 6px; }
+  .cfb-compact .destinatario { margin: 6px 0 6px; }
+  .cfb-compact .saludo { margin: 6px 0 6px; }
+  .cfb-compact p.parrafo { margin: 5px 0; }
+  .cfb-compact table.kv { margin: 4px 0 6px; }
+  .cfb-compact table.kv td { padding: 1.5px 0; font-size: 10pt; }
+</style>
 </head><body>
 ${actionsBar()}
-<div class="page">
+<div class="page cfb-compact">
   <div class="doc-header">
     ${logoBlock()}
     <div class="doc-fecha">Caracas, ${fmtFechaCaracas(c.fecha_documento)}</div>
@@ -422,8 +433,8 @@ ${actionsBar()}
     Programa de Certificados de Financiamiento Bursatil notificadas a la Superintendencia Nacional de
     Valores.
   </p>
-  <div class="firma-area" style="margin-top: 28px;">
-    <div class="espacio-firma" style="height: 60px;">&nbsp;</div>
+  <div class="firma-area" style="margin-top: 14px;">
+    <div class="espacio-firma" style="height: 95px;">&nbsp;</div>
     <div class="nombre">${c.cedente_rep_legal ?? '—'}</div>
     <div class="subtitulo">Por ${c.deudor_razon_social}</div>
     <div class="subtitulo">Mandatario de</div>
