@@ -643,8 +643,6 @@ ${actionsBar()}
         <td class="v">${fmtPct(c.precio, 2)}</td></tr>
     <tr><td class="k">Base</td>
         <td class="v">ACT/360</td></tr>
-    <tr><td class="k">Asesores Cashea</td>
-        <td class="v">${c.asesores_cashea}</td></tr>
     <tr><td class="k">Forma de Adquisición</td>
         <td class="v">A través de Bolsa de Valores de Caracas</td></tr>
     <tr><td class="k">Cedente</td>
