@@ -500,7 +500,16 @@ function DescuentosDialog({ open, onOpenChange, programa }: {
               <tbody>
                 {items.map(d => (
                   <tr key={d.id} className="border-t border-border">
-                    <td className="px-3 py-2">{d.etiqueta ?? <span className="text-muted-foreground">—</span>}</td>
+                    <td className="px-3 py-2">
+                      <Input
+                        defaultValue={d.etiqueta ?? ""}
+                        onBlur={(e) => updateEtiqueta(d, e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                        placeholder="Sin etiqueta"
+                        maxLength={40}
+                        className="h-8 text-sm"
+                      />
+                    </td>
                     <td className="px-3 py-2 text-right font-mono">{(d.descuento * 100).toFixed(4)}%</td>
                     <td className="px-3 py-2 text-center">
                       {d.es_default ? <Pill tone="success">DEFAULT</Pill> :
