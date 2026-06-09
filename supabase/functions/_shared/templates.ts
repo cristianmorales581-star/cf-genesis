@@ -290,39 +290,41 @@ function baseStyles(): string {
   table.form {
     width: 100%;
     border-collapse: collapse;
-    margin: 8px 0;
-    font-size: 9pt;
+    margin: 6px 0;
+    font-size: 8.5pt;
+    page-break-inside: avoid;
   }
   table.form td, table.form th {
     border: 1px solid #000;
-    padding: 4px 6px;
+    padding: 3px 5px;
     vertical-align: middle;
+    line-height: 1.3;
   }
   table.form th {
     background: #f0f0f0;
     text-align: left;
     font-weight: bold;
     text-transform: uppercase;
-    font-size: 8.5pt;
+    font-size: 8pt;
   }
   table.form .label-mini {
-    font-size: 7.5pt;
+    font-size: 7pt;
     color: #555;
     text-transform: uppercase;
     letter-spacing: 0.3px;
   }
   table.form .checkbox-cell {
     text-align: center;
-    font-size: 12pt;
+    font-size: 11pt;
     font-weight: bold;
-    width: 28px;
+    width: 26px;
   }
   table.form tr.firma-form-row td {
-    height: 96px;
+    height: 80px;
     vertical-align: top;
   }
   table.form td.firma-form-cell {
-    min-width: 90px;
+    min-width: 80px;
   }
   .form-titulo {
     background: #d9d9d9;
