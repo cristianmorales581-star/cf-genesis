@@ -328,14 +328,38 @@ export default function Programas() {
                     <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{p.codigo_pcfb}</td>
                     <td className="px-5 py-3">{p.cedentes?.razon_social ?? "—"}</td>
                     <td className="px-5 py-3 text-muted-foreground text-xs uppercase tracking-wider">{p.linea ?? "—"}</td>
-                    <td className="px-5 py-3 text-right">
-                      {isOperador ? (
-                        <Button variant="ghost" size="sm" onClick={() => openDescuentos(p)} className="h-7 text-xs">
-                          <Percent className="h-3 w-3 mr-1" /> {descCount} descuento{descCount === 1 ? "" : "s"}
-                        </Button>
-                      ) : (
-                        <Numeric>{fmtPct(Number(p.descuento_base), 2)}</Numeric>
-                      )}
+                    <td className="px-5 py-3">
+                      <div className="flex flex-wrap gap-1 justify-end items-center">
+                        {(p.programa_descuentos ?? [])
+                          .filter(d => d.activo)
+                          .sort((a, b) => Number(a.descuento) - Number(b.descuento))
+                          .slice(0, 4)
+                          .map(d => (
+                            <span
+                              key={d.id}
+                              title={d.etiqueta ?? ""}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono border ${
+                                d.es_default
+                                  ? "bg-primary/10 border-primary/40 text-primary font-semibold"
+                                  : "bg-secondary/60 border-border text-foreground"
+                              }`}
+                            >
+                              {d.etiqueta && <span className="font-sans normal-case">{d.etiqueta}:</span>}
+                              {(Number(d.descuento) * 100).toFixed(2)}%
+                            </span>
+                          ))}
+                        {descCount > 4 && (
+                          <span className="text-[10px] text-muted-foreground">+{descCount - 4}</span>
+                        )}
+                        {descCount === 0 && (
+                          <Numeric>{fmtPct(Number(p.descuento_base), 2)}</Numeric>
+                        )}
+                        {isOperador && (
+                          <Button variant="ghost" size="sm" onClick={() => openDescuentos(p)} className="h-6 px-2 text-[10px] ml-1">
+                            <Percent className="h-3 w-3 mr-1" /> Editar
+                          </Button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-xs text-muted-foreground">{fmtDate(p.fecha_inicio)} — {fmtDate(p.fecha_vencimiento)}</td>
                     <td className="px-5 py-3 text-center">
