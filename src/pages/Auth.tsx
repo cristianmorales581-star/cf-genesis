@@ -68,7 +68,7 @@ export default function Auth() {
           <p className="text-[11px] uppercase tracking-[0.22em] text-primary-foreground/70 font-semibold">
             Grupo Bursátil Venezolano
           </p>
-          <h1 className="font-display text-6xl font-bold mt-3 tracking-tight">SICEBOP</h1>
+          <h1 className="font-display text-6xl font-bold mt-3 tracking-tight text-white">SICEBOP</h1>
           <p className="text-primary-foreground/80 mt-2 text-lg">
             Sistema de Certificados de Financiamiento Bursátil
           </p>
