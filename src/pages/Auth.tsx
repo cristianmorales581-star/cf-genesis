@@ -136,7 +136,7 @@ export default function Auth() {
           </Tabs>
 
           <p className="text-center text-[11px] text-muted-foreground mt-8 uppercase tracking-wider">
-            Acceso restringido · Personal autorizado
+            ACCESO RESTRINGIDO · SOLO PERSONAL AUTORIZADO DE GBV CASA DE BOLSA
           </p>
         </div>
       </div>
