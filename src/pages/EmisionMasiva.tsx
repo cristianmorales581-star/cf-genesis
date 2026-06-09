@@ -140,6 +140,36 @@ export default function EmisionMasiva() {
     });
   }
 
+  /** Réplica del macro NextTicker(): prefijo (no-dígitos) + número(+1, preservando padding) + sufijo (no-dígitos). */
+  function nextTicker(ticker: string): string {
+    const m = String(ticker ?? "").trim().match(/^(\D*?)(\d+)(\D*)$/);
+    if (!m) return ticker;
+    const [, prefix, numStr, suffix] = m;
+    const next = String(Number(numStr) + 1).padStart(numStr.length, "0");
+    return `${prefix}${next}${suffix}`;
+  }
+
+  /** Rellena el símbolo de las filas siguientes auto-incrementando desde la primera fila incluida. */
+  function fillSymbolsFromFirst() {
+    setRows(prev => {
+      if (!prev.length) return prev;
+      const seed = String(prev[0].simbolo_cfb ?? "").trim();
+      if (!seed || !/^\D*\d+\D*$/.test(seed)) {
+        toast({ title: "Símbolo inválido", description: "La primera fila debe tener el formato prefijo+número+sufijo (ej. C1234A).", variant: "destructive" });
+        return prev;
+      }
+      const copy = [...prev];
+      let current = seed;
+      copy[0] = { ...copy[0], simbolo_cfb: seed };
+      for (let i = 1; i < copy.length; i++) {
+        current = nextTicker(current);
+        copy[i] = { ...copy[i], simbolo_cfb: current };
+      }
+      toast({ title: "Símbolos auto-rellenados", description: `${copy.length} filas desde ${seed}.` });
+      return copy;
+    });
+  }
+
   function updatePrograma(i: number, programaId: string) {
     const programa = programas.find(p => p.id === programaId);
     const def = programa?.programa_descuentos?.find(d => d.es_default && d.activo)
