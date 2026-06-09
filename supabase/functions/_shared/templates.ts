@@ -612,9 +612,16 @@ export function renderCFB(c: TemplateContext): string {
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>CFB ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
+<style>
+  @page { size: A4; margin: 8mm 18mm 12mm 18mm; }
+  .page.cfb-doc { padding-top: 0; }
+  .cfb-doc .doc-header { margin-bottom: 4px; }
+  .cfb-doc .cfb-title { margin: 4px 0 8px; }
+  .cfb-doc .firma-cedente { margin: 90px 0 14px !important; }
+</style>
 </head><body>
 ${actionsBar()}
-<div class="page">
+<div class="page cfb-doc">
   <div class="doc-header">
     ${logoBlock()}
     <div class="doc-fecha"><strong>${c.simbolo_cfb}</strong></div>
@@ -662,7 +669,7 @@ ${actionsBar()}
     <tr><td class="k">Cedente</td>
         <td class="v"><strong>${c.cedente_razon_social}</strong></td></tr>
   </table>
-  <p class="parrafo" style="text-align: center; font-weight: bold; margin: 16px 0 10px;">
+  <p class="parrafo firma-cedente" style="text-align: center; font-weight: bold;">
     ${c.cedente_razon_social}<br/><span style="font-weight: normal;">Cedente</span>
   </p>
   <p class="legal-pie">
