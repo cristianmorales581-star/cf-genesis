@@ -150,7 +150,7 @@ export default function Portafolio() {
                     <td className="px-4 py-3 text-xs">{r.programas?.cedentes?.razon_social ?? "—"}</td>
                     <td className="px-4 py-3 text-xs">{r.financistas?.razon_social ?? "—"}</td>
                     <td className="px-4 py-3 text-right"><Numeric>{fmtUSD(Number(r.valor_nominal_usd))}</Numeric></td>
-                    <td className="px-4 py-3 text-right"><Numeric>{fmtPct(Number(r.rendimiento_anualizado))}</Numeric></td>
+                    <td className="px-4 py-3 text-right"><Numeric>{fmtPct(Number(r.rendimiento_anualizado), 2)}</Numeric></td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDate(r.fecha_vencimiento)}</td>
                     <td className="px-4 py-3 text-right"><Numeric>{r.diasRest} d</Numeric></td>
                     <td className="px-4 py-3 text-right"><Numeric>{fmtPct(Number(r.precio))}</Numeric></td>
