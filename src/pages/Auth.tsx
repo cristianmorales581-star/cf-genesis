@@ -64,7 +64,7 @@ export default function Auth() {
           backgroundSize: "32px 32px",
         }} />
         <div className="relative">
-          <img src={gbvLogo.url} alt="GBV — Grupo Bursátil Venezolano" className="h-14 w-auto object-contain mb-6" />
+          <img src={gbvLogo.url} alt="GBV — Grupo Bursátil Venezolano" className="h-20 w-auto object-contain mb-6" />
           <p className="text-[11px] uppercase tracking-[0.22em] text-primary-foreground/70 font-semibold">
             Grupo Bursátil Venezolano
           </p>
@@ -76,7 +76,7 @@ export default function Auth() {
         <div className="relative space-y-4 max-w-md">
           <div className="border-l-2 border-accent pl-5">
             <p className="font-display text-2xl leading-tight">
-              Emisión, valoración y administración de instrumentos CFB conforme a normativa <span className="text-accent">SUNAVAL</span>.
+              Emisión, valoración y administración de CFBs.
             </p>
           </div>
           <p className="text-xs text-primary-foreground/60 uppercase tracking-wider">
@@ -89,9 +89,9 @@ export default function Auth() {
       <div className="flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-md">
           <div className="lg:hidden mb-8 text-center flex flex-col items-center">
-            <img src={gbvLogo.url} alt="GBV" className="h-10 w-auto object-contain mb-3" />
-            <h1 className="font-display text-4xl font-bold text-primary">SICEBOP</h1>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">Grupo Bursátil Venezolano</p>
+            <img src={gbvLogo.url} alt="GBV" className="h-14 w-auto object-contain mb-3" />
+            <h1 className="font-display text-4xl font-bold text-white">SICEBOP</h1>
+            <p className="text-xs uppercase tracking-widest text-white mt-1">Grupo Bursátil Venezolano</p>
           </div>
 
           <Tabs defaultValue="signin" className="w-full">
