@@ -454,6 +454,14 @@ export function renderCartaSunaval(c: TemplateContext): string {
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>Carta SUNAVAL ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
+<style>
+  @page { size: A4; margin: 8mm 18mm 10mm 18mm; }
+  body { font-size: 10pt; line-height: 1.35; }
+  .bloque-detalle { page-break-inside: avoid; }
+  .seccion-titulo { page-break-after: avoid; }
+  table.kv { page-break-inside: avoid; }
+  .firma-area { page-break-inside: avoid; }
+</style>
 </head><body>
 ${actionsBar()}
 <div class="page">
