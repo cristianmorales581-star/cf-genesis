@@ -140,6 +140,36 @@ export default function EmisionMasiva() {
     });
   }
 
+  /** Réplica del macro NextTicker(): prefijo (no-dígitos) + número(+1, preservando padding) + sufijo (no-dígitos). */
+  function nextTicker(ticker: string): string {
+    const m = String(ticker ?? "").trim().match(/^(\D*?)(\d+)(\D*)$/);
+    if (!m) return ticker;
+    const [, prefix, numStr, suffix] = m;
+    const next = String(Number(numStr) + 1).padStart(numStr.length, "0");
+    return `${prefix}${next}${suffix}`;
+  }
+
+  /** Rellena el símbolo de las filas siguientes auto-incrementando desde la primera fila incluida. */
+  function fillSymbolsFromFirst() {
+    setRows(prev => {
+      if (!prev.length) return prev;
+      const seed = String(prev[0].simbolo_cfb ?? "").trim();
+      if (!seed || !/^\D*\d+\D*$/.test(seed)) {
+        toast({ title: "Símbolo inválido", description: "La primera fila debe tener el formato prefijo+número+sufijo (ej. C1234A).", variant: "destructive" });
+        return prev;
+      }
+      const copy = [...prev];
+      let current = seed;
+      copy[0] = { ...copy[0], simbolo_cfb: seed };
+      for (let i = 1; i < copy.length; i++) {
+        current = nextTicker(current);
+        copy[i] = { ...copy[i], simbolo_cfb: current };
+      }
+      toast({ title: "Símbolos auto-rellenados", description: `${copy.length} filas desde ${seed}.` });
+      return copy;
+    });
+  }
+
   function updatePrograma(i: number, programaId: string) {
     const programa = programas.find(p => p.id === programaId);
     const def = programa?.programa_descuentos?.find(d => d.es_default && d.activo)
@@ -294,6 +324,16 @@ export default function EmisionMasiva() {
               <Stat label="Total USD" value={fmtUSD(stats.totalUsd)} tone="ok" />
             </div>
 
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <p className="text-[11px] text-muted-foreground max-w-2xl">
+                Edita el símbolo CFB de la primera fila (ej. <span className="font-mono">C1234A</span>) y usa <b>Auto-rellenar símbolos</b> para incrementarlo en el resto, igual que el macro <span className="font-mono">NextTicker()</span>.
+              </p>
+              <Button size="sm" variant="outline" onClick={fillSymbolsFromFirst}>
+                <Wand2 className="h-3.5 w-3.5 mr-1.5" /> Auto-rellenar símbolos
+              </Button>
+            </div>
+
+
             <div className="overflow-x-auto rounded-md border border-border">
               <table className="w-full text-[11.5px]">
                 <thead className="bg-muted/40 text-muted-foreground uppercase tracking-wider">
@@ -322,7 +362,14 @@ export default function EmisionMasiva() {
                         <td className="px-2 py-1.5">
                           <input type="checkbox" checked={r.include} onChange={(e) => updateRow(i, { include: e.target.checked })} disabled={!ok} />
                         </td>
-                        <td className="px-2 py-1.5 font-mono text-xs">{r.simbolo_cfb || "—"}</td>
+                        <td className="px-2 py-1.5">
+                          <Input
+                            value={r.simbolo_cfb ?? ""}
+                            onChange={(e) => updateRow(i, { simbolo_cfb: e.target.value.toUpperCase() })}
+                            placeholder="C1234A"
+                            className="h-7 text-[11px] font-mono w-[110px]"
+                          />
+                        </td>
                         <td className="px-2 py-1.5">
                           <div className="font-medium">{inferCedenteName(r)}</div>
                           <div className="text-[10px] text-muted-foreground">{r.rif_csv} · {r.tipo}</div>
