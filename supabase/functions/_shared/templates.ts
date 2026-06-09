@@ -646,7 +646,7 @@ ${actionsBar()}
     <tr><td class="k">Forma de Adquisición</td>
         <td class="v">A través de Bolsa de Valores de Caracas</td></tr>
     <tr><td class="k">Cedente</td>
-        <td class="v"><strong>${c.cedente_razon_social}</strong> ${fmtUSD(c.valor_nominal_usd)}</td></tr>
+        <td class="v"><strong>${c.cedente_razon_social}</strong></td></tr>
   </table>
   <p class="parrafo" style="text-align: center; font-weight: bold; margin: 16px 0 10px;">
     ${c.cedente_razon_social}<br/><span style="font-weight: normal;">Cedente</span>
