@@ -19,6 +19,7 @@ import Emisiones from "./pages/Emisiones";
 import EmisionDetalle from "./pages/EmisionDetalle";
 import Confirmaciones from "./pages/Confirmaciones";
 import Auditoria from "./pages/Auditoria";
+import Portafolio from "./pages/Portafolio";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/importar" element={<CargaMasiva />} />
               <Route path="/emisiones/:id" element={<EmisionDetalle />} />
               <Route path="/confirmaciones" element={<Confirmaciones />} />
+              <Route path="/portafolio" element={<Portafolio />} />
               <Route path="/auditoria" element={<Auditoria />} />
             </Route>
             <Route path="*" element={<NotFound />} />
