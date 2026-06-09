@@ -365,15 +365,18 @@ function renderSolicitudEmision(c: TemplateContext): string {
 <title>Hoja de Términos ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
 <style>
-  @page { size: A4; margin: 10mm 18mm 12mm 18mm; }
+  @page { size: A4; margin: 6mm 18mm 8mm 18mm; }
   html, body { height: auto; }
-  body { font-size: 10pt; line-height: 1.35; }
-  .cfb-compact .doc-header { margin-bottom: 6px; }
-  .cfb-compact .destinatario { margin: 6px 0 6px; }
-  .cfb-compact .saludo { margin: 6px 0 6px; }
-  .cfb-compact p.parrafo { margin: 5px 0; }
-  .cfb-compact table.kv { margin: 4px 0 6px; }
-  .cfb-compact table.kv td { padding: 1.5px 0; font-size: 10pt; }
+  body { font-size: 9pt; line-height: 1.3; }
+  .cfb-compact { page-break-after: avoid; }
+  .cfb-compact .doc-header { margin-bottom: 2px; }
+  .cfb-compact .doc-fecha { font-size: 10pt; padding-top: 0; }
+  .cfb-compact .destinatario { margin: 2px 0 4px; font-size: 9pt; }
+  .cfb-compact .saludo { margin: 4px 0 4px; }
+  .cfb-compact p.parrafo { margin: 4px 0; font-size: 9pt; }
+  .cfb-compact table.kv { margin: 3px 0 5px; }
+  .cfb-compact table.kv td { padding: 1px 0; font-size: 9pt; }
+  .cfb-compact .firma-area { page-break-inside: avoid; page-break-before: avoid; }
 </style>
 </head><body>
 ${actionsBar()}
