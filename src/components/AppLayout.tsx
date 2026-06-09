@@ -7,6 +7,7 @@ import {
   Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import gbvLogo from "@/assets/gbv-logo-white.png.asset.json";
 
 const NAV = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard", end: true, group: "general" },
@@ -32,10 +33,8 @@ export function AppLayout() {
       {/* Sidebar */}
       <aside className="hidden md:flex w-[260px] flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
         <div className="px-6 pt-7 pb-6 border-b border-sidebar-border">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-md bg-gradient-gold flex items-center justify-center font-display font-bold text-[15px] text-sidebar-primary-foreground shadow-sm">
-              S
-            </div>
+          <div className="flex items-center gap-3">
+            <img src={gbvLogo.url} alt="GBV" className="h-10 w-auto object-contain" />
             <div className="leading-none">
               <h1 className="font-display text-[15px] font-bold text-sidebar-accent-foreground tracking-wide">SICEBOP</h1>
               <p className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/55 mt-1">
@@ -99,7 +98,10 @@ export function AppLayout() {
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile bar */}
         <div className="md:hidden bg-sidebar text-sidebar-foreground px-4 py-3 flex items-center justify-between border-b border-sidebar-border">
-          <h1 className="font-display text-base font-bold text-sidebar-accent-foreground">SICEBOP</h1>
+          <div className="flex items-center gap-2">
+            <img src={gbvLogo.url} alt="GBV" className="h-7 w-auto object-contain" />
+            <h1 className="font-display text-base font-bold text-sidebar-accent-foreground">SICEBOP</h1>
+          </div>
           <Button size="sm" variant="ghost" className="text-sidebar-foreground" onClick={async () => { await signOut(); navigate("/auth"); }}>
             <LogOut className="h-4 w-4" />
           </Button>
