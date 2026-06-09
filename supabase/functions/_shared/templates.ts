@@ -420,8 +420,8 @@ ${actionsBar()}
     Programa de Certificados de Financiamiento Bursatil notificadas a la Superintendencia Nacional de
     Valores.
   </p>
-  <div class="firma-area">
-    <div class="espacio-firma">&nbsp;</div>
+  <div class="firma-area" style="margin-top: 28px;">
+    <div class="espacio-firma" style="height: 60px;">&nbsp;</div>
     <div class="nombre">${c.cedente_rep_legal ?? '—'}</div>
     <div class="subtitulo">Por ${c.deudor_razon_social}</div>
     <div class="subtitulo">Mandatario de</div>
