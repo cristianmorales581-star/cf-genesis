@@ -328,14 +328,38 @@ export default function Programas() {
                     <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{p.codigo_pcfb}</td>
                     <td className="px-5 py-3">{p.cedentes?.razon_social ?? "—"}</td>
                     <td className="px-5 py-3 text-muted-foreground text-xs uppercase tracking-wider">{p.linea ?? "—"}</td>
-                    <td className="px-5 py-3 text-right">
-                      {isOperador ? (
-                        <Button variant="ghost" size="sm" onClick={() => openDescuentos(p)} className="h-7 text-xs">
-                          <Percent className="h-3 w-3 mr-1" /> {descCount} descuento{descCount === 1 ? "" : "s"}
-                        </Button>
-                      ) : (
-                        <Numeric>{fmtPct(Number(p.descuento_base), 2)}</Numeric>
-                      )}
+                    <td className="px-5 py-3">
+                      <div className="flex flex-wrap gap-1 justify-end items-center">
+                        {(p.programa_descuentos ?? [])
+                          .filter(d => d.activo)
+                          .sort((a, b) => Number(a.descuento) - Number(b.descuento))
+                          .slice(0, 4)
+                          .map(d => (
+                            <span
+                              key={d.id}
+                              title={d.etiqueta ?? ""}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono border ${
+                                d.es_default
+                                  ? "bg-primary/10 border-primary/40 text-primary font-semibold"
+                                  : "bg-secondary/60 border-border text-foreground"
+                              }`}
+                            >
+                              {d.etiqueta && <span className="font-sans normal-case">{d.etiqueta}:</span>}
+                              {(Number(d.descuento) * 100).toFixed(2)}%
+                            </span>
+                          ))}
+                        {descCount > 4 && (
+                          <span className="text-[10px] text-muted-foreground">+{descCount - 4}</span>
+                        )}
+                        {descCount === 0 && (
+                          <Numeric>{fmtPct(Number(p.descuento_base), 2)}</Numeric>
+                        )}
+                        {isOperador && (
+                          <Button variant="ghost" size="sm" onClick={() => openDescuentos(p)} className="h-6 px-2 text-[10px] ml-1">
+                            <Percent className="h-3 w-3 mr-1" /> Editar
+                          </Button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-xs text-muted-foreground">{fmtDate(p.fecha_inicio)} — {fmtDate(p.fecha_vencimiento)}</td>
                     <td className="px-5 py-3 text-center">
@@ -425,6 +449,18 @@ function DescuentosDialog({ open, onOpenChange, programa }: {
     reload();
   }
 
+  async function updateEtiqueta(d: Descuento, value: string) {
+    const newEtiqueta = value.trim() || null;
+    if (newEtiqueta === d.etiqueta) return;
+    // Optimistic update
+    setItems(prev => prev.map(x => x.id === d.id ? { ...x, etiqueta: newEtiqueta } : x));
+    const { error } = await supabase.from("programa_descuentos")
+      .update({ etiqueta: newEtiqueta }).eq("id", d.id);
+    if (error) { toast.error(error.message); reload(); return; }
+    await logAudit({ action: "update", resource_type: "programa_descuento", resource_id: d.id, details: { etiqueta: newEtiqueta } });
+    toast.success("Etiqueta actualizada");
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
@@ -464,7 +500,16 @@ function DescuentosDialog({ open, onOpenChange, programa }: {
               <tbody>
                 {items.map(d => (
                   <tr key={d.id} className="border-t border-border">
-                    <td className="px-3 py-2">{d.etiqueta ?? <span className="text-muted-foreground">—</span>}</td>
+                    <td className="px-3 py-2">
+                      <Input
+                        defaultValue={d.etiqueta ?? ""}
+                        onBlur={(e) => updateEtiqueta(d, e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                        placeholder="Sin etiqueta"
+                        maxLength={40}
+                        className="h-8 text-sm"
+                      />
+                    </td>
                     <td className="px-3 py-2 text-right font-mono">{(d.descuento * 100).toFixed(4)}%</td>
                     <td className="px-3 py-2 text-center">
                       {d.es_default ? <Pill tone="success">DEFAULT</Pill> :
