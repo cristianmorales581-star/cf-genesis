@@ -977,7 +977,7 @@ ${actionsBar()}
   <table class="form">
     <tr><td colspan="3" class="form-titulo-claro">SOLICITUD DE ÓRDENES DE COMPRA Y/O VENTA DE TÍTULOS VALORES - RENTA FIJA</td></tr>
     <tr><td colspan="3" class="form-titulo-claro">DECLARACIÓN DEL CLIENTE</td></tr>
-    <tr><td colspan="3" style="font-size: 7.5pt; text-align: justify; line-height: 1.3;">
+    <tr><td colspan="3" class="declaracion-cell" style="font-size: 7.5pt; text-align: justify; line-height: 1.3;">
       <strong>El Cliente declara que:</strong><br/>
       1.- Certifico que la información y datos suministrados en la presente son verdaderos y autorizo a la Bolsa de Valores de Caracas y Superintendencia Nacional de Valores (SUNAVAL) y demás autoridades competentes a verificar o validar su autenticidad.<br/>
       2.- Autorizo la forma expresa a <strong>GRUPO BURSÁTIL VENEZOLANO, CASA DE BOLSA C.A.</strong>, para que suministre a las autoridades competentes la información que estas requieran sobre las operaciones de compra y venta de divisas y/o títulos valores a que se refiere esta solicitud.<br/>
