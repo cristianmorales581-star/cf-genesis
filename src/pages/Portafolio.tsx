@@ -153,8 +153,8 @@ export default function Portafolio() {
                     <td className="px-4 py-3 text-right"><Numeric>{fmtPct(Number(r.rendimiento_anualizado))}</Numeric></td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDate(r.fecha_vencimiento)}</td>
                     <td className="px-4 py-3 text-right"><Numeric>{r.diasRest} d</Numeric></td>
-                    <td className="px-4 py-3 text-right"><Numeric>{Number(r.precio).toFixed(6)}</Numeric></td>
-                    <td className="px-4 py-3 text-right"><Numeric><span className="text-accent">{r.pActual.toFixed(6)}</span></Numeric></td>
+                    <td className="px-4 py-3 text-right"><Numeric>{fmtPct(Number(r.precio))}</Numeric></td>
+                    <td className="px-4 py-3 text-right"><Numeric><span className="text-accent">{fmtPct(r.pActual)}</span></Numeric></td>
                     <td className="px-4 py-3 text-right"><Numeric>{fmtUSD(r.valorAdq)}</Numeric></td>
                     <td className="px-4 py-3 text-right"><Numeric>{fmtUSD(r.valorMkt)}</Numeric></td>
                     <td className="px-4 py-3 text-right">
