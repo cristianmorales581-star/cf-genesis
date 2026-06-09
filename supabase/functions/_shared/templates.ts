@@ -825,9 +825,31 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>${esCompra ? 'ODC' : 'ODV'} ${c.simbolo_cfb} — ${clienteNombre}</title>
 ${baseStyles()}
+<style>
+  @page { size: A4; margin: 8mm 10mm 8mm 10mm; }
+  html, body { height: auto; }
+  body { font-size: 8pt; line-height: 1.25; }
+  .orden-doc { page-break-after: avoid; }
+  .orden-doc table.form { margin: 3px 0; font-size: 8pt; page-break-inside: avoid; }
+  .orden-doc table.form tr { page-break-inside: avoid; page-break-after: auto; }
+  .orden-doc table.form td, .orden-doc table.form th {
+    padding: 4px 5px 5px;
+    vertical-align: top;
+    line-height: 1.25;
+  }
+  .orden-doc table.form th { font-size: 7.5pt; padding: 3px 5px; }
+  .orden-doc .label-mini { font-size: 6.5pt; display: block; margin-bottom: 1px; }
+  .orden-doc .form-titulo { font-size: 9pt; padding: 4px; }
+  .orden-doc .form-titulo-claro { font-size: 8pt; padding: 3px 5px; }
+  .orden-doc .checkbox-cell { padding: 2px 4px; font-size: 10pt; }
+  .orden-doc table.form tr.firma-form-row td { height: 55px; }
+  .orden-doc .declaracion-cell { font-size: 6.8pt !important; line-height: 1.25 !important; padding: 4px 5px !important; }
+  .orden-doc .declaracion-cell br { line-height: 1.2; }
+</style>
 </head><body>
 ${actionsBar()}
-<div class="page">
+<div class="page orden-doc">
+
   <table class="form">
     <tr>
       <td colspan="3" class="form-titulo">
