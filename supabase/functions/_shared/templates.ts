@@ -613,11 +613,13 @@ export function renderCFB(c: TemplateContext): string {
 <title>CFB ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
 <style>
-  @page { size: A4; margin: 8mm 18mm 12mm 18mm; }
-  .page.cfb-doc { padding-top: 0; }
+  @page { size: A4; margin: 8mm 18mm 6mm 18mm; }
+  .page.cfb-doc { padding-top: 0; padding-bottom: 0; page-break-after: avoid; }
   .cfb-doc .doc-header { margin-bottom: 4px; }
   .cfb-doc .cfb-title { margin: 4px 0 8px; }
-  .cfb-doc .firma-cedente { margin: 90px 0 14px !important; }
+  .cfb-doc .firma-cedente { margin: 78px 0 8px !important; }
+  .cfb-doc p.legal-pie { margin: 4px 0; font-size: 7.5pt; line-height: 1.25; }
+  .cfb-doc p.legal-pie:last-child { margin-bottom: 0; }
 </style>
 </head><body>
 ${actionsBar()}
