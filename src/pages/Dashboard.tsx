@@ -106,7 +106,7 @@ export default function Dashboard() {
                       </Link>
                     </td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(e.valor_nominal_usd)}</Numeric></td>
-                    <td className="px-5 py-3 text-right"><Numeric>{fmtPct(e.rendimiento_anualizado)}</Numeric></td>
+                    <td className="px-5 py-3 text-right"><Numeric>{fmtPct(e.rendimiento_anualizado, 2)}</Numeric></td>
                     <td className="px-5 py-3 text-muted-foreground">{fmtDate(e.fecha_vencimiento)}</td>
                   </tr>
                 ))}
