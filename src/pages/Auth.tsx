@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { z } from "zod";
+import gbvLogo from "@/assets/gbv-logo-white.png.asset.json";
 
 const credSchema = z.object({
   email: z.string().trim().email("Correo inválido").max(255),
@@ -63,6 +64,7 @@ export default function Auth() {
           backgroundSize: "32px 32px",
         }} />
         <div className="relative">
+          <img src={gbvLogo.url} alt="GBV — Grupo Bursátil Venezolano" className="h-14 w-auto object-contain mb-6" />
           <p className="text-[11px] uppercase tracking-[0.22em] text-primary-foreground/70 font-semibold">
             Grupo Bursátil Venezolano
           </p>
@@ -86,7 +88,8 @@ export default function Auth() {
       {/* Form panel */}
       <div className="flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-md">
-          <div className="lg:hidden mb-8 text-center">
+          <div className="lg:hidden mb-8 text-center flex flex-col items-center">
+            <img src={gbvLogo.url} alt="GBV" className="h-10 w-auto object-contain mb-3" />
             <h1 className="font-display text-4xl font-bold text-primary">SICEBOP</h1>
             <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">Grupo Bursátil Venezolano</p>
           </div>
