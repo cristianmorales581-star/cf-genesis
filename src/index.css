@@ -9,14 +9,14 @@
 
 @layer base {
   :root {
-    /* Surfaces — GBV deep navy */
-    --background: 215 55% 7%;
+    /* Surfaces — GBV deep navy (lightly lifted for more life) */
+    --background: 215 55% 9%;
     --foreground: 0 0% 100%;
 
-    --card: 215 50% 10%;
+    --card: 215 50% 12%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 215 52% 9%;
+    --popover: 215 52% 11%;
     --popover-foreground: 0 0% 100%;
 
     /* Brand: GBV cyan/teal */
@@ -26,13 +26,13 @@
 
     /* Accent: lighter cyan highlight */
     --accent: 188 75% 58%;
-    --accent-foreground: 215 55% 7%;
+    --accent-foreground: 215 55% 9%;
     --accent-soft: 188 40% 18%;
 
-    --secondary: 215 35% 15%;
+    --secondary: 215 35% 16%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 215 32% 13%;
+    --muted: 215 32% 14%;
     --muted-foreground: 0 0% 92%;
 
     --success: 152 56% 48%;
@@ -42,33 +42,33 @@
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 215 30% 17%;
-    --input: 215 30% 17%;
+    --border: 215 30% 19%;
+    --input: 215 30% 19%;
     --ring: 188 70% 52%;
 
     --radius: 0.625rem;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(215 60% 14%), hsl(200 70% 26%));
+    --gradient-primary: linear-gradient(135deg, hsl(215 60% 16%), hsl(200 70% 28%));
     --gradient-gold: linear-gradient(135deg, hsl(188 75% 48%), hsl(188 85% 62%));
-    --gradient-surface: radial-gradient(ellipse at top left, hsl(215 50% 11%), hsl(215 55% 6%));
-    --gradient-card: linear-gradient(180deg, hsl(215 45% 11%), hsl(215 55% 8%));
+    --gradient-surface: radial-gradient(ellipse at top left, hsl(215 50% 13%), hsl(215 55% 8%));
+    --gradient-card: linear-gradient(180deg, hsl(215 45% 13%), hsl(215 55% 10%));
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0%0% / 0.4);
     --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.45);
     --shadow-lg: 0 18px 40px -12px hsl(0 0% 0% / 0.55);
     --shadow-elegant: 0 8px 24px -6px hsl(188 70% 30% / 0.45);
     --shadow-glow: 0 0 0 1px hsl(188 70% 52% / 0.2), 0 8px 24px -6px hsl(188 70% 52% / 0.28);
 
-    /* Sidebar — deepest navy tone */
-    --sidebar-background: 215 60% 5%;
+    /* Sidebar — deepest navy tone (lightly lifted) */
+    --sidebar-background: 215 60% 7%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 188 70% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 40% 12%;
+    --sidebar-accent: 215 40% 14%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 215 36% 13%;
+    --sidebar-border: 215 36% 15%;
     --sidebar-ring: 188 70% 52%;
 
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
