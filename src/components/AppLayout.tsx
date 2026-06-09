@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, Building2, BookOpenCheck,
   FilePlus2, FileStack, Upload, ScrollText, LogOut, FileSpreadsheet,
-  Database,
+  Database, Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import gbvLogo from "@/assets/gbv-logo-white.png.asset.json";
@@ -15,6 +15,7 @@ const NAV = [
   { to: "/emisiones/nueva", icon: FilePlus2, label: "Nueva Emisión", op: true, group: "operación" },
   { to: "/emisiones/masiva", icon: FileSpreadsheet, label: "Emisión Masiva", op: true, group: "operación" },
   { to: "/confirmaciones", icon: Upload, label: "Confirmaciones", group: "operación" },
+  { to: "/portafolio", icon: Briefcase, label: "Portafolio", group: "operación" },
   { to: "/programas", icon: BookOpenCheck, label: "Programas", group: "maestros" },
   { to: "/cedentes", icon: Building2, label: "Cedentes", group: "maestros" },
   { to: "/financistas", icon: Users, label: "Financistas", group: "maestros" },
