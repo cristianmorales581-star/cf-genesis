@@ -826,7 +826,7 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
 <title>${esCompra ? 'ODC' : 'ODV'} ${c.simbolo_cfb} — ${clienteNombre}</title>
 ${baseStyles()}
 <style>
-  @page { size: A4; margin: 14mm 14mm 14mm 14mm; }
+  @page { size: A4; margin: 7mm 12mm 10mm 12mm; }
   html, body { height: auto; }
   body { font-size: 9.5pt; line-height: 1.35; }
   .orden-doc table.form { margin: 6px 0; font-size: 9pt; page-break-inside: auto; }
