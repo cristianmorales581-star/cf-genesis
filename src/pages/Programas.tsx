@@ -449,6 +449,18 @@ function DescuentosDialog({ open, onOpenChange, programa }: {
     reload();
   }
 
+  async function updateEtiqueta(d: Descuento, value: string) {
+    const newEtiqueta = value.trim() || null;
+    if (newEtiqueta === d.etiqueta) return;
+    // Optimistic update
+    setItems(prev => prev.map(x => x.id === d.id ? { ...x, etiqueta: newEtiqueta } : x));
+    const { error } = await supabase.from("programa_descuentos")
+      .update({ etiqueta: newEtiqueta }).eq("id", d.id);
+    if (error) { toast.error(error.message); reload(); return; }
+    await logAudit({ action: "update", resource_type: "programa_descuento", resource_id: d.id, details: { etiqueta: newEtiqueta } });
+    toast.success("Etiqueta actualizada");
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
