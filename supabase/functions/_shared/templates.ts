@@ -454,6 +454,14 @@ export function renderCartaSunaval(c: TemplateContext): string {
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>Carta SUNAVAL ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
+<style>
+  @page { size: A4; margin: 8mm 18mm 10mm 18mm; }
+  body { font-size: 10pt; line-height: 1.35; }
+  .bloque-detalle { page-break-inside: avoid; }
+  .seccion-titulo { page-break-after: avoid; }
+  table.kv { page-break-inside: avoid; }
+  .firma-area { page-break-inside: avoid; }
+</style>
 </head><body>
 ${actionsBar()}
 <div class="page">
@@ -826,7 +834,7 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
 <title>${esCompra ? 'ODC' : 'ODV'} ${c.simbolo_cfb} — ${clienteNombre}</title>
 ${baseStyles()}
 <style>
-  @page { size: A4; margin: 14mm 14mm 14mm 14mm; }
+  @page { size: A4; margin: 7mm 12mm 10mm 12mm; }
   html, body { height: auto; }
   body { font-size: 9.5pt; line-height: 1.35; }
   .orden-doc table.form { margin: 6px 0; font-size: 9pt; page-break-inside: auto; }
