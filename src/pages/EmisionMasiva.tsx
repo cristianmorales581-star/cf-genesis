@@ -352,7 +352,14 @@ export default function EmisionMasiva() {
                         <td className="px-2 py-1.5">
                           <input type="checkbox" checked={r.include} onChange={(e) => updateRow(i, { include: e.target.checked })} disabled={!ok} />
                         </td>
-                        <td className="px-2 py-1.5 font-mono text-xs">{r.simbolo_cfb || "—"}</td>
+                        <td className="px-2 py-1.5">
+                          <Input
+                            value={r.simbolo_cfb ?? ""}
+                            onChange={(e) => updateRow(i, { simbolo_cfb: e.target.value.toUpperCase() })}
+                            placeholder="C1234A"
+                            className="h-7 text-[11px] font-mono w-[110px]"
+                          />
+                        </td>
                         <td className="px-2 py-1.5">
                           <div className="font-medium">{inferCedenteName(r)}</div>
                           <div className="text-[10px] text-muted-foreground">{r.rif_csv} · {r.tipo}</div>
