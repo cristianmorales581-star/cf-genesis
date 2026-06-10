@@ -455,12 +455,20 @@ export function renderCartaSunaval(c: TemplateContext): string {
 <title>Carta SUNAVAL ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
 <style>
-  @page { size: A4; margin: 8mm 18mm 10mm 18mm; }
-  body { font-size: 10pt; line-height: 1.35; }
-  .bloque-detalle { page-break-inside: avoid; }
-  .seccion-titulo { page-break-after: avoid; }
-  table.kv { page-break-inside: avoid; }
-  .firma-area { page-break-inside: avoid; }
+  @page { size: A4; margin: 6mm 18mm 8mm 18mm; }
+  body { font-size: 9.5pt; line-height: 1.28; }
+  .doc-header { margin-bottom: 6px; }
+  .destinatario { margin: 6px 0 6px; font-size: 9.5pt; }
+  .saludo { margin: 6px 0 6px; }
+  p.parrafo { margin: 4px 0; }
+  .bloque-detalle { page-break-inside: avoid; margin: 4px 0 6px; }
+  .bloque-detalle .titulo { margin-bottom: 2px; font-size: 9.5pt; }
+  .seccion-titulo { page-break-after: avoid; margin: 8px 0 4px; font-size: 10.5pt; }
+  table.kv { page-break-inside: avoid; margin: 3px 0 4px; }
+  table.kv td { padding: 1.5px 0; font-size: 9.5pt; }
+  .cierre { page-break-after: avoid; margin: 10px 0 2px; }
+  .firma-area { page-break-inside: avoid; page-break-before: avoid; margin-top: 22px; }
+  .espacio-firma { height: 56px; }
 </style>
 </head><body>
 ${actionsBar()}
