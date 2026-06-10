@@ -539,12 +539,14 @@ ${actionsBar()}
   <p class="parrafo">
     Quedamos a su disposición para cualquier aclaración adicional que pueda necesitar.
   </p>
-  <div class="cierre">Atentamente,</div>
-  <div class="firma-area">
-    <div class="espacio-firma">&nbsp;</div>
-    <div class="nombre">${c.operador_nombre}</div>
-    <div class="subtitulo">Firma Autorizada</div>
-    <div class="subtitulo">${c.operador_cedula}</div>
+  <div data-no-break>
+    <div class="cierre">Atentamente,</div>
+    <div class="firma-area">
+      <div class="espacio-firma">&nbsp;</div>
+      <div class="nombre">${c.operador_nombre}</div>
+      <div class="subtitulo">Firma Autorizada</div>
+      <div class="subtitulo">${c.operador_cedula}</div>
+    </div>
   </div>
 </div>
 </body></html>`;
@@ -606,12 +608,14 @@ ${actionsBar()}
       en bolsa de los Certificados de Financiamiento Bursátil.
     </li>
   </ol>
-  <p class="parrafo">Sin otro particular al que hacer referencia,</p>
-  <div class="cierre">Atentamente,</div>
-  <div class="firma-area">
-    <div class="espacio-firma">&nbsp;</div>
-    <div class="nombre">${c.operador_nombre}</div>
-    <div class="subtitulo">Firma Autorizada</div>
+  <div data-no-break>
+    <p class="parrafo">Sin otro particular al que hacer referencia,</p>
+    <div class="cierre">Atentamente,</div>
+    <div class="firma-area">
+      <div class="espacio-firma">&nbsp;</div>
+      <div class="nombre">${c.operador_nombre}</div>
+      <div class="subtitulo">Firma Autorizada</div>
+    </div>
   </div>
 </div>
 </body></html>`;
@@ -989,6 +993,7 @@ ${actionsBar()}
   <p style="font-size: 8.5pt; margin: 8px 0 6px;">
     (*) Por favor, señalar los datos de la cuenta bancaria en la que se realizará la liquidación del CFB.
   </p>
+  <div data-no-break>
   <table class="form">
     <tr><td colspan="3" class="form-titulo-claro">SOLICITUD DE ÓRDENES DE COMPRA Y/O VENTA DE TÍTULOS VALORES - RENTA FIJA</td></tr>
     <tr><td colspan="3" class="form-titulo-claro">DECLARACIÓN DEL CLIENTE</td></tr>
@@ -1012,6 +1017,7 @@ ${actionsBar()}
       <td colspan="2" style="text-align: center;"><strong>Inversión</strong></td>
     </tr>
   </table>
+  </div>
   <table class="form">
     <tr><td colspan="4" class="form-titulo-claro">Titular / Representante Legal</td><td class="form-titulo-claro">Huella Dactilar</td></tr>
     <tr class="firma-form-row">
