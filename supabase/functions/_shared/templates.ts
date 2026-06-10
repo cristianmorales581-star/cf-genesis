@@ -842,20 +842,23 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
 <title>${esCompra ? 'ODC' : 'ODV'} ${c.simbolo_cfb} — ${clienteNombre}</title>
 ${baseStyles()}
 <style>
-  @page { size: A4; margin: 7mm 12mm 10mm 12mm; }
+  @page { size: A4; margin: 5mm 12mm 6mm 12mm; }
   html, body { height: auto; }
-  body { font-size: 9.5pt; line-height: 1.35; }
-  .orden-doc table.form { margin: 6px 0; font-size: 9pt; page-break-inside: auto; }
-  .orden-doc table.form tr { page-break-inside: avoid; page-break-after: auto; }
+  body { font-size: 9pt; line-height: 1.28; }
+  .orden-doc table.form { margin: 3px 0; font-size: 9pt; page-break-inside: avoid; page-break-after: auto; }
+  .orden-doc table.form tr { page-break-inside: avoid; }
   .orden-doc table.form td, .orden-doc table.form th {
-    padding: 6px 6px 7px;
+    padding: 4px 5px 5px;
     vertical-align: top;
-    line-height: 1.3;
+    line-height: 1.25;
   }
-  .orden-doc table.form th { padding: 4px 6px; font-size: 8.5pt; }
-  .orden-doc .label-mini { display: block; margin-bottom: 2px; }
-  .orden-doc .checkbox-cell { padding: 3px 4px; }
-  .orden-doc table.form tr.firma-form-row td { height: 75px; }
+  .orden-doc table.form th { padding: 3px 5px; font-size: 8.5pt; }
+  .orden-doc .label-mini { display: block; margin-bottom: 1px; }
+  .orden-doc .checkbox-cell { padding: 2px 4px; }
+  .orden-doc table.form tr.firma-form-row td { height: 65px; }
+  .orden-doc .form-titulo { padding: 4px; font-size: 9.5pt; }
+  .orden-doc .form-titulo-claro { padding: 3px 6px; font-size: 9pt; }
+  .orden-doc .declaracion-cell { font-size: 7.5pt !important; line-height: 1.28 !important; }
 </style>
 
 </head><body>
