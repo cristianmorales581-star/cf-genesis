@@ -455,12 +455,20 @@ export function renderCartaSunaval(c: TemplateContext): string {
 <title>Carta SUNAVAL ${c.simbolo_cfb} — ${c.cedente_razon_social}</title>
 ${baseStyles()}
 <style>
-  @page { size: A4; margin: 8mm 18mm 10mm 18mm; }
-  body { font-size: 10pt; line-height: 1.35; }
-  .bloque-detalle { page-break-inside: avoid; }
-  .seccion-titulo { page-break-after: avoid; }
-  table.kv { page-break-inside: avoid; }
-  .firma-area { page-break-inside: avoid; }
+  @page { size: A4; margin: 6mm 18mm 8mm 18mm; }
+  body { font-size: 9.5pt; line-height: 1.28; }
+  .doc-header { margin-bottom: 6px; }
+  .destinatario { margin: 6px 0 6px; font-size: 9.5pt; }
+  .saludo { margin: 6px 0 6px; }
+  p.parrafo { margin: 4px 0; }
+  .bloque-detalle { page-break-inside: avoid; margin: 4px 0 6px; }
+  .bloque-detalle .titulo { margin-bottom: 2px; font-size: 9.5pt; }
+  .seccion-titulo { page-break-after: avoid; margin: 8px 0 4px; font-size: 10.5pt; }
+  table.kv { page-break-inside: avoid; margin: 3px 0 4px; }
+  table.kv td { padding: 1.5px 0; font-size: 9.5pt; }
+  .cierre { page-break-after: avoid; margin: 10px 0 2px; }
+  .firma-area { page-break-inside: avoid; page-break-before: avoid; margin-top: 22px; }
+  .espacio-firma { height: 56px; }
 </style>
 </head><body>
 ${actionsBar()}
@@ -834,20 +842,23 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
 <title>${esCompra ? 'ODC' : 'ODV'} ${c.simbolo_cfb} — ${clienteNombre}</title>
 ${baseStyles()}
 <style>
-  @page { size: A4; margin: 7mm 12mm 10mm 12mm; }
+  @page { size: A4; margin: 5mm 12mm 6mm 12mm; }
   html, body { height: auto; }
-  body { font-size: 9.5pt; line-height: 1.35; }
-  .orden-doc table.form { margin: 6px 0; font-size: 9pt; page-break-inside: auto; }
-  .orden-doc table.form tr { page-break-inside: avoid; page-break-after: auto; }
+  body { font-size: 9pt; line-height: 1.28; }
+  .orden-doc table.form { margin: 3px 0; font-size: 9pt; page-break-inside: avoid; page-break-after: auto; }
+  .orden-doc table.form tr { page-break-inside: avoid; }
   .orden-doc table.form td, .orden-doc table.form th {
-    padding: 6px 6px 7px;
+    padding: 4px 5px 5px;
     vertical-align: top;
-    line-height: 1.3;
+    line-height: 1.25;
   }
-  .orden-doc table.form th { padding: 4px 6px; font-size: 8.5pt; }
-  .orden-doc .label-mini { display: block; margin-bottom: 2px; }
-  .orden-doc .checkbox-cell { padding: 3px 4px; }
-  .orden-doc table.form tr.firma-form-row td { height: 75px; }
+  .orden-doc table.form th { padding: 3px 5px; font-size: 8.5pt; }
+  .orden-doc .label-mini { display: block; margin-bottom: 1px; }
+  .orden-doc .checkbox-cell { padding: 2px 4px; }
+  .orden-doc table.form tr.firma-form-row td { height: 65px; }
+  .orden-doc .form-titulo { padding: 4px; font-size: 9.5pt; }
+  .orden-doc .form-titulo-claro { padding: 3px 6px; font-size: 9pt; }
+  .orden-doc .declaracion-cell { font-size: 7.5pt !important; line-height: 1.28 !important; }
 </style>
 
 </head><body>
