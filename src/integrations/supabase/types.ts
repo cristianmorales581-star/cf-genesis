@@ -375,6 +375,24 @@ export type Database = {
           },
         ]
       }
+      role_section_permissions: {
+        Row: {
+          created_at: string
+          role: Database["public"]["Enums"]["app_role"]
+          section: string
+        }
+        Insert: {
+          created_at?: string
+          role: Database["public"]["Enums"]["app_role"]
+          section: string
+        }
+        Update: {
+          created_at?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          section?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
