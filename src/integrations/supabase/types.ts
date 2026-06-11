@@ -375,6 +375,24 @@ export type Database = {
           },
         ]
       }
+      role_section_permissions: {
+        Row: {
+          created_at: string
+          role: Database["public"]["Enums"]["app_role"]
+          section: string
+        }
+        Insert: {
+          created_at?: string
+          role: Database["public"]["Enums"]["app_role"]
+          section: string
+        }
+        Update: {
+          created_at?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          section?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -417,7 +435,7 @@ export type Database = {
       refresh_programas_estado: { Args: never; Returns: number }
     }
     Enums: {
-      app_role: "admin" | "operador"
+      app_role: "admin" | "operador" | "backoffice"
       tipo_confirmacion: "CDC" | "CDV"
       tipo_financista: "natural" | "juridica"
     }
@@ -547,7 +565,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "operador"],
+      app_role: ["admin", "operador", "backoffice"],
       tipo_confirmacion: ["CDC", "CDV"],
       tipo_financista: ["natural", "juridica"],
     },

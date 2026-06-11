@@ -4,34 +4,34 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, Building2, BookOpenCheck,
   FilePlus2, FileStack, Upload, ScrollText, LogOut, FileSpreadsheet,
-  Database, Briefcase,
+  Database, Briefcase, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import gbvLogo from "@/assets/gbv-logo-white.png.asset.json";
 
 const NAV = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard", end: true, group: "general" },
-  { to: "/emisiones", icon: FileStack, label: "Emisiones", group: "operación" },
-  { to: "/emisiones/nueva", icon: FilePlus2, label: "Nueva Emisión", op: true, group: "operación" },
-  { to: "/emisiones/masiva", icon: FileSpreadsheet, label: "Emisión Masiva", op: true, group: "operación" },
-  { to: "/confirmaciones", icon: Upload, label: "Confirmaciones", group: "operación" },
-  { to: "/portafolio", icon: Briefcase, label: "Portafolio", group: "operación" },
-  { to: "/programas", icon: BookOpenCheck, label: "Programas", group: "maestros" },
-  { to: "/cedentes", icon: Building2, label: "Cedentes", group: "maestros" },
-  { to: "/financistas", icon: Users, label: "Financistas", group: "maestros" },
-  { to: "/importar", icon: Database, label: "Carga Masiva", op: true, group: "maestros" },
-  { to: "/auditoria", icon: ScrollText, label: "Auditoría", group: "sistema" },
+  { to: "/",                 icon: LayoutDashboard,  label: "Dashboard",       end: true, group: "general",   section: "dashboard" },
+  { to: "/emisiones",        icon: FileStack,        label: "Emisiones",                   group: "operación", section: "emisiones" },
+  { to: "/emisiones/nueva",  icon: FilePlus2,        label: "Nueva Emisión",               group: "operación", section: "emisiones_nueva" },
+  { to: "/emisiones/masiva", icon: FileSpreadsheet,  label: "Emisión Masiva",              group: "operación", section: "emisiones_masiva" },
+  { to: "/confirmaciones",   icon: Upload,           label: "Confirmaciones",              group: "operación", section: "confirmaciones" },
+  { to: "/portafolio",       icon: Briefcase,        label: "Portafolio",                  group: "operación", section: "portafolio" },
+  { to: "/programas",        icon: BookOpenCheck,    label: "Programas",                   group: "maestros",  section: "programas" },
+  { to: "/cedentes",         icon: Building2,        label: "Cedentes",                    group: "maestros",  section: "cedentes" },
+  { to: "/financistas",      icon: Users,            label: "Financistas",                 group: "maestros",  section: "financistas" },
+  { to: "/importar",         icon: Database,         label: "Carga Masiva",                group: "maestros",  section: "importar" },
+  { to: "/auditoria",        icon: ScrollText,       label: "Auditoría",                   group: "sistema",   section: "auditoria" },
+  { to: "/admin/usuarios",   icon: ShieldCheck,      label: "Usuarios",                    group: "sistema",   section: "admin_usuarios", adminOnly: true },
 ];
 
 export function AppLayout() {
-  const { user, role, signOut, isOperador } = useAuth();
+  const { user, role, signOut, canAccess, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const groups = ["general", "operación", "maestros", "sistema"];
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
       <aside className="hidden md:flex w-[260px] flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
         <div className="px-6 pt-7 pb-6 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
@@ -47,7 +47,11 @@ export function AppLayout() {
 
         <nav className="flex-1 px-3 py-5 overflow-y-auto">
           {groups.map((g) => {
-            const items = NAV.filter(n => n.group === g && (!n.op || isOperador));
+            const items = NAV.filter(n =>
+              n.group === g
+              && (!n.adminOnly || isAdmin)
+              && canAccess(n.section)
+            );
             if (items.length === 0) return null;
             return (
               <div key={g} className="mb-5">
@@ -95,9 +99,7 @@ export function AppLayout() {
         </div>
       </aside>
 
-      {/* Main */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Mobile bar */}
         <div className="md:hidden bg-sidebar text-sidebar-foreground px-4 py-3 flex items-center justify-between border-b border-sidebar-border">
           <div className="flex items-center gap-2">
             <img src={gbvLogo.url} alt="GBV" className="h-7 w-auto object-contain" />
