@@ -417,7 +417,7 @@ export type Database = {
       refresh_programas_estado: { Args: never; Returns: number }
     }
     Enums: {
-      app_role: "admin" | "operador"
+      app_role: "admin" | "operador" | "backoffice"
       tipo_confirmacion: "CDC" | "CDV"
       tipo_financista: "natural" | "juridica"
     }
@@ -547,7 +547,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "operador"],
+      app_role: ["admin", "operador", "backoffice"],
       tipo_confirmacion: ["CDC", "CDV"],
       tipo_financista: ["natural", "juridica"],
     },
