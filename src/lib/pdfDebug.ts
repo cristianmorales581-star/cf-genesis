@@ -176,8 +176,9 @@ function computePageRanges(totalHeight: number, pageHeightPx: number, avoidBlock
 }
 
 function canvasToPdf(canvas: HTMLCanvasElement, pages: PageRange[]) {
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
   const pageHeightPx = Math.round((A4_HEIGHT_MM / A4_WIDTH_MM) * canvas.width);
+  const JPEG_QUALITY = 0.82;
 
   pages.forEach((range, idx) => {
     if (idx > 0) pdf.addPage();
@@ -196,7 +197,7 @@ function canvasToPdf(canvas: HTMLCanvasElement, pages: PageRange[]) {
       0, range.top, canvas.width, sliceHeight,
       0, 0, canvas.width, sliceHeight,
     );
-    pdf.addImage(slice.toDataURL("image/png"), "PNG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
+    pdf.addImage(slice.toDataURL("image/jpeg", JPEG_QUALITY), "JPEG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, undefined, "FAST");
     slice.width = 0;
     slice.height = 0;
   });
