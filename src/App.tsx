@@ -20,6 +20,7 @@ import EmisionDetalle from "./pages/EmisionDetalle";
 import Confirmaciones from "./pages/Confirmaciones";
 import Auditoria from "./pages/Auditoria";
 import Portafolio from "./pages/Portafolio";
+import UsuariosAdmin from "./pages/UsuariosAdmin";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,14 @@ const App = () => (
               <Route path="/confirmaciones" element={<Confirmaciones />} />
               <Route path="/portafolio" element={<Portafolio />} />
               <Route path="/auditoria" element={<Auditoria />} />
+              <Route
+                path="/admin/usuarios"
+                element={
+                  <ProtectedRoute requireAdmin section="admin_usuarios">
+                    <UsuariosAdmin />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
