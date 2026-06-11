@@ -176,8 +176,9 @@ function computePageRanges(totalHeight: number, pageHeightPx: number, avoidBlock
 }
 
 function canvasToPdf(canvas: HTMLCanvasElement, pages: PageRange[]) {
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
   const pageHeightPx = Math.round((A4_HEIGHT_MM / A4_WIDTH_MM) * canvas.width);
+  const JPEG_QUALITY = 0.82;
 
   pages.forEach((range, idx) => {
     if (idx > 0) pdf.addPage();
