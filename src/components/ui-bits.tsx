@@ -15,10 +15,10 @@ export function PageHeader({ title, subtitle, children }: { title: string; subti
 
 export function StatCard({ label, value, hint, accent }: { label: string; value: string; hint?: string; accent?: boolean }) {
   return (
-    <div className={`surface-card p-5 ${accent ? "glow-ring" : ""}`}>
-      <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">{label}</div>
-      <div className="font-display text-[28px] font-semibold text-foreground mt-2 tabular-nums">{value}</div>
-      {hint && <div className="text-[11px] text-muted-foreground mt-1.5 uppercase tracking-wider">{hint}</div>}
+    <div className={`surface-card p-5 min-w-0 overflow-hidden ${accent ? "glow-ring" : ""}`}>
+      <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold truncate">{label}</div>
+      <div className="font-display font-semibold text-foreground mt-2 tabular-nums truncate text-[clamp(18px,2.2vw,28px)]" title={value}>{value}</div>
+      {hint && <div className="text-[11px] text-muted-foreground mt-1.5 uppercase tracking-wider truncate">{hint}</div>}
     </div>
   );
 }
