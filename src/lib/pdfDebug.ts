@@ -197,7 +197,7 @@ function canvasToPdf(canvas: HTMLCanvasElement, pages: PageRange[]) {
       0, range.top, canvas.width, sliceHeight,
       0, 0, canvas.width, sliceHeight,
     );
-    pdf.addImage(slice.toDataURL("image/png"), "PNG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
+    pdf.addImage(slice.toDataURL("image/jpeg", JPEG_QUALITY), "JPEG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, undefined, "FAST");
     slice.width = 0;
     slice.height = 0;
   });
