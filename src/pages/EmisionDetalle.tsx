@@ -31,7 +31,7 @@ const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
 export default function EmisionDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isOperador } = useAuth();
+  const { isAdmin } = useAuth();
   const [e, setE] = useState<Emision | null>(null);
   const [confs, setConfs] = useState<Confirmacion[]>([]);
   const [openConf, setOpenConf] = useState(false);
@@ -157,7 +157,7 @@ export default function EmisionDetalle() {
           <section className="surface-card p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display text-sm uppercase tracking-[0.16em] text-muted-foreground">Confirmaciones</h3>
-              {isOperador && (
+              {isAdmin && (
                 <Dialog open={openConf} onOpenChange={setOpenConf}>
                   <DialogTrigger asChild>
                     <Button size="sm" className="bg-gradient-gold text-accent-foreground hover:opacity-95">

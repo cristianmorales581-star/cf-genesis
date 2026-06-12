@@ -312,7 +312,7 @@ export default function Emisiones() {
   return (
     <>
       <PageHeader title="Emisiones" subtitle="Listado completo de Certificados de Financiamiento Bursátil">
-        {isOperador && (
+        {isAdmin && (
           <Link to="/emisiones/nueva">
             <Button className="bg-gradient-gold text-accent-foreground hover:opacity-95">
               <FilePlus2 className="h-4 w-4 mr-1.5" /> Nueva Emisión

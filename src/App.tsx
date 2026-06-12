@@ -41,11 +41,11 @@ const App = () => (
               <Route path="/financistas" element={<Financistas />} />
               <Route path="/programas" element={<Programas />} />
               <Route path="/emisiones" element={<Emisiones />} />
-              <Route path="/emisiones/nueva" element={<NuevaEmision />} />
-              <Route path="/emisiones/masiva" element={<EmisionMasiva />} />
+              <Route path="/emisiones/nueva" element={<ProtectedRoute requireAdmin><NuevaEmision /></ProtectedRoute>} />
+              <Route path="/emisiones/masiva" element={<ProtectedRoute requireAdmin><EmisionMasiva /></ProtectedRoute>} />
               <Route path="/importar" element={<CargaMasiva />} />
               <Route path="/emisiones/:id" element={<EmisionDetalle />} />
-              <Route path="/confirmaciones" element={<Confirmaciones />} />
+              <Route path="/confirmaciones" element={<ProtectedRoute requireAdmin><Confirmaciones /></ProtectedRoute>} />
               <Route path="/portafolio" element={<Portafolio />} />
               <Route path="/honorarios" element={<Honorarios />} />
               <Route path="/backoffice/carga-historica" element={<ProtectedRoute requireAdmin section="carga_historica"><CargaHistorica /></ProtectedRoute>} />
