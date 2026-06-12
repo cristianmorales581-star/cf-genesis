@@ -8,16 +8,24 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { fmtDate, fmtPct, fmtUSD } from "@/lib/format";
+import { fmtBs, fmtDate, fmtPct, fmtUSD } from "@/lib/format";
 import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 
+const DERECHO_REGISTRO_RATE = 0.001; // 0.1% sobre monto efectivo
+
+const calcDerechoRegistroUsd = (montoEfectivoUsd: number) =>
+  Math.round(Number(montoEfectivoUsd) * DERECHO_REGISTRO_RATE * 100) / 100;
+const calcDerechoRegistroBs = (montoEfectivoUsd: number, tasa: number) =>
+  Math.round(calcDerechoRegistroUsd(montoEfectivoUsd) * Number(tasa) * 100) / 100;
+
 interface Row {
   id: string; simbolo_cfb: string; valor_nominal_usd: number; precio: number;
   fecha_emision: string; fecha_vencimiento: string; estado: string;
   rendimiento_anualizado: number; monto_efectivo_usd: number;
+  tasa_cambio_bs_usd: number;
   programas?: { codigo_pcfb: string; cedentes?: { razon_social: string } };
   financistas?: { razon_social: string } | null;
 }
