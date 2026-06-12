@@ -126,7 +126,7 @@ export default function CargaHistorica() {
     if (list.length === 0) return null;
     if (list.length === 1) return list[0].id;
     const inRange = list.find(
-      (p) => (!p.fecha_emision || p.fecha_emision <= fechaEmision) && (!p.fecha_vencimiento || p.fecha_vencimiento >= fechaEmision)
+      (p) => (!p.fecha_inicio || p.fecha_inicio <= fechaEmision) && (!p.fecha_vencimiento || p.fecha_vencimiento >= fechaEmision)
     );
     return (inRange ?? list[0]).id;
   }
