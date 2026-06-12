@@ -14,18 +14,25 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 
-const DERECHO_REGISTRO_RATE = 0.001; // 0.1% sobre monto efectivo
+const DERECHO_REGISTRO_RATE_DEFAULT = 0.001; // 0.1%
+const DERECHO_REGISTRO_RATE_14D = 0.00078;   // 0.078%
 
-const calcDerechoRegistroUsd = (montoEfectivoUsd: number) =>
-  Math.round(Number(montoEfectivoUsd) * DERECHO_REGISTRO_RATE * 100) / 100;
-const calcDerechoRegistroBs = (montoEfectivoUsd: number, tasa: number) =>
-  Math.round(calcDerechoRegistroUsd(montoEfectivoUsd) * Number(tasa) * 100) / 100;
+function getDerechoRegistroRate(dias: number) {
+  return dias === 14 ? DERECHO_REGISTRO_RATE_14D : DERECHO_REGISTRO_RATE_DEFAULT;
+}
+
+const calcDerechoRegistroUsd = (montoEfectivoUsd: number, dias: number) => {
+  const rate = getDerechoRegistroRate(dias);
+  return Math.round(Number(montoEfectivoUsd) * rate * 100) / 100;
+};
+const calcDerechoRegistroBs = (montoEfectivoUsd: number, dias: number, tasa: number) =>
+  Math.round(calcDerechoRegistroUsd(montoEfectivoUsd, dias) * Number(tasa) * 100) / 100;
 
 interface Row {
   id: string; simbolo_cfb: string; valor_nominal_usd: number; precio: number;
   fecha_emision: string; fecha_vencimiento: string; estado: string;
   rendimiento_anualizado: number; monto_efectivo_usd: number;
-  tasa_cambio_bs_usd: number;
+  tasa_cambio_bs_usd: number; dias_colocados: number;
   programas?: { codigo_pcfb: string; cedentes?: { razon_social: string } };
   financistas?: { razon_social: string } | null;
 }
@@ -70,8 +77,8 @@ function downloadCSV(filename: string, rows: Row[]) {
   ];
   const lines = [header.join(",")];
   for (const r of rows) {
-    const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd));
-    const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), Number(r.tasa_cambio_bs_usd));
+    const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
+    const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
     lines.push([
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
@@ -339,7 +346,7 @@ export default function Emisiones() {
                   <th className="text-left px-5 py-3 font-semibold">Cedente / Financista</th>
                   <th className="text-right px-5 py-3 font-semibold">VN USD</th>
                   <th className="text-right px-5 py-3 font-semibold">Monto SIBE</th>
-                  <th className="text-right px-5 py-3 font-semibold" title="0.1% sobre monto efectivo (Bs fijado a la tasa BCV del día de emisión)">Der. Registro</th>
+                  <th className="text-right px-5 py-3 font-semibold" title="0.078% a 14 días, 0.1% otros plazos. Sobre monto efectivo (Bs fijado a la tasa BCV del día de emisión)">Der. Registro</th>
                   <th className="text-right px-5 py-3 font-semibold">Precio</th>
                   <th className="text-right px-5 py-3 font-semibold">Rend.</th>
                   <th className="text-left px-5 py-3 font-semibold">Vigencia</th>
@@ -350,8 +357,8 @@ export default function Emisiones() {
               <tbody>
                 {filtered.map(r => {
                   const remaining = daysRemaining(r.fecha_vencimiento);
-                  const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd));
-                  const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), Number(r.tasa_cambio_bs_usd));
+                  const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
+                  const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
                   return <tr key={r.id} className="border-t border-border hover:bg-secondary/30 transition-smooth">
                     <td className="px-5 py-3">
                       <input type="checkbox" checked={selected.includes(r.id)} onChange={e => toggleSelected(r.id, e.target.checked)} aria-label={`Seleccionar ${r.simbolo_cfb}`} />
