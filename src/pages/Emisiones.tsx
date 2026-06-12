@@ -228,32 +228,35 @@ export default function Emisiones() {
     return [...s].sort();
   }, [rows]);
 
-  const filtered = useMemo(() => rows.filter(r => {
-    if (f.estado !== "todos" && r.estado !== f.estado) return false;
-    if (f.cedente !== "__all__" && r.programas?.cedentes?.razon_social !== f.cedente) return false;
-    if (f.financista !== "__all__") {
-      const name = r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.";
-      if (name !== f.financista) return false;
-    }
-    if (f.fechaEmDesde && r.fecha_emision < f.fechaEmDesde) return false;
-    if (f.fechaEmHasta && r.fecha_emision > f.fechaEmHasta) return false;
-    if (f.fechaVcDesde && r.fecha_vencimiento < f.fechaVcDesde) return false;
-    if (f.fechaVcHasta && r.fecha_vencimiento > f.fechaVcHasta) return false;
-    const rend = Number(r.rendimiento_anualizado);
-    if (f.rendMin !== "" && rend < Number(f.rendMin) / 100) return false;
-    if (f.rendMax !== "" && rend > Number(f.rendMax) / 100) return false;
-    const vn = Number(r.valor_nominal_usd);
-    if (f.vnMin !== "" && vn < Number(f.vnMin)) return false;
-    if (f.vnMax !== "" && vn > Number(f.vnMax)) return false;
-    if (f.q) {
-      const t = f.q.toLowerCase();
-      return r.simbolo_cfb.toLowerCase().includes(t)
-        || r.programas?.codigo_pcfb?.toLowerCase().includes(t)
-        || r.programas?.cedentes?.razon_social?.toLowerCase().includes(t)
-        || r.financistas?.razon_social?.toLowerCase().includes(t);
-    }
-    return true;
-  }), [rows, f]);
+  const filtered = useMemo(() => {
+    const fRows = rows.filter(r => {
+      if (f.estado !== "todos" && r.estado !== f.estado) return false;
+      if (f.cedente !== "__all__" && r.programas?.cedentes?.razon_social !== f.cedente) return false;
+      if (f.financista !== "__all__") {
+        const name = r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.";
+        if (name !== f.financista) return false;
+      }
+      if (f.fechaEmDesde && r.fecha_emision < f.fechaEmDesde) return false;
+      if (f.fechaEmHasta && r.fecha_emision > f.fechaEmHasta) return false;
+      if (f.fechaVcDesde && r.fecha_vencimiento < f.fechaVcDesde) return false;
+      if (f.fechaVcHasta && r.fecha_vencimiento > f.fechaVcHasta) return false;
+      const rend = Number(r.rendimiento_anualizado);
+      if (f.rendMin !== "" && rend < Number(f.rendMin) / 100) return false;
+      if (f.rendMax !== "" && rend > Number(f.rendMax) / 100) return false;
+      const vn = Number(r.valor_nominal_usd);
+      if (f.vnMin !== "" && vn < Number(f.vnMin)) return false;
+      if (f.vnMax !== "" && vn > Number(f.vnMax)) return false;
+      if (f.q) {
+        const t = f.q.toLowerCase();
+        return r.simbolo_cfb.toLowerCase().includes(t)
+          || r.programas?.codigo_pcfb?.toLowerCase().includes(t)
+          || r.programas?.cedentes?.razon_social?.toLowerCase().includes(t)
+          || r.financistas?.razon_social?.toLowerCase().includes(t);
+      }
+      return true;
+    });
+    return sortRows(fRows, sort);
+  }, [rows, f, sort]);
 
   const filteredIds = filtered.map(r => r.id);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every(id => selected.includes(id));
