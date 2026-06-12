@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { fmtBs, fmtDate, fmtPct, fmtUSD } from "@/lib/format";
-import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal } from "lucide-react";
+import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
