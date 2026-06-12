@@ -159,6 +159,31 @@ function sortRows(rows: Row[], config: SortConfig): Row[] {
   });
 }
 
+function SortTh({
+  keyName, label, align, sort, onSort,
+}: {
+  keyName: SortKey; label: string; align: "left" | "right" | "center";
+  sort: SortConfig; onSort: (k: SortKey) => void;
+}) {
+  const active = sort.key === keyName;
+  const alignClass = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+  return (
+    <th
+      className={`${alignClass} px-5 py-3 font-semibold cursor-pointer select-none hover:text-foreground transition-colors`}
+      onClick={() => onSort(keyName)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active ? (
+          sort.direction === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-40" />
+        )}
+      </span>
+    </th>
+  );
+}
+
 export default function Emisiones() {
   const { isOperador, isAdmin } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
