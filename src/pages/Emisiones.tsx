@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { fmtBs, fmtDate, fmtPct, fmtUSD } from "@/lib/format";
-import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal } from "lucide-react";
+import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
@@ -109,6 +109,81 @@ function downloadCSV(filename: string, rows: Row[]) {
   URL.revokeObjectURL(url);
 }
 
+type SortKey =
+  | "simbolo_cfb"
+  | "cedente"
+  | "valor_nominal_usd"
+  | "monto_efectivo_usd"
+  | "precio"
+  | "rendimiento_anualizado"
+  | "fecha_emision"
+  | "estado";
+
+interface SortConfig {
+  key: SortKey;
+  direction: "asc" | "desc";
+}
+
+function sortRows(rows: Row[], config: SortConfig): Row[] {
+  const { key, direction } = config;
+  const d = direction === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    let cmp = 0;
+    switch (key) {
+      case "simbolo_cfb":
+        cmp = a.simbolo_cfb.localeCompare(b.simbolo_cfb);
+        break;
+      case "cedente":
+        cmp = (a.programas?.cedentes?.razon_social ?? "").localeCompare(b.programas?.cedentes?.razon_social ?? "");
+        break;
+      case "valor_nominal_usd":
+        cmp = Number(a.valor_nominal_usd) - Number(b.valor_nominal_usd);
+        break;
+      case "monto_efectivo_usd":
+        cmp = Number(a.monto_efectivo_usd) - Number(b.monto_efectivo_usd);
+        break;
+      case "precio":
+        cmp = Number(a.precio) - Number(b.precio);
+        break;
+      case "rendimiento_anualizado":
+        cmp = Number(a.rendimiento_anualizado) - Number(b.rendimiento_anualizado);
+        break;
+      case "fecha_emision":
+        cmp = new Date(a.fecha_emision).getTime() - new Date(b.fecha_emision).getTime();
+        break;
+      case "estado":
+        cmp = a.estado.localeCompare(b.estado);
+        break;
+    }
+    return cmp * d;
+  });
+}
+
+function SortTh({
+  keyName, label, align, sort, onSort,
+}: {
+  keyName: SortKey; label: string; align: "left" | "right" | "center";
+  sort: SortConfig; onSort: (k: SortKey) => void;
+}) {
+  const active = sort.key === keyName;
+  const alignClass = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+  return (
+    <th
+      className={`${alignClass} px-5 py-3 font-semibold cursor-pointer select-none hover:text-foreground transition-colors`}
+      onClick={() => onSort(keyName)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active ? (
+          sort.direction === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-40" />
+        )}
+      </span>
+    </th>
+  );
+}
+
 export default function Emisiones() {
   const { isOperador, isAdmin } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
@@ -116,9 +191,19 @@ export default function Emisiones() {
   const [deleting, setDeleting] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [f, setF] = useState(INITIAL_FILTERS);
+  const [sort, setSort] = useState<SortConfig>({ key: "fecha_emision", direction: "desc" });
 
   function setFilter<K extends keyof typeof INITIAL_FILTERS>(k: K, v: (typeof INITIAL_FILTERS)[K]) {
     setF(prev => ({ ...prev, [k]: v }));
+  }
+
+  function toggleSort(key: SortKey) {
+    setSort(prev => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
+      }
+      return { key, direction: "desc" };
+    });
   }
 
   async function load() {
@@ -168,32 +253,35 @@ export default function Emisiones() {
     return [...s].sort();
   }, [rows]);
 
-  const filtered = useMemo(() => rows.filter(r => {
-    if (f.estado !== "todos" && r.estado !== f.estado) return false;
-    if (f.cedente !== "__all__" && r.programas?.cedentes?.razon_social !== f.cedente) return false;
-    if (f.financista !== "__all__") {
-      const name = r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.";
-      if (name !== f.financista) return false;
-    }
-    if (f.fechaEmDesde && r.fecha_emision < f.fechaEmDesde) return false;
-    if (f.fechaEmHasta && r.fecha_emision > f.fechaEmHasta) return false;
-    if (f.fechaVcDesde && r.fecha_vencimiento < f.fechaVcDesde) return false;
-    if (f.fechaVcHasta && r.fecha_vencimiento > f.fechaVcHasta) return false;
-    const rend = Number(r.rendimiento_anualizado);
-    if (f.rendMin !== "" && rend < Number(f.rendMin) / 100) return false;
-    if (f.rendMax !== "" && rend > Number(f.rendMax) / 100) return false;
-    const vn = Number(r.valor_nominal_usd);
-    if (f.vnMin !== "" && vn < Number(f.vnMin)) return false;
-    if (f.vnMax !== "" && vn > Number(f.vnMax)) return false;
-    if (f.q) {
-      const t = f.q.toLowerCase();
-      return r.simbolo_cfb.toLowerCase().includes(t)
-        || r.programas?.codigo_pcfb?.toLowerCase().includes(t)
-        || r.programas?.cedentes?.razon_social?.toLowerCase().includes(t)
-        || r.financistas?.razon_social?.toLowerCase().includes(t);
-    }
-    return true;
-  }), [rows, f]);
+  const filtered = useMemo(() => {
+    const fRows = rows.filter(r => {
+      if (f.estado !== "todos" && r.estado !== f.estado) return false;
+      if (f.cedente !== "__all__" && r.programas?.cedentes?.razon_social !== f.cedente) return false;
+      if (f.financista !== "__all__") {
+        const name = r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.";
+        if (name !== f.financista) return false;
+      }
+      if (f.fechaEmDesde && r.fecha_emision < f.fechaEmDesde) return false;
+      if (f.fechaEmHasta && r.fecha_emision > f.fechaEmHasta) return false;
+      if (f.fechaVcDesde && r.fecha_vencimiento < f.fechaVcDesde) return false;
+      if (f.fechaVcHasta && r.fecha_vencimiento > f.fechaVcHasta) return false;
+      const rend = Number(r.rendimiento_anualizado);
+      if (f.rendMin !== "" && rend < Number(f.rendMin) / 100) return false;
+      if (f.rendMax !== "" && rend > Number(f.rendMax) / 100) return false;
+      const vn = Number(r.valor_nominal_usd);
+      if (f.vnMin !== "" && vn < Number(f.vnMin)) return false;
+      if (f.vnMax !== "" && vn > Number(f.vnMax)) return false;
+      if (f.q) {
+        const t = f.q.toLowerCase();
+        return r.simbolo_cfb.toLowerCase().includes(t)
+          || r.programas?.codigo_pcfb?.toLowerCase().includes(t)
+          || r.programas?.cedentes?.razon_social?.toLowerCase().includes(t)
+          || r.financistas?.razon_social?.toLowerCase().includes(t);
+      }
+      return true;
+    });
+    return sortRows(fRows, sort);
+  }, [rows, f, sort]);
 
   const filteredIds = filtered.map(r => r.id);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every(id => selected.includes(id));
@@ -344,15 +432,15 @@ export default function Emisiones() {
                   <th className="text-left px-5 py-3 font-semibold w-10">
                     <input type="checkbox" checked={allFilteredSelected} onChange={e => toggleAllFiltered(e.target.checked)} aria-label="Seleccionar emisiones filtradas" />
                   </th>
-                  <th className="text-left px-5 py-3 font-semibold">Símbolo</th>
-                  <th className="text-left px-5 py-3 font-semibold">Cedente / Financista</th>
-                  <th className="text-right px-5 py-3 font-semibold">VN USD</th>
-                  <th className="text-right px-5 py-3 font-semibold">Monto SIBE</th>
+                  <SortTh keyName="simbolo_cfb" label="Símbolo" align="left" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="cedente" label="Cedente / Financista" align="left" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="valor_nominal_usd" label="VN USD" align="right" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="monto_efectivo_usd" label="Monto SIBE" align="right" sort={sort} onSort={toggleSort} />
                   <th className="text-right px-5 py-3 font-semibold" title="0.078% a 14 días, 0.1% otros plazos. Sobre monto efectivo (Bs fijado a la tasa BCV del día de emisión)">Der. Registro</th>
-                  <th className="text-right px-5 py-3 font-semibold">Precio</th>
-                  <th className="text-right px-5 py-3 font-semibold">Rend.</th>
-                  <th className="text-left px-5 py-3 font-semibold">Vigencia</th>
-                  <th className="text-center px-5 py-3 font-semibold">Estado</th>
+                  <SortTh keyName="precio" label="Precio" align="right" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="rendimiento_anualizado" label="Rend." align="right" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="fecha_emision" label="Vigencia" align="left" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="estado" label="Estado" align="center" sort={sort} onSort={toggleSort} />
                   {isAdmin && <th className="text-right px-5 py-3 font-semibold"></th>}
                 </tr>
               </thead>
