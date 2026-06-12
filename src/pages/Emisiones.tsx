@@ -109,6 +109,56 @@ function downloadCSV(filename: string, rows: Row[]) {
   URL.revokeObjectURL(url);
 }
 
+type SortKey =
+  | "simbolo_cfb"
+  | "cedente"
+  | "valor_nominal_usd"
+  | "monto_efectivo_usd"
+  | "precio"
+  | "rendimiento_anualizado"
+  | "fecha_emision"
+  | "estado";
+
+interface SortConfig {
+  key: SortKey;
+  direction: "asc" | "desc";
+}
+
+function sortRows(rows: Row[], config: SortConfig): Row[] {
+  const { key, direction } = config;
+  const d = direction === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    let cmp = 0;
+    switch (key) {
+      case "simbolo_cfb":
+        cmp = a.simbolo_cfb.localeCompare(b.simbolo_cfb);
+        break;
+      case "cedente":
+        cmp = (a.programas?.cedentes?.razon_social ?? "").localeCompare(b.programas?.cedentes?.razon_social ?? "");
+        break;
+      case "valor_nominal_usd":
+        cmp = Number(a.valor_nominal_usd) - Number(b.valor_nominal_usd);
+        break;
+      case "monto_efectivo_usd":
+        cmp = Number(a.monto_efectivo_usd) - Number(b.monto_efectivo_usd);
+        break;
+      case "precio":
+        cmp = Number(a.precio) - Number(b.precio);
+        break;
+      case "rendimiento_anualizado":
+        cmp = Number(a.rendimiento_anualizado) - Number(b.rendimiento_anualizado);
+        break;
+      case "fecha_emision":
+        cmp = new Date(a.fecha_emision).getTime() - new Date(b.fecha_emision).getTime();
+        break;
+      case "estado":
+        cmp = a.estado.localeCompare(b.estado);
+        break;
+    }
+    return cmp * d;
+  });
+}
+
 export default function Emisiones() {
   const { isOperador, isAdmin } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
@@ -116,9 +166,19 @@ export default function Emisiones() {
   const [deleting, setDeleting] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [f, setF] = useState(INITIAL_FILTERS);
+  const [sort, setSort] = useState<SortConfig>({ key: "fecha_emision", direction: "desc" });
 
   function setFilter<K extends keyof typeof INITIAL_FILTERS>(k: K, v: (typeof INITIAL_FILTERS)[K]) {
     setF(prev => ({ ...prev, [k]: v }));
+  }
+
+  function toggleSort(key: SortKey) {
+    setSort(prev => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
+      }
+      return { key, direction: "desc" };
+    });
   }
 
   async function load() {
