@@ -81,14 +81,14 @@ export default function CargaHistorica() {
   const [loading, setLoading] = useState(false);
   const [inserting, setInserting] = useState(false);
   const [cedentes, setCedentes] = useState<Array<{ id: string; rif: string; razon_social: string }>>([]);
-  const [programas, setProgramas] = useState<Array<{ id: string; codigo_pcfb: string; cedente_id: string; fecha_emision?: string; fecha_vencimiento?: string }>>([]);
+  const [programas, setProgramas] = useState<Array<{ id: string; codigo_pcfb: string; cedente_id: string; fecha_inicio?: string; fecha_vencimiento?: string }>>([]);
   const [existingSimbolos, setExistingSimbolos] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
       const [c, p, e] = await Promise.all([
         supabase.from("cedentes").select("id, rif, razon_social"),
-        supabase.from("programas").select("id, codigo_pcfb, cedente_id, fecha_emision, fecha_vencimiento"),
+        supabase.from("programas").select("id, codigo_pcfb, cedente_id, fecha_inicio, fecha_vencimiento"),
         supabase.from("emisiones").select("simbolo_cfb"),
       ]);
       setCedentes(c.data ?? []);
