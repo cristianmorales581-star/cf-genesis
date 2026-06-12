@@ -407,15 +407,15 @@ export default function Emisiones() {
                   <th className="text-left px-5 py-3 font-semibold w-10">
                     <input type="checkbox" checked={allFilteredSelected} onChange={e => toggleAllFiltered(e.target.checked)} aria-label="Seleccionar emisiones filtradas" />
                   </th>
-                  <th className="text-left px-5 py-3 font-semibold">Símbolo</th>
-                  <th className="text-left px-5 py-3 font-semibold">Cedente / Financista</th>
-                  <th className="text-right px-5 py-3 font-semibold">VN USD</th>
-                  <th className="text-right px-5 py-3 font-semibold">Monto SIBE</th>
+                  <SortTh keyName="simbolo_cfb" label="Símbolo" align="left" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="cedente" label="Cedente / Financista" align="left" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="valor_nominal_usd" label="VN USD" align="right" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="monto_efectivo_usd" label="Monto SIBE" align="right" sort={sort} onSort={toggleSort} />
                   <th className="text-right px-5 py-3 font-semibold" title="0.078% a 14 días, 0.1% otros plazos. Sobre monto efectivo (Bs fijado a la tasa BCV del día de emisión)">Der. Registro</th>
-                  <th className="text-right px-5 py-3 font-semibold">Precio</th>
-                  <th className="text-right px-5 py-3 font-semibold">Rend.</th>
-                  <th className="text-left px-5 py-3 font-semibold">Vigencia</th>
-                  <th className="text-center px-5 py-3 font-semibold">Estado</th>
+                  <SortTh keyName="precio" label="Precio" align="right" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="rendimiento_anualizado" label="Rend." align="right" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="fecha_emision" label="Vigencia" align="left" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="estado" label="Estado" align="center" sort={sort} onSort={toggleSort} />
                   {isAdmin && <th className="text-right px-5 py-3 font-semibold"></th>}
                 </tr>
               </thead>
