@@ -8,9 +8,14 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { SECTIONS, ROLE_LABELS } from "@/lib/sections";
-import { ShieldCheck, Users as UsersIcon, Save } from "lucide-react";
+import { ShieldCheck, Users as UsersIcon, Save, UserPlus } from "lucide-react";
 
 type Role = "admin" | "backoffice";
 
