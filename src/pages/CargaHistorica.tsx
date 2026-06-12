@@ -81,14 +81,14 @@ export default function CargaHistorica() {
   const [loading, setLoading] = useState(false);
   const [inserting, setInserting] = useState(false);
   const [cedentes, setCedentes] = useState<Array<{ id: string; rif: string; razon_social: string }>>([]);
-  const [programas, setProgramas] = useState<Array<{ id: string; codigo_pcfb: string; cedente_id: string; fecha_emision?: string; fecha_vencimiento?: string }>>([]);
+  const [programas, setProgramas] = useState<Array<{ id: string; codigo_pcfb: string; cedente_id: string; fecha_inicio?: string; fecha_vencimiento?: string }>>([]);
   const [existingSimbolos, setExistingSimbolos] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
       const [c, p, e] = await Promise.all([
         supabase.from("cedentes").select("id, rif, razon_social"),
-        supabase.from("programas").select("id, codigo_pcfb, cedente_id, fecha_emision, fecha_vencimiento"),
+        supabase.from("programas").select("id, codigo_pcfb, cedente_id, fecha_inicio, fecha_vencimiento"),
         supabase.from("emisiones").select("simbolo_cfb"),
       ]);
       setCedentes(c.data ?? []);
@@ -126,7 +126,7 @@ export default function CargaHistorica() {
     if (list.length === 0) return null;
     if (list.length === 1) return list[0].id;
     const inRange = list.find(
-      (p) => (!p.fecha_emision || p.fecha_emision <= fechaEmision) && (!p.fecha_vencimiento || p.fecha_vencimiento >= fechaEmision)
+      (p) => (!p.fecha_inicio || p.fecha_inicio <= fechaEmision) && (!p.fecha_vencimiento || p.fecha_vencimiento >= fechaEmision)
     );
     return (inRange ?? list[0]).id;
   }
@@ -229,7 +229,7 @@ export default function CargaHistorica() {
         else {
           row.cedente_id = ced.id;
           row.programa_id = pickProgramaForCedente(ced.id, fechaEmision ?? "");
-          if (!row.programa_id) errs.push("Cedente sin programa");
+          // programa_id puede quedar null para histórico — la columna es nullable.
         }
         if (existingSimbolos.has(simbolo)) errs.push("Símbolo ya existe en BD");
         if (seenSym.has(simbolo)) errs.push("Símbolo duplicado en archivo");
