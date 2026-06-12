@@ -1,0 +1,1 @@
+INSERT INTO public.role_section_permissions (role, section) VALUES ('admin', 'carga_historica') ON CONFLICT DO NOTHING;
