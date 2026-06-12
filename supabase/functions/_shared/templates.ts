@@ -665,7 +665,7 @@ ${actionsBar()}
     <tr><td class="k">Cedente</td>
         <td class="v">${c.cedente_razon_social}</td></tr>
     <tr><td class="k">Deudor Cedido</td>
-        <td class="v">${c.deudor_razon_social} en representación de<br/>los usuarios de la plataforma Cashea.</td></tr>
+        <td class="v">${(c.deudor_razon_social && c.deudor_razon_social !== '—') ? c.deudor_razon_social : 'Grupo Cashea Ve, C.A.'} en representación de<br/>los usuarios de la plataforma Cashea.</td></tr>
     <tr><td class="k">Modalidad</td>
         <td class="v">A descuento</td></tr>
     <tr><td class="k">Estructurador</td>
