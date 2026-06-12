@@ -21,6 +21,7 @@ import Confirmaciones from "./pages/Confirmaciones";
 import Auditoria from "./pages/Auditoria";
 import Portafolio from "./pages/Portafolio";
 import UsuariosAdmin from "./pages/UsuariosAdmin";
+import Honorarios from "./pages/Honorarios";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/emisiones/:id" element={<EmisionDetalle />} />
               <Route path="/confirmaciones" element={<Confirmaciones />} />
               <Route path="/portafolio" element={<Portafolio />} />
+              <Route path="/honorarios" element={<Honorarios />} />
               <Route path="/auditoria" element={<Auditoria />} />
               <Route
                 path="/admin/usuarios"

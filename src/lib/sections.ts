@@ -7,6 +7,7 @@ export const SECTIONS: { id: string; label: string; path: string; group: string 
   { id: "emisiones_masiva", label: "Emisión Masiva",    path: "/emisiones/masiva", group: "operación" },
   { id: "confirmaciones",   label: "Confirmaciones",    path: "/confirmaciones",   group: "operación" },
   { id: "portafolio",       label: "Portafolio",        path: "/portafolio",       group: "operación" },
+  { id: "honorarios",       label: "Honorarios",        path: "/honorarios",       group: "operación" },
   { id: "programas",        label: "Programas",         path: "/programas",        group: "maestros" },
   { id: "cedentes",         label: "Cedentes",          path: "/cedentes",         group: "maestros" },
   { id: "financistas",      label: "Financistas",       path: "/financistas",      group: "maestros" },
