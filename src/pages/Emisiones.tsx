@@ -8,16 +8,24 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { fmtDate, fmtPct, fmtUSD } from "@/lib/format";
+import { fmtBs, fmtDate, fmtPct, fmtUSD } from "@/lib/format";
 import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 
+const DERECHO_REGISTRO_RATE = 0.001; // 0.1% sobre monto efectivo
+
+const calcDerechoRegistroUsd = (montoEfectivoUsd: number) =>
+  Math.round(Number(montoEfectivoUsd) * DERECHO_REGISTRO_RATE * 100) / 100;
+const calcDerechoRegistroBs = (montoEfectivoUsd: number, tasa: number) =>
+  Math.round(calcDerechoRegistroUsd(montoEfectivoUsd) * Number(tasa) * 100) / 100;
+
 interface Row {
   id: string; simbolo_cfb: string; valor_nominal_usd: number; precio: number;
   fecha_emision: string; fecha_vencimiento: string; estado: string;
   rendimiento_anualizado: number; monto_efectivo_usd: number;
+  tasa_cambio_bs_usd: number;
   programas?: { codigo_pcfb: string; cedentes?: { razon_social: string } };
   financistas?: { razon_social: string } | null;
 }
@@ -58,9 +66,12 @@ function downloadCSV(filename: string, rows: Row[]) {
     "Simbolo CFB", "Programa", "Cedente", "Financista",
     "Valor Nominal USD", "Monto Efectivo USD", "Precio",
     "Rendimiento Anualizado", "Fecha Emisión", "Fecha Vencimiento", "Estado",
+    "Tasa BCV Emisión", "Derecho de Registro USD", "Derecho de Registro Bs",
   ];
   const lines = [header.join(",")];
   for (const r of rows) {
+    const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd));
+    const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), Number(r.tasa_cambio_bs_usd));
     lines.push([
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
@@ -73,6 +84,9 @@ function downloadCSV(filename: string, rows: Row[]) {
       r.fecha_emision,
       r.fecha_vencimiento,
       r.estado,
+      Number(r.tasa_cambio_bs_usd).toFixed(4),
+      drUsd.toFixed(2),
+      drBs.toFixed(2),
     ].map(csvEscape).join(","));
   }
   const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -325,6 +339,7 @@ export default function Emisiones() {
                   <th className="text-left px-5 py-3 font-semibold">Cedente / Financista</th>
                   <th className="text-right px-5 py-3 font-semibold">VN USD</th>
                   <th className="text-right px-5 py-3 font-semibold">Monto SIBE</th>
+                  <th className="text-right px-5 py-3 font-semibold" title="0.1% sobre monto efectivo (Bs fijado a la tasa BCV del día de emisión)">Der. Registro</th>
                   <th className="text-right px-5 py-3 font-semibold">Precio</th>
                   <th className="text-right px-5 py-3 font-semibold">Rend.</th>
                   <th className="text-left px-5 py-3 font-semibold">Vigencia</th>
@@ -335,6 +350,8 @@ export default function Emisiones() {
               <tbody>
                 {filtered.map(r => {
                   const remaining = daysRemaining(r.fecha_vencimiento);
+                  const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd));
+                  const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), Number(r.tasa_cambio_bs_usd));
                   return <tr key={r.id} className="border-t border-border hover:bg-secondary/30 transition-smooth">
                     <td className="px-5 py-3">
                       <input type="checkbox" checked={selected.includes(r.id)} onChange={e => toggleSelected(r.id, e.target.checked)} aria-label={`Seleccionar ${r.simbolo_cfb}`} />
@@ -351,8 +368,13 @@ export default function Emisiones() {
                     </td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.valor_nominal_usd)}</Numeric></td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.monto_efectivo_usd)}</Numeric></td>
+                    <td className="px-5 py-3 text-right">
+                      <Numeric>{fmtUSD(drUsd)}</Numeric>
+                      <div className="text-[10px] text-muted-foreground tabular-nums">{fmtBs(drBs)}</div>
+                    </td>
                     <td className="px-5 py-3 text-right"><Numeric>{Number(r.precio).toFixed(5)}</Numeric></td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtPct(r.rendimiento_anualizado, 2)}</Numeric></td>
+
                     <td className="px-5 py-3 text-xs text-muted-foreground">
                       <div>{fmtDate(r.fecha_emision)} → {fmtDate(r.fecha_vencimiento)}</div>
                       <div className={remaining < 0 ? "text-warning" : "text-accent"}>{remaining < 0 ? `${Math.abs(remaining)} días vencida` : `${remaining} días restantes`}</div>
