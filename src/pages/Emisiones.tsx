@@ -352,11 +352,6 @@ export default function Emisiones() {
                   const remaining = daysRemaining(r.fecha_vencimiento);
                   const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd));
                   const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), Number(r.tasa_cambio_bs_usd));
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(r => {
-                  const remaining = daysRemaining(r.fecha_vencimiento);
                   return <tr key={r.id} className="border-t border-border hover:bg-secondary/30 transition-smooth">
                     <td className="px-5 py-3">
                       <input type="checkbox" checked={selected.includes(r.id)} onChange={e => toggleSelected(r.id, e.target.checked)} aria-label={`Seleccionar ${r.simbolo_cfb}`} />
@@ -373,8 +368,13 @@ export default function Emisiones() {
                     </td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.valor_nominal_usd)}</Numeric></td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.monto_efectivo_usd)}</Numeric></td>
+                    <td className="px-5 py-3 text-right">
+                      <Numeric>{fmtUSD(drUsd)}</Numeric>
+                      <div className="text-[10px] text-muted-foreground tabular-nums">{fmtBs(drBs)}</div>
+                    </td>
                     <td className="px-5 py-3 text-right"><Numeric>{Number(r.precio).toFixed(5)}</Numeric></td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtPct(r.rendimiento_anualizado, 2)}</Numeric></td>
+
                     <td className="px-5 py-3 text-xs text-muted-foreground">
                       <div>{fmtDate(r.fecha_emision)} → {fmtDate(r.fecha_vencimiento)}</div>
                       <div className={remaining < 0 ? "text-warning" : "text-accent"}>{remaining < 0 ? `${Math.abs(remaining)} días vencida` : `${remaining} días restantes`}</div>
