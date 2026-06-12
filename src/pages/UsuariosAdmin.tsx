@@ -37,6 +37,34 @@ export default function UsuariosAdmin() {
   });
   const [busy, setBusy] = useState(false);
   const [permsBusy, setPermsBusy] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newUser, setNewUser] = useState<{ email: string; password: string; full_name: string; role: Role }>({
+    email: "", password: "", full_name: "", role: "backoffice",
+  });
+
+  async function createUser() {
+    if (!newUser.email.trim() || !newUser.email.includes("@")) { toast.error("Email inválido"); return; }
+    if (newUser.password.length < 8) { toast.error("La contraseña debe tener al menos 8 caracteres"); return; }
+    setCreating(true);
+    const { data, error } = await supabase.functions.invoke("admin-create-user", {
+      body: {
+        email: newUser.email.trim().toLowerCase(),
+        password: newUser.password,
+        full_name: newUser.full_name.trim() || null,
+        role: newUser.role,
+      },
+    });
+    setCreating(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? "No se pudo crear el usuario");
+      return;
+    }
+    toast.success(`Usuario ${newUser.email} creado.`);
+    setCreateOpen(false);
+    setNewUser({ email: "", password: "", full_name: "", role: "backoffice" });
+    await load();
+  }
 
   async function load() {
     const [{ data: profiles }, { data: rolesData }, { data: permsData }] = await Promise.all([
