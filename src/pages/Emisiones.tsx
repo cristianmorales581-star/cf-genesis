@@ -73,12 +73,13 @@ function downloadCSV(filename: string, rows: Row[]) {
     "Simbolo CFB", "Programa", "Cedente", "Financista",
     "Valor Nominal USD", "Monto Efectivo USD", "Precio",
     "Rendimiento Anualizado", "Fecha Emisión", "Fecha Vencimiento", "Estado",
-    "Tasa BCV Emisión", "Derecho de Registro USD", "Derecho de Registro Bs",
+    "Tasa BCV Emisión", "Tasa Derecho Registro", "Derecho de Registro USD", "Derecho de Registro Bs",
   ];
   const lines = [header.join(",")];
   for (const r of rows) {
     const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
     const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
+    const drRate = fmtPct(getDerechoRegistroRate(r.dias_colocados), 3);
     lines.push([
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
@@ -92,6 +93,7 @@ function downloadCSV(filename: string, rows: Row[]) {
       r.fecha_vencimiento,
       r.estado,
       Number(r.tasa_cambio_bs_usd).toFixed(4),
+      drRate,
       drUsd.toFixed(2),
       drBs.toFixed(2),
     ].map(csvEscape).join(","));
