@@ -43,10 +43,16 @@ function excelDateToIso(v: any): string | undefined {
     return iso;
   }
   const s = String(v).trim();
-  const parts = s.split(/[\/\-]/);
+  // Acepta separadores /, -, . y también " 0:00:00" al final
+  const clean = s.split(/\s+/)[0];
+  const parts = clean.split(/[\/\-.]/);
   if (parts.length === 3) {
-    const [a, b, c] = parts;
+    let [a, b, c] = parts;
+    // yyyy-mm-dd
     if (a.length === 4) return `${a}-${b.padStart(2, "0")}-${c.padStart(2, "0")}`;
+    // dd-mm-yy(yy) — expandir año de 2 dígitos
+    if (c.length === 2) c = (Number(c) > 50 ? "19" : "20") + c;
+    if (c.length !== 4) return undefined;
     return `${c}-${b.padStart(2, "0")}-${a.padStart(2, "0")}`;
   }
   const d = new Date(s);
