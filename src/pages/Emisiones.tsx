@@ -339,11 +339,19 @@ export default function Emisiones() {
                   <th className="text-left px-5 py-3 font-semibold">Cedente / Financista</th>
                   <th className="text-right px-5 py-3 font-semibold">VN USD</th>
                   <th className="text-right px-5 py-3 font-semibold">Monto SIBE</th>
+                  <th className="text-right px-5 py-3 font-semibold" title="0.1% sobre monto efectivo (Bs fijado a la tasa BCV del día de emisión)">Der. Registro</th>
                   <th className="text-right px-5 py-3 font-semibold">Precio</th>
                   <th className="text-right px-5 py-3 font-semibold">Rend.</th>
                   <th className="text-left px-5 py-3 font-semibold">Vigencia</th>
                   <th className="text-center px-5 py-3 font-semibold">Estado</th>
                   {isAdmin && <th className="text-right px-5 py-3 font-semibold"></th>}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(r => {
+                  const remaining = daysRemaining(r.fecha_vencimiento);
+                  const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd));
+                  const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), Number(r.tasa_cambio_bs_usd));
                 </tr>
               </thead>
               <tbody>
