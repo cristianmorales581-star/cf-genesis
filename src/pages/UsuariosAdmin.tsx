@@ -154,9 +154,58 @@ export default function UsuariosAdmin() {
           <TabsTrigger value="permisos" className="gap-2"><ShieldCheck className="h-3.5 w-3.5" /> Permisos por rol</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="usuarios" className="mt-6">
+        <TabsContent value="usuarios" className="mt-6 space-y-4">
+          <div className="flex justify-end">
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2"><UserPlus className="h-3.5 w-3.5" /> Crear usuario</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Crear nuevo usuario</DialogTitle>
+                  <DialogDescription>
+                    El usuario se creará con email confirmado y podrá iniciar sesión inmediatamente.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nu-name">Nombre completo</Label>
+                    <Input id="nu-name" value={newUser.full_name}
+                      onChange={(e) => setNewUser(s => ({ ...s, full_name: e.target.value }))}
+                      placeholder="Juan Pérez" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nu-email">Correo</Label>
+                    <Input id="nu-email" type="email" value={newUser.email}
+                      onChange={(e) => setNewUser(s => ({ ...s, email: e.target.value }))}
+                      placeholder="usuario@dominio.com" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nu-pass">Contraseña (mín. 8 caracteres)</Label>
+                    <Input id="nu-pass" type="password" value={newUser.password}
+                      onChange={(e) => setNewUser(s => ({ ...s, password: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Rol</Label>
+                    <Select value={newUser.role} onValueChange={(v) => setNewUser(s => ({ ...s, role: v as Role }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {ROLES.map(r => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>Cancelar</Button>
+                  <Button onClick={createUser} disabled={creating} className="gap-2">
+                    <UserPlus className="h-3.5 w-3.5" /> {creating ? "Creando..." : "Crear"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
           {users.length === 0 ? (
-            <EmptyState title="Sin usuarios registrados" hint="Cuando alguien se registre, aparecerá aquí." />
+            <EmptyState title="Sin usuarios registrados" hint="Crea el primer usuario con el botón superior." />
           ) : (
             <div className="surface-card overflow-x-auto">
               <table className="w-full text-sm">
