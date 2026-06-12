@@ -8,9 +8,14 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { SECTIONS, ROLE_LABELS } from "@/lib/sections";
-import { ShieldCheck, Users as UsersIcon, Save } from "lucide-react";
+import { ShieldCheck, Users as UsersIcon, Save, UserPlus } from "lucide-react";
 
 type Role = "admin" | "backoffice";
 
@@ -32,6 +37,34 @@ export default function UsuariosAdmin() {
   });
   const [busy, setBusy] = useState(false);
   const [permsBusy, setPermsBusy] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newUser, setNewUser] = useState<{ email: string; password: string; full_name: string; role: Role }>({
+    email: "", password: "", full_name: "", role: "backoffice",
+  });
+
+  async function createUser() {
+    if (!newUser.email.trim() || !newUser.email.includes("@")) { toast.error("Email inválido"); return; }
+    if (newUser.password.length < 8) { toast.error("La contraseña debe tener al menos 8 caracteres"); return; }
+    setCreating(true);
+    const { data, error } = await supabase.functions.invoke("admin-create-user", {
+      body: {
+        email: newUser.email.trim().toLowerCase(),
+        password: newUser.password,
+        full_name: newUser.full_name.trim() || null,
+        role: newUser.role,
+      },
+    });
+    setCreating(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? "No se pudo crear el usuario");
+      return;
+    }
+    toast.success(`Usuario ${newUser.email} creado.`);
+    setCreateOpen(false);
+    setNewUser({ email: "", password: "", full_name: "", role: "backoffice" });
+    await load();
+  }
 
   async function load() {
     const [{ data: profiles }, { data: rolesData }, { data: permsData }] = await Promise.all([
@@ -121,9 +154,58 @@ export default function UsuariosAdmin() {
           <TabsTrigger value="permisos" className="gap-2"><ShieldCheck className="h-3.5 w-3.5" /> Permisos por rol</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="usuarios" className="mt-6">
+        <TabsContent value="usuarios" className="mt-6 space-y-4">
+          <div className="flex justify-end">
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2"><UserPlus className="h-3.5 w-3.5" /> Crear usuario</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Crear nuevo usuario</DialogTitle>
+                  <DialogDescription>
+                    El usuario se creará con email confirmado y podrá iniciar sesión inmediatamente.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nu-name">Nombre completo</Label>
+                    <Input id="nu-name" value={newUser.full_name}
+                      onChange={(e) => setNewUser(s => ({ ...s, full_name: e.target.value }))}
+                      placeholder="Juan Pérez" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nu-email">Correo</Label>
+                    <Input id="nu-email" type="email" value={newUser.email}
+                      onChange={(e) => setNewUser(s => ({ ...s, email: e.target.value }))}
+                      placeholder="usuario@dominio.com" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nu-pass">Contraseña (mín. 8 caracteres)</Label>
+                    <Input id="nu-pass" type="password" value={newUser.password}
+                      onChange={(e) => setNewUser(s => ({ ...s, password: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Rol</Label>
+                    <Select value={newUser.role} onValueChange={(v) => setNewUser(s => ({ ...s, role: v as Role }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {ROLES.map(r => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>Cancelar</Button>
+                  <Button onClick={createUser} disabled={creating} className="gap-2">
+                    <UserPlus className="h-3.5 w-3.5" /> {creating ? "Creando..." : "Crear"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
           {users.length === 0 ? (
-            <EmptyState title="Sin usuarios registrados" hint="Cuando alguien se registre, aparecerá aquí." />
+            <EmptyState title="Sin usuarios registrados" hint="Crea el primer usuario con el botón superior." />
           ) : (
             <div className="surface-card overflow-x-auto">
               <table className="w-full text-sm">
