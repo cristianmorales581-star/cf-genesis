@@ -77,8 +77,8 @@ function downloadCSV(filename: string, rows: Row[]) {
   ];
   const lines = [header.join(",")];
   for (const r of rows) {
-    const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd));
-    const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), Number(r.tasa_cambio_bs_usd));
+    const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
+    const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
     lines.push([
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
@@ -346,7 +346,7 @@ export default function Emisiones() {
                   <th className="text-left px-5 py-3 font-semibold">Cedente / Financista</th>
                   <th className="text-right px-5 py-3 font-semibold">VN USD</th>
                   <th className="text-right px-5 py-3 font-semibold">Monto SIBE</th>
-                  <th className="text-right px-5 py-3 font-semibold" title="0.1% sobre monto efectivo (Bs fijado a la tasa BCV del día de emisión)">Der. Registro</th>
+                  <th className="text-right px-5 py-3 font-semibold" title="0.078% a 14 días, 0.1% otros plazos. Sobre monto efectivo (Bs fijado a la tasa BCV del día de emisión)">Der. Registro</th>
                   <th className="text-right px-5 py-3 font-semibold">Precio</th>
                   <th className="text-right px-5 py-3 font-semibold">Rend.</th>
                   <th className="text-left px-5 py-3 font-semibold">Vigencia</th>
