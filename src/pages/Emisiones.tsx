@@ -14,18 +14,25 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 
-const DERECHO_REGISTRO_RATE = 0.001; // 0.1% sobre monto efectivo
+const DERECHO_REGISTRO_RATE_DEFAULT = 0.001; // 0.1%
+const DERECHO_REGISTRO_RATE_14D = 0.00078;   // 0.078%
 
-const calcDerechoRegistroUsd = (montoEfectivoUsd: number) =>
-  Math.round(Number(montoEfectivoUsd) * DERECHO_REGISTRO_RATE * 100) / 100;
-const calcDerechoRegistroBs = (montoEfectivoUsd: number, tasa: number) =>
-  Math.round(calcDerechoRegistroUsd(montoEfectivoUsd) * Number(tasa) * 100) / 100;
+function getDerechoRegistroRate(dias: number) {
+  return dias === 14 ? DERECHO_REGISTRO_RATE_14D : DERECHO_REGISTRO_RATE_DEFAULT;
+}
+
+const calcDerechoRegistroUsd = (montoEfectivoUsd: number, dias: number) => {
+  const rate = getDerechoRegistroRate(dias);
+  return Math.round(Number(montoEfectivoUsd) * rate * 100) / 100;
+};
+const calcDerechoRegistroBs = (montoEfectivoUsd: number, dias: number, tasa: number) =>
+  Math.round(calcDerechoRegistroUsd(montoEfectivoUsd, dias) * Number(tasa) * 100) / 100;
 
 interface Row {
   id: string; simbolo_cfb: string; valor_nominal_usd: number; precio: number;
   fecha_emision: string; fecha_vencimiento: string; estado: string;
   rendimiento_anualizado: number; monto_efectivo_usd: number;
-  tasa_cambio_bs_usd: number;
+  tasa_cambio_bs_usd: number; dias_colocados: number;
   programas?: { codigo_pcfb: string; cedentes?: { razon_social: string } };
   financistas?: { razon_social: string } | null;
 }
