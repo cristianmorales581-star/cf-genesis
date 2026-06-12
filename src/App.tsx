@@ -22,6 +22,7 @@ import Auditoria from "./pages/Auditoria";
 import Portafolio from "./pages/Portafolio";
 import UsuariosAdmin from "./pages/UsuariosAdmin";
 import Honorarios from "./pages/Honorarios";
+import CargaHistorica from "./pages/CargaHistorica";
 
 const queryClient = new QueryClient();
 
