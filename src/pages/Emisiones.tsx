@@ -357,8 +357,8 @@ export default function Emisiones() {
               <tbody>
                 {filtered.map(r => {
                   const remaining = daysRemaining(r.fecha_vencimiento);
-                  const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd));
-                  const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), Number(r.tasa_cambio_bs_usd));
+                  const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
+                  const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
                   return <tr key={r.id} className="border-t border-border hover:bg-secondary/30 transition-smooth">
                     <td className="px-5 py-3">
                       <input type="checkbox" checked={selected.includes(r.id)} onChange={e => toggleSelected(r.id, e.target.checked)} aria-label={`Seleccionar ${r.simbolo_cfb}`} />
