@@ -29,7 +29,7 @@ export function AppLayout() {
   const { user, role, signOut, canAccess, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  const groups = ["general", "operación", "maestros", "sistema"];
+  const groups = ["general", "operación", "backoffice", "maestros", "sistema"];
 
   return (
     <div className="flex min-h-screen">
