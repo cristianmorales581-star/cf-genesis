@@ -105,10 +105,19 @@ export default function EmisionMasiva() {
 
   // Persistencia con TTL de 30 minutos (sobrevive recargas y cambios de pantalla)
   useEffect(() => {
-    try {
-      const payload: PersistedState = { rows, fechaEmision, tasaBcv, filename, pastedCsv, savedAt: Date.now() };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch { /* quota o modo privado */ }
+    if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+    setSaveStatus("saving");
+    saveDebounceRef.current = setTimeout(() => {
+      try {
+        const payload: PersistedState = { rows, fechaEmision, tasaBcv, filename, pastedCsv, savedAt: Date.now() };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        setSaveStatus("saved");
+        setLastSavedAt(Date.now());
+      } catch {
+        setSaveStatus("error");
+      }
+    }, 700);
+    return () => { if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current); };
   }, [rows, fechaEmision, tasaBcv, filename, pastedCsv]);
 
   async function fetchBcv() {
