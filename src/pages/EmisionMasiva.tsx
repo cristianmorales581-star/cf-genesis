@@ -364,6 +364,23 @@ export default function EmisionMasiva() {
       {rows.length > 0 && (
         <>
           <Card title="2. Mapeo y previsualización">
+            <div className="flex items-center justify-end gap-2 mb-3 min-h-[20px]">
+              {saveStatus === "saving" && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground animate-pulse">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Guardando…
+                </span>
+              )}
+              {saveStatus === "error" && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-destructive">
+                  <AlertCircle className="h-3 w-3" /> Error al guardar
+                </span>
+              )}
+              {saveStatus === "saved" && lastSavedAt > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-600">
+                  <CheckCircle2 className="h-3 w-3" /> Guardado {new Date(lastSavedAt).toLocaleTimeString()}
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <Stat label="Filas leídas" value={String(stats.total)} />
               <Stat label="Auto-mapeadas" value={`${stats.mapped} / ${stats.total}`} />
