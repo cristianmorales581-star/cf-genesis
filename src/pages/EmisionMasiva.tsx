@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, Download, Loader2, Wand2, Trash2 } from "lucide-react";
+import { Upload, FileSpreadsheet, Download, Loader2, Wand2, Trash2, Save, CheckCircle2, AlertCircle } from "lucide-react";
 
 function Card({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
@@ -82,7 +82,11 @@ export default function EmisionMasiva() {
   const [filename, setFilename] = useState<string>(persisted?.filename ?? "");
   const [pastedCsv, setPastedCsv] = useState(persisted?.pastedCsv ?? "");
   const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
+  const initialSavedAt = persisted?.savedAt ?? 0;
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(initialSavedAt ? "saved" : "idle");
+  const [lastSavedAt, setLastSavedAt] = useState<number>(initialSavedAt);
   const fileRef = useRef<HTMLInputElement>(null);
+  const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -102,10 +106,19 @@ export default function EmisionMasiva() {
 
   // Persistencia con TTL de 30 minutos (sobrevive recargas y cambios de pantalla)
   useEffect(() => {
-    try {
-      const payload: PersistedState = { rows, fechaEmision, tasaBcv, filename, pastedCsv, savedAt: Date.now() };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch { /* quota o modo privado */ }
+    if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+    setSaveStatus("saving");
+    saveDebounceRef.current = setTimeout(() => {
+      try {
+        const payload: PersistedState = { rows, fechaEmision, tasaBcv, filename, pastedCsv, savedAt: Date.now() };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        setSaveStatus("saved");
+        setLastSavedAt(Date.now());
+      } catch {
+        setSaveStatus("error");
+      }
+    }, 700);
+    return () => { if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current); };
   }, [rows, fechaEmision, tasaBcv, filename, pastedCsv]);
 
   async function fetchBcv() {
@@ -352,6 +365,23 @@ export default function EmisionMasiva() {
       {rows.length > 0 && (
         <>
           <Card title="2. Mapeo y previsualización">
+            <div className="flex items-center justify-end gap-2 mb-3 min-h-[20px]">
+              {saveStatus === "saving" && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground animate-pulse">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Guardando…
+                </span>
+              )}
+              {saveStatus === "error" && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-destructive">
+                  <AlertCircle className="h-3 w-3" /> Error al guardar
+                </span>
+              )}
+              {saveStatus === "saved" && lastSavedAt > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-600">
+                  <CheckCircle2 className="h-3 w-3" /> Guardado {new Date(lastSavedAt).toLocaleTimeString()}
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <Stat label="Filas leídas" value={String(stats.total)} />
               <Stat label="Auto-mapeadas" value={`${stats.mapped} / ${stats.total}`} />
