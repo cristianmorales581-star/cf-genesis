@@ -82,8 +82,9 @@ export default function EmisionMasiva() {
   const [filename, setFilename] = useState<string>(persisted?.filename ?? "");
   const [pastedCsv, setPastedCsv] = useState(persisted?.pastedCsv ?? "");
   const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [lastSavedAt, setLastSavedAt] = useState<number>(0);
+  const initialSavedAt = persisted?.savedAt ?? 0;
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(initialSavedAt ? "saved" : "idle");
+  const [lastSavedAt, setLastSavedAt] = useState<number>(initialSavedAt);
   const fileRef = useRef<HTMLInputElement>(null);
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
