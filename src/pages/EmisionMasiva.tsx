@@ -43,17 +43,44 @@ type RowMapping = ParsedRow & {
   include: boolean;
 };
 
+const STORAGE_KEY = "sicebop:emision-masiva:v1";
+const STORAGE_TTL_MS = 30 * 60 * 1000; // 30 minutos
+
+type PersistedState = {
+  rows: RowMapping[];
+  fechaEmision: string;
+  tasaBcv: number;
+  filename: string;
+  pastedCsv: string;
+  savedAt: number;
+};
+
+function loadPersisted(): PersistedState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedState;
+    if (!parsed?.savedAt || Date.now() - parsed.savedAt > STORAGE_TTL_MS) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch { return null; }
+}
+
 export default function EmisionMasiva() {
   const [cedentes, setCedentes] = useState<Cedente[]>([]);
   const [programas, setProgramas] = useState<Programa[]>([]);
   const [financistas, setFinancistas] = useState<Financista[]>([]);
-  const [rows, setRows] = useState<RowMapping[]>([]);
-  const [fechaEmision, setFechaEmision] = useState(todayISO());
-  const [tasaBcv, setTasaBcv] = useState<number>(0);
+  const persistedRef = useRef<PersistedState | null>(loadPersisted());
+  const persisted = persistedRef.current;
+  const [rows, setRows] = useState<RowMapping[]>(persisted?.rows ?? []);
+  const [fechaEmision, setFechaEmision] = useState(persisted?.fechaEmision ?? todayISO());
+  const [tasaBcv, setTasaBcv] = useState<number>(persisted?.tasaBcv ?? 0);
   const [loadingBcv, setLoadingBcv] = useState(false);
   const [generating, setGenerating] = useState<"vector" | "zip" | null>(null);
-  const [filename, setFilename] = useState<string>("");
-  const [pastedCsv, setPastedCsv] = useState("");
+  const [filename, setFilename] = useState<string>(persisted?.filename ?? "");
+  const [pastedCsv, setPastedCsv] = useState(persisted?.pastedCsv ?? "");
   const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -69,9 +96,17 @@ export default function EmisionMasiva() {
       setCedentes((c.data ?? []) as Cedente[]);
       setProgramas((p.data ?? []) as Programa[]);
       setFinancistas((f.data ?? []) as Financista[]);
-      fetchBcv();
+      if (!persistedRef.current?.tasaBcv) fetchBcv();
     })();
   }, []);
+
+  // Persistencia con TTL de 30 minutos (sobrevive recargas y cambios de pantalla)
+  useEffect(() => {
+    try {
+      const payload: PersistedState = { rows, fechaEmision, tasaBcv, filename, pastedCsv, savedAt: Date.now() };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch { /* quota o modo privado */ }
+  }, [rows, fechaEmision, tasaBcv, filename, pastedCsv]);
 
   async function fetchBcv() {
     setLoadingBcv(true);
