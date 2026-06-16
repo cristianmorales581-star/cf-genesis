@@ -106,11 +106,29 @@ Deno.serve(async (req) => {
   const vector: any[] = [];
   const failedRows: string[] = [];
 
+  // Resolver tasa BCV por fecha de emisión (histórica si la fecha es pasada)
+  const uniqueDates = [...new Set(body.rows.map(r => r.fecha_emision || body.fecha_emision))];
+  const tasaByDate = new Map<string, number>();
+  const today = new Date().toISOString().slice(0, 10);
+  await Promise.all(uniqueDates.map(async (d) => {
+    if (d >= today) { tasaByDate.set(d, body.tasa_bcv); return; }
+    try {
+      const u = `${Deno.env.get('SUPABASE_URL')!}/functions/v1/bcv-rate?date=${d}`;
+      const r = await fetch(u, { headers: { 'Authorization': auth!, 'apikey': Deno.env.get('SUPABASE_ANON_KEY')! } });
+      const j = await r.json();
+      const t = Number(j?.tasa);
+      tasaByDate.set(d, t > 0 ? t : body.tasa_bcv);
+    } catch {
+      tasaByDate.set(d, body.tasa_bcv);
+    }
+  }));
+
   for (const r of body.rows) {
     const ced = cedById.get(r.cedente_id);
     const prog = r.programa_id ? progById.get(r.programa_id) : null;
     if (!ced) continue;
     const fechaEmisionFila = r.fecha_emision || body.fecha_emision;
+    const tasaFila = tasaByDate.get(fechaEmisionFila) ?? body.tasa_bcv;
 
     // Cálculos zero-coupon
     const precio = round5(1 - r.descuento_decimal);
@@ -118,7 +136,7 @@ Deno.serve(async (req) => {
     const rendimiento = round5(((1 - precio) / precio) * (360 / dias));
     const vnUsd = round2(r.monto_total_usd);
     const montoUsd = round2(vnUsd * precio);
-    const valorBs = round2(montoUsd * body.tasa_bcv);
+    const valorBs = round2(montoUsd * tasaFila);
 
     let simbolo = String(r.simbolo_cfb ?? '').trim();
 
@@ -156,7 +174,7 @@ Deno.serve(async (req) => {
         rendimiento_anualizado: rendimiento,
         monto_efectivo_usd: montoUsd,
         valor_efectivo_bs: valorBs,
-        tasa_cambio_bs_usd: body.tasa_bcv,
+        tasa_cambio_bs_usd: tasaFila,
         cantidad_ordenes_compra: r.cantidad_ordenes,
         estado: 'activa',
       })
@@ -203,13 +221,13 @@ Deno.serve(async (req) => {
       dias_colocados: r.plazo_dias,
       rendimiento,
       volumen_ordenes: r.cantidad_ordenes,
-      valor_nominal_bs: round2(vnUsd * body.tasa_bcv),
+      valor_nominal_bs: round2(vnUsd * tasaFila),
       precio_emision: precio,
       tipo_sociedad: 'COMERCIAL',
       moneda: 'VES',
       valor_nominal_usd: vnUsd,
       monto_sibe_usd: Math.round(vnUsd),
-      tasa_cambio: body.tasa_bcv,
+      tasa_cambio: tasaFila,
       inversionista: r.inversionista_label ?? 'GRUPO CASHEA VE, C.A.',
       rif_inversionista: r.inversionista_rif ?? 'J-501934070',
     });
