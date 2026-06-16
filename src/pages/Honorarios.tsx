@@ -275,6 +275,13 @@ export default function Honorarios() {
               <tbody>
                 {months.map(m => (
                   <tr key={m.month} className="border-t border-border hover:bg-secondary/30 transition-smooth">
+                    <td className="px-4 py-3 align-middle">
+                      <Checkbox
+                        checked={selected.has(m.month)}
+                        onCheckedChange={() => toggleMonth(m.month)}
+                        aria-label={`Seleccionar ${m.label}`}
+                      />
+                    </td>
                     <td className="px-5 py-3 font-medium">{m.label}</td>
                     <td className="px-5 py-3 text-right tabular-nums">{m.count}</td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(m.totalVn)}</Numeric></td>
