@@ -502,6 +502,24 @@ export default function Emisiones() {
                   </tr>;
                 })}
               </tbody>
+              <tfoot className="bg-secondary/70 border-t-2 border-border font-semibold text-foreground">
+                <tr>
+                  <td className="px-5 py-3"></td>
+                  <td className="px-5 py-3 text-xs uppercase tracking-wide">Total ({totals.count})</td>
+                  <td className="px-5 py-3"></td>
+                  <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.vn)}</Numeric></td>
+                  <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.sibe)}</Numeric></td>
+                  <td className="px-5 py-3 text-right">
+                    <Numeric>{fmtUSD(totals.drUsd)}</Numeric>
+                    <div className="text-[10px] text-muted-foreground tabular-nums">{fmtBs(totals.drBs)}</div>
+                  </td>
+                  <td className="px-5 py-3"></td>
+                  <td className="px-5 py-3"></td>
+                  <td className="px-5 py-3"></td>
+                  <td className="px-5 py-3"></td>
+                  {isAdmin && <td className="px-5 py-3"></td>}
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}
