@@ -119,8 +119,20 @@ export default function Honorarios() {
       .sort((a,b) => b.month.localeCompare(a.month));
   }, [filtered]);
 
+  const visibleMonths = useMemo(() => new Set(months.map(m => m.month)), [months]);
+
+  useEffect(() => {
+    setSelected(prev => {
+      const next = new Set<string>();
+      for (const m of prev) { if (visibleMonths.has(m)) next.add(m); }
+      return next;
+    });
+  }, [visibleMonths]);
+
   const totals = useMemo(() => {
-    const t = months.reduce((acc, m) => ({
+    const selectedMonths = months.filter(m => selected.has(m.month));
+    const source = selectedMonths.length > 0 ? selectedMonths : months;
+    const t = source.reduce((acc, m) => ({
       count: acc.count + m.count,
       totalVn: acc.totalVn + m.totalVn,
       fee1: acc.fee1 + m.fee.fee1,
@@ -130,7 +142,25 @@ export default function Honorarios() {
       cm: acc.cm + m.fee.cm,
     }), { count: 0, totalVn: 0, fee1: 0, fee2: 0, fee3: 0, total: 0, cm: 0 });
     return t;
-  }, [months]);
+  }, [months, selected]);
+
+  const allSelected = months.length > 0 && months.every(m => selected.has(m.month));
+
+  function toggleMonth(month: string) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(month)) next.delete(month); else next.add(month);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(months.map(m => m.month)));
+    }
+  }
 
   function exportCSV() {
     if (!months.length) { toast.error("No hay datos para exportar"); return; }
