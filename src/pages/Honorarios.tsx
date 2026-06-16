@@ -96,8 +96,6 @@ export default function Honorarios() {
     return true;
   }), [rows, cedente, year]);
 
-  const visibleMonths = useMemo(() => new Set(months.map(m => m.month)), [months]);
-
   const months: MonthAgg[] = useMemo(() => {
     const map = new Map<string, { count: number; totalVn: number }>();
     for (const r of filtered) {
