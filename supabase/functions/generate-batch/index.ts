@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
         rendimiento_anualizado: rendimiento,
         monto_efectivo_usd: montoUsd,
         valor_efectivo_bs: valorBs,
-        tasa_cambio_bs_usd: body.tasa_bcv,
+        tasa_cambio_bs_usd: tasaFila,
         cantidad_ordenes_compra: r.cantidad_ordenes,
         estado: 'activa',
       })
