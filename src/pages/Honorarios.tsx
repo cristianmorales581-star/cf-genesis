@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader, EmptyState, Numeric } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,7 @@ function csvEscape(v: unknown): string {
 }
 
 export default function Honorarios() {
+  const { isAdmin } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [cedente, setCedente] = useState("__all__");
   const [year, setYear] = useState("__all__");
@@ -135,7 +137,8 @@ export default function Honorarios() {
       "Base Tramo 1", "Honorarios Tramo 1 (0.09%)",
       "Base Tramo 2", "Honorarios Tramo 2 (0.05%)",
       "Base Tramo 3", "Honorarios Tramo 3 (0.02%)",
-      "Honorarios Total", "CM (5%)",
+      "Honorarios Total",
+      ...(isAdmin ? ["CM (5%)"] : []),
     ];
     const lines = [header.join(",")];
     for (const m of months) {
@@ -144,7 +147,8 @@ export default function Honorarios() {
         m.fee.base1.toFixed(2), m.fee.fee1.toFixed(2),
         m.fee.base2.toFixed(2), m.fee.fee2.toFixed(2),
         m.fee.base3.toFixed(2), m.fee.fee3.toFixed(2),
-        m.fee.total.toFixed(2), m.fee.cm.toFixed(2),
+        m.fee.total.toFixed(2),
+        ...(isAdmin ? [m.fee.cm.toFixed(2)] : []),
       ].map(csvEscape).join(","));
     }
     lines.push([
@@ -152,7 +156,8 @@ export default function Honorarios() {
       "", totals.fee1.toFixed(2),
       "", totals.fee2.toFixed(2),
       "", totals.fee3.toFixed(2),
-      totals.total.toFixed(2), totals.cm.toFixed(2),
+      totals.total.toFixed(2),
+      ...(isAdmin ? [totals.cm.toFixed(2)] : []),
     ].map(csvEscape).join(","));
     const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -217,7 +222,9 @@ export default function Honorarios() {
                   <th className="text-right px-5 py-3 font-semibold" title="Siguientes 10M @ 0.05%">Tramo 2</th>
                   <th className="text-right px-5 py-3 font-semibold" title="Resto @ 0.02%">Tramo 3</th>
                   <th className="text-right px-5 py-3 font-semibold">Honorarios</th>
-                  <th className="text-right px-5 py-3 font-semibold" title="5% de honorarios globales">CM</th>
+                  {isAdmin && (
+                    <th className="text-right px-5 py-3 font-semibold" title="5% de honorarios globales">CM</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -239,7 +246,9 @@ export default function Honorarios() {
                       <div className="text-[10px] text-muted-foreground tabular-nums">sobre {fmtUSD(m.fee.base3)}</div>
                     </td>
                     <td className="px-5 py-3 text-right font-semibold"><Numeric>{fmtUSD(m.fee.total)}</Numeric></td>
-                    <td className="px-5 py-3 text-right text-accent font-semibold"><Numeric>{fmtUSD(m.fee.cm)}</Numeric></td>
+                    {isAdmin && (
+                      <td className="px-5 py-3 text-right text-accent font-semibold"><Numeric>{fmtUSD(m.fee.cm)}</Numeric></td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -251,8 +260,10 @@ export default function Honorarios() {
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.fee1)}</Numeric></td>
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.fee2)}</Numeric></td>
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.fee3)}</Numeric></td>
-                  <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.total)}</Numeric></td>
-                  <td className="px-5 py-3 text-right text-accent"><Numeric>{fmtUSD(totals.cm)}</Numeric></td>
+                    <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.total)}</Numeric></td>
+                    {isAdmin && (
+                      <td className="px-5 py-3 text-right text-accent"><Numeric>{fmtUSD(totals.cm)}</Numeric></td>
+                    )}
                 </tr>
               </tfoot>
             </table>
