@@ -182,12 +182,12 @@ Deno.serve(async (req) => {
 
     const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif, r.inversionista_rep_legal, r.inversionista_cedula);
     docs.push(
-      { filename: `CFB_${simbolo}.pdf`, html: renderTemplateCFB(ctx) },
-      { filename: `CARTA_SUNAVAL_${simbolo}.pdf`, html: renderTemplateCartaSunaval(ctx) },
-      { filename: `CARTA_BVC_${simbolo}.pdf`, html: renderTemplateCartaBVC(ctx) },
-      { filename: `HOJA_TERMINOS_${simbolo}.pdf`, html: renderTemplateHojaTerminos(ctx) },
-      { filename: `ODC_${simbolo}.pdf`, html: renderTemplateODC(ctx) },
-      { filename: `ODV_${simbolo}.pdf`, html: renderTemplateODV(ctx) },
+      { filename: `CFB_${simbolo}_CEDENTE.pdf`, html: renderTemplateCFB(ctx) },
+      { filename: `CARTA_SUNAVAL_${simbolo}_CEDENTE.pdf`, html: renderTemplateCartaSunaval(ctx) },
+      { filename: `CARTA_BVC_${simbolo}_CEDENTE.pdf`, html: renderTemplateCartaBVC(ctx) },
+      { filename: `HOJA_TERMINOS_${simbolo}_CEDENTE.pdf`, html: renderTemplateHojaTerminos(ctx) },
+      { filename: `ODC_${simbolo}_CEDENTE.pdf`, html: renderTemplateODC(ctx) },
+      { filename: `ODV_${simbolo}_CEDENTE.pdf`, html: renderTemplateODV(ctx) },
     );
 
     // Fila vector
