@@ -9,6 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { fmtUSD } from "@/lib/format";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 
