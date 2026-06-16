@@ -66,6 +66,7 @@ export default function Honorarios() {
   const [rows, setRows] = useState<Row[]>([]);
   const [cedente, setCedente] = useState("__all__");
   const [year, setYear] = useState("__all__");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
