@@ -92,7 +92,7 @@ export default function EmisionDetalle() {
         throw new Error(err?.error ?? "Error generando documento");
       }
       const html = await res.text();
-      await htmlToPdfDownload(html, `${tipo}_${e.simbolo_cfb}.pdf`, { onDebug: setPdfDebug });
+      await htmlToPdfDownload(html, `${tipo}_${e.simbolo_cfb}_CEDENTE.pdf`, { onDebug: setPdfDebug });
       await logAudit({ action: "generate_pdf", resource_type: tipo.toLowerCase(), resource_id: e.id });
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Error");
