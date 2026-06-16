@@ -79,15 +79,15 @@ function downloadCSV(filename: string, rows: Row[]) {
   for (const r of rows) {
     const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
     const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
-    const drRate = fmtPct(getDerechoRegistroRate(r.dias_colocados), 3);
+    const drRate = (getDerechoRegistroRate(r.dias_colocados) * 100).toFixed(4) + "%";
     lines.push([
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
       r.programas?.cedentes?.razon_social ?? "",
       r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.",
-      Number(r.valor_nominal_usd).toFixed(2),
-      Number(r.monto_efectivo_usd).toFixed(2),
-      Number(r.precio).toFixed(5),
+      Number(r.valor_nominal_usd).toFixed(4),
+      Number(r.monto_efectivo_usd).toFixed(4),
+      Number(r.precio).toFixed(4),
       Number(r.rendimiento_anualizado).toFixed(4),
       r.fecha_emision,
       r.fecha_vencimiento,
