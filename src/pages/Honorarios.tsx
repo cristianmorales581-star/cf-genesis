@@ -246,7 +246,9 @@ export default function Honorarios() {
                       <div className="text-[10px] text-muted-foreground tabular-nums">sobre {fmtUSD(m.fee.base3)}</div>
                     </td>
                     <td className="px-5 py-3 text-right font-semibold"><Numeric>{fmtUSD(m.fee.total)}</Numeric></td>
-                    <td className="px-5 py-3 text-right text-accent font-semibold"><Numeric>{fmtUSD(m.fee.cm)}</Numeric></td>
+                    {isAdmin && (
+                      <td className="px-5 py-3 text-right text-accent font-semibold"><Numeric>{fmtUSD(m.fee.cm)}</Numeric></td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -258,8 +260,10 @@ export default function Honorarios() {
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.fee1)}</Numeric></td>
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.fee2)}</Numeric></td>
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.fee3)}</Numeric></td>
-                  <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.total)}</Numeric></td>
-                  <td className="px-5 py-3 text-right text-accent"><Numeric>{fmtUSD(totals.cm)}</Numeric></td>
+                    <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.total)}</Numeric></td>
+                    {isAdmin && (
+                      <td className="px-5 py-3 text-right text-accent"><Numeric>{fmtUSD(totals.cm)}</Numeric></td>
+                    )}
                 </tr>
               </tfoot>
             </table>
