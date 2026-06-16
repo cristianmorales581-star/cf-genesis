@@ -137,7 +137,8 @@ export default function Honorarios() {
       "Base Tramo 1", "Honorarios Tramo 1 (0.09%)",
       "Base Tramo 2", "Honorarios Tramo 2 (0.05%)",
       "Base Tramo 3", "Honorarios Tramo 3 (0.02%)",
-      "Honorarios Total", "CM (5%)",
+      "Honorarios Total",
+      ...(isAdmin ? ["CM (5%)"] : []),
     ];
     const lines = [header.join(",")];
     for (const m of months) {
@@ -146,7 +147,8 @@ export default function Honorarios() {
         m.fee.base1.toFixed(2), m.fee.fee1.toFixed(2),
         m.fee.base2.toFixed(2), m.fee.fee2.toFixed(2),
         m.fee.base3.toFixed(2), m.fee.fee3.toFixed(2),
-        m.fee.total.toFixed(2), m.fee.cm.toFixed(2),
+        m.fee.total.toFixed(2),
+        ...(isAdmin ? [m.fee.cm.toFixed(2)] : []),
       ].map(csvEscape).join(","));
     }
     lines.push([
@@ -154,7 +156,8 @@ export default function Honorarios() {
       "", totals.fee1.toFixed(2),
       "", totals.fee2.toFixed(2),
       "", totals.fee3.toFixed(2),
-      totals.total.toFixed(2), totals.cm.toFixed(2),
+      totals.total.toFixed(2),
+      ...(isAdmin ? [totals.cm.toFixed(2)] : []),
     ].map(csvEscape).join(","));
     const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
