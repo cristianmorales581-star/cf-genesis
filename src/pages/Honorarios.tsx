@@ -61,6 +61,7 @@ function csvEscape(v: unknown): string {
 }
 
 export default function Honorarios() {
+  const { isAdmin } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [cedente, setCedente] = useState("__all__");
   const [year, setYear] = useState("__all__");
