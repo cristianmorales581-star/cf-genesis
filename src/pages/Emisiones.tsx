@@ -286,6 +286,19 @@ export default function Emisiones() {
   const filteredIds = filtered.map(r => r.id);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every(id => selected.includes(id));
 
+  const totals = useMemo(() => {
+    let vn = 0, sibe = 0, drUsd = 0, drBs = 0;
+    for (const r of filtered) {
+      vn += Number(r.valor_nominal_usd) || 0;
+      sibe += Number(r.monto_efectivo_usd) || 0;
+      const drU = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
+      const drB = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
+      drUsd += drU;
+      drBs += drB;
+    }
+    return { vn, sibe, drUsd, drBs, count: filtered.length };
+  }, [filtered]);
+
   function toggleAllFiltered(checked: boolean) {
     setSelected(prev => checked ? [...new Set([...prev, ...filteredIds])] : prev.filter(id => !filteredIds.includes(id)));
   }
