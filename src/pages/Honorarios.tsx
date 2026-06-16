@@ -306,6 +306,7 @@ export default function Honorarios() {
               </tbody>
               <tfoot className="bg-secondary/40 text-xs font-semibold">
                 <tr>
+                  <td className="px-4 py-3" />
                   <td className="px-5 py-3">TOTAL</td>
                   <td className="px-5 py-3 text-right tabular-nums">{totals.count}</td>
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.totalVn)}</Numeric></td>
