@@ -94,8 +94,8 @@ function downloadCSV(filename: string, rows: Row[]) {
       r.estado,
       Number(r.tasa_cambio_bs_usd).toFixed(4),
       drRate,
-      drUsd.toFixed(2),
-      drBs.toFixed(2),
+      drUsd.toFixed(4),
+      drBs.toFixed(4),
     ].map(csvEscape).join(","));
   }
   const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
