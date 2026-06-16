@@ -163,7 +163,8 @@ export default function Honorarios() {
   }
 
   function exportCSV() {
-    if (!months.length) { toast.error("No hay datos para exportar"); return; }
+    const source = months.filter(m => selected.has(m.month));
+    if (source.length === 0) { toast.error("Selecciona al menos una fila para exportar"); return; }
     const header = [
       "Mes", "Emisiones", "VN USD Total",
       "Base Tramo 1", "Honorarios Tramo 1 (0.09%)",
@@ -173,7 +174,7 @@ export default function Honorarios() {
       ...(isAdmin ? ["CM (5%)"] : []),
     ];
     const lines = [header.join(",")];
-    for (const m of months) {
+    for (const m of source) {
       lines.push([
         m.label, m.count, m.totalVn.toFixed(2),
         m.fee.base1.toFixed(2), m.fee.fee1.toFixed(2),
