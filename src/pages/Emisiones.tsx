@@ -79,7 +79,7 @@ function downloadCSV(filename: string, rows: Row[]) {
   for (const r of rows) {
     const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
     const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
-    const drRate = fmtPct(getDerechoRegistroRate(r.dias_colocados), 3);
+    const drRate = (getDerechoRegistroRate(r.dias_colocados) * 100).toFixed(4) + "%";
     lines.push([
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
