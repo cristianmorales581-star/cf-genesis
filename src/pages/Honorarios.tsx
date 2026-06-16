@@ -222,7 +222,9 @@ export default function Honorarios() {
                   <th className="text-right px-5 py-3 font-semibold" title="Siguientes 10M @ 0.05%">Tramo 2</th>
                   <th className="text-right px-5 py-3 font-semibold" title="Resto @ 0.02%">Tramo 3</th>
                   <th className="text-right px-5 py-3 font-semibold">Honorarios</th>
-                  <th className="text-right px-5 py-3 font-semibold" title="5% de honorarios globales">CM</th>
+                  {isAdmin && (
+                    <th className="text-right px-5 py-3 font-semibold" title="5% de honorarios globales">CM</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
