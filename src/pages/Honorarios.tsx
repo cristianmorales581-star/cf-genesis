@@ -253,6 +253,13 @@ export default function Honorarios() {
             <table className="w-full text-sm min-w-[1000px]">
               <thead className="bg-secondary/40 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                 <tr>
+                  <th className="px-4 py-3">
+                    <Checkbox
+                      checked={allSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Seleccionar todos"
+                    />
+                  </th>
                   <th className="text-left px-5 py-3 font-semibold">Mes</th>
                   <th className="text-right px-5 py-3 font-semibold"># Emis.</th>
                   <th className="text-right px-5 py-3 font-semibold">VN USD</th>
