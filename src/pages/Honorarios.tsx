@@ -9,6 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { fmtUSD } from "@/lib/format";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 
@@ -65,6 +66,7 @@ export default function Honorarios() {
   const [rows, setRows] = useState<Row[]>([]);
   const [cedente, setCedente] = useState("__all__");
   const [year, setYear] = useState("__all__");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
@@ -117,8 +119,20 @@ export default function Honorarios() {
       .sort((a,b) => b.month.localeCompare(a.month));
   }, [filtered]);
 
+  const visibleMonths = useMemo(() => new Set(months.map(m => m.month)), [months]);
+
+  useEffect(() => {
+    setSelected(prev => {
+      const next = new Set<string>();
+      for (const m of prev) { if (visibleMonths.has(m)) next.add(m); }
+      return next;
+    });
+  }, [visibleMonths]);
+
   const totals = useMemo(() => {
-    const t = months.reduce((acc, m) => ({
+    const selectedMonths = months.filter(m => selected.has(m.month));
+    const source = selectedMonths.length > 0 ? selectedMonths : months;
+    const t = source.reduce((acc, m) => ({
       count: acc.count + m.count,
       totalVn: acc.totalVn + m.totalVn,
       fee1: acc.fee1 + m.fee.fee1,
@@ -128,10 +142,29 @@ export default function Honorarios() {
       cm: acc.cm + m.fee.cm,
     }), { count: 0, totalVn: 0, fee1: 0, fee2: 0, fee3: 0, total: 0, cm: 0 });
     return t;
-  }, [months]);
+  }, [months, selected]);
+
+  const allSelected = months.length > 0 && months.every(m => selected.has(m.month));
+
+  function toggleMonth(month: string) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(month)) next.delete(month); else next.add(month);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(months.map(m => m.month)));
+    }
+  }
 
   function exportCSV() {
-    if (!months.length) { toast.error("No hay datos para exportar"); return; }
+    const source = months.filter(m => selected.has(m.month));
+    if (source.length === 0) { toast.error("Selecciona al menos una fila para exportar"); return; }
     const header = [
       "Mes", "Emisiones", "VN USD Total",
       "Base Tramo 1", "Honorarios Tramo 1 (0.09%)",
@@ -141,7 +174,7 @@ export default function Honorarios() {
       ...(isAdmin ? ["CM (5%)"] : []),
     ];
     const lines = [header.join(",")];
-    for (const m of months) {
+    for (const m of source) {
       lines.push([
         m.label, m.count, m.totalVn.toFixed(2),
         m.fee.base1.toFixed(2), m.fee.fee1.toFixed(2),
@@ -176,9 +209,14 @@ export default function Honorarios() {
         title="Honorarios"
         subtitle="Cálculo escalonado mensual sobre el Valor Nominal USD colocado"
       >
-        <Button variant="outline" onClick={exportCSV}>
-          <Download className="h-4 w-4 mr-1.5" /> Exportar CSV
-        </Button>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            {selected.size} / {months.length} seleccionados
+          </span>
+          <Button variant="outline" onClick={exportCSV}>
+            <Download className="h-4 w-4 mr-1.5" /> Exportar CSV
+          </Button>
+        </div>
       </PageHeader>
 
       <div className="surface-card p-4 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -215,6 +253,13 @@ export default function Honorarios() {
             <table className="w-full text-sm min-w-[1000px]">
               <thead className="bg-secondary/40 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                 <tr>
+                  <th className="px-4 py-3">
+                    <Checkbox
+                      checked={allSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Seleccionar todos"
+                    />
+                  </th>
                   <th className="text-left px-5 py-3 font-semibold">Mes</th>
                   <th className="text-right px-5 py-3 font-semibold"># Emis.</th>
                   <th className="text-right px-5 py-3 font-semibold">VN USD</th>
@@ -230,6 +275,13 @@ export default function Honorarios() {
               <tbody>
                 {months.map(m => (
                   <tr key={m.month} className="border-t border-border hover:bg-secondary/30 transition-smooth">
+                    <td className="px-4 py-3 align-middle">
+                      <Checkbox
+                        checked={selected.has(m.month)}
+                        onCheckedChange={() => toggleMonth(m.month)}
+                        aria-label={`Seleccionar ${m.label}`}
+                      />
+                    </td>
                     <td className="px-5 py-3 font-medium">{m.label}</td>
                     <td className="px-5 py-3 text-right tabular-nums">{m.count}</td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(m.totalVn)}</Numeric></td>
@@ -254,6 +306,7 @@ export default function Honorarios() {
               </tbody>
               <tfoot className="bg-secondary/40 text-xs font-semibold">
                 <tr>
+                  <td className="px-4 py-3" />
                   <td className="px-5 py-3">TOTAL</td>
                   <td className="px-5 py-3 text-right tabular-nums">{totals.count}</td>
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.totalVn)}</Numeric></td>
