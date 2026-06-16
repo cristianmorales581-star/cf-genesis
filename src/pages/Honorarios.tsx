@@ -209,9 +209,14 @@ export default function Honorarios() {
         title="Honorarios"
         subtitle="Cálculo escalonado mensual sobre el Valor Nominal USD colocado"
       >
-        <Button variant="outline" onClick={exportCSV}>
-          <Download className="h-4 w-4 mr-1.5" /> Exportar CSV
-        </Button>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            {selected.size} / {months.length} seleccionados
+          </span>
+          <Button variant="outline" onClick={exportCSV}>
+            <Download className="h-4 w-4 mr-1.5" /> Exportar CSV
+          </Button>
+        </div>
       </PageHeader>
 
       <div className="surface-card p-4 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
