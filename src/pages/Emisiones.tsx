@@ -23,10 +23,10 @@ function getDerechoRegistroRate(dias: number) {
 
 const calcDerechoRegistroUsd = (montoEfectivoUsd: number, dias: number) => {
   const rate = getDerechoRegistroRate(dias);
-  return Math.round(Number(montoEfectivoUsd) * rate * 100) / 100;
+  return Number(montoEfectivoUsd) * rate;
 };
 const calcDerechoRegistroBs = (montoEfectivoUsd: number, dias: number, tasa: number) =>
-  Math.round(calcDerechoRegistroUsd(montoEfectivoUsd, dias) * Number(tasa) * 100) / 100;
+  calcDerechoRegistroUsd(montoEfectivoUsd, dias) * Number(tasa);
 
 interface Row {
   id: string; simbolo_cfb: string; valor_nominal_usd: number; precio: number;
