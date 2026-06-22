@@ -33,7 +33,7 @@ interface Row {
   fecha_emision: string; fecha_vencimiento: string; estado: string;
   rendimiento_anualizado: number; monto_efectivo_usd: number;
   tasa_cambio_bs_usd: number; dias_colocados: number;
-  programas?: { codigo_pcfb: string; cedentes?: { razon_social: string } };
+  programas?: { codigo_pcfb: string; fecha_inicio?: string; cedentes?: { razon_social: string } };
   financistas?: { razon_social: string } | null;
 }
 
@@ -74,7 +74,7 @@ function csvNumber(n: number, decimals = 4): string {
   return Number(n).toFixed(decimals).replace(".", ",");
 }
 
-function downloadCSV(filename: string, rows: Row[]) {
+function downloadCSV(filename: string, rows: Row[], rateByRow: Map<string, number>) {
   const header = [
     "Simbolo CFB", "Programa", "Cedente", "Financista",
     "Valor Nominal USD", "Monto Efectivo USD", "Precio",
@@ -83,8 +83,9 @@ function downloadCSV(filename: string, rows: Row[]) {
   ];
   const lines = [`sep=${CSV_SEPARATOR}`, header.join(CSV_SEPARATOR)];
   for (const r of rows) {
+    const tasa = rateByRow.get(r.id) ?? Number(r.tasa_cambio_bs_usd);
     const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
-    const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
+    const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, tasa);
     const drRate = csvNumber(getDerechoRegistroRate(r.dias_colocados) * 100) + "%";
     lines.push([
       r.simbolo_cfb,
@@ -98,7 +99,7 @@ function downloadCSV(filename: string, rows: Row[]) {
       r.fecha_emision,
       r.fecha_vencimiento,
       r.estado,
-      csvNumber(Number(r.tasa_cambio_bs_usd)),
+      csvNumber(tasa),
       drRate,
       csvNumber(drUsd),
       csvNumber(drBs),
@@ -113,6 +114,32 @@ function downloadCSV(filename: string, rows: Row[]) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+async function resolveRatesByReferenceDate(rows: Row[]): Promise<Map<string, number>> {
+  const byDate = new Map<string, string[]>(); // refDate -> rowIds
+  for (const r of rows) {
+    const refDate = r.programas?.fecha_inicio || r.fecha_emision;
+    if (!refDate) continue;
+    if (!byDate.has(refDate)) byDate.set(refDate, []);
+    byDate.get(refDate)!.push(r.id);
+  }
+  const rateByDate = new Map<string, number>();
+  await Promise.all([...byDate.keys()].map(async (date) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("bcv-rate", { body: { date } });
+      if (!error && data?.tasa && Number(data.tasa) > 0) {
+        rateByDate.set(date, Number(data.tasa));
+      }
+    } catch { /* ignore */ }
+  }));
+  const rateByRow = new Map<string, number>();
+  for (const r of rows) {
+    const refDate = r.programas?.fecha_inicio || r.fecha_emision;
+    const rate = (refDate && rateByDate.get(refDate)) || Number(r.tasa_cambio_bs_usd);
+    rateByRow.set(r.id, rate);
+  }
+  return rateByRow;
 }
 
 type SortKey =
@@ -215,7 +242,7 @@ export default function Emisiones() {
   async function load() {
     const { data } = await supabase
       .from("emisiones")
-      .select("*, programas(codigo_pcfb, cedentes(razon_social)), financistas(razon_social)")
+      .select("*, programas(codigo_pcfb, fecha_inicio, cedentes(razon_social)), financistas(razon_social)")
       .order("fecha_emision", { ascending: false });
     setRows((data ?? []) as Row[]);
   }
@@ -312,13 +339,15 @@ export default function Emisiones() {
     setSelected(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
   }
 
-  function exportCSV(scope: "filtered" | "selected") {
+  async function exportCSV(scope: "filtered" | "selected") {
     const subset = scope === "selected"
       ? filtered.filter(r => selected.includes(r.id))
       : filtered;
     if (!subset.length) { toast.error("No hay filas para exportar"); return; }
     const stamp = new Date().toISOString().slice(0, 10);
-    downloadCSV(`emisiones_${scope}_${stamp}.csv`, subset);
+    toast.info("Obteniendo tasas BCV por fecha de inicio…");
+    const rateByRow = await resolveRatesByReferenceDate(subset);
+    downloadCSV(`emisiones_${scope}_${stamp}.csv`, subset, rateByRow);
     toast.success(`Exportadas ${subset.length} emisiones`);
   }
 
