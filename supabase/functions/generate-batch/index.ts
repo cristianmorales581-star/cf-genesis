@@ -106,8 +106,13 @@ Deno.serve(async (req) => {
   const vector: any[] = [];
   const failedRows: string[] = [];
 
-  // Resolver tasa BCV por fecha de emisión (histórica si la fecha es pasada)
-  const uniqueDates = [...new Set(body.rows.map(r => r.fecha_emision || body.fecha_emision))];
+  // Resolver tasa BCV por fecha inicial de vigencia del programa
+  // (histórica si la vigencia inició en una fecha pasada).
+  const rateReferenceDateForRow = (r: BatchRow): string => {
+    const prog = r.programa_id ? progById.get(r.programa_id) : null;
+    return String(prog?.fecha_inicio || r.fecha_emision || body.fecha_emision);
+  };
+  const uniqueDates = [...new Set(body.rows.map(rateReferenceDateForRow))];
   const tasaByDate = new Map<string, number>();
   const today = new Date().toISOString().slice(0, 10);
   await Promise.all(uniqueDates.map(async (d) => {
@@ -128,7 +133,8 @@ Deno.serve(async (req) => {
     const prog = r.programa_id ? progById.get(r.programa_id) : null;
     if (!ced) continue;
     const fechaEmisionFila = r.fecha_emision || body.fecha_emision;
-    const tasaFila = tasaByDate.get(fechaEmisionFila) ?? body.tasa_bcv;
+    const fechaReferenciaTasa = rateReferenceDateForRow(r);
+    const tasaFila = tasaByDate.get(fechaReferenciaTasa) ?? body.tasa_bcv;
 
     // Cálculos zero-coupon
     const precio = round5(1 - r.descuento_decimal);

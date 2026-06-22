@@ -92,6 +92,7 @@ export default function NuevaEmision() {
         descuento_pct: descPct,
         dias_colocados: programa.plazo_cuotas_dias,
       }));
+      fetchBCV(programa.fecha_inicio);
       supabase.rpc("next_simbolo_for_programa", { _programa_id: programa.id })
         .then(({ data }) => setSimboloPreview(data ?? ""));
     } else {
@@ -108,10 +109,14 @@ export default function NuevaEmision() {
   const rend = rendimientoAnualizado(precio, dias || form.dias_colocados);
   const { montoUsd, valorBs } = calcMontos(form.valor_nominal_usd, precio, form.tasa_cambio_bs_usd);
 
-  async function fetchBCV() {
+  async function fetchBCV(referenceDate?: string) {
     setBcvLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("bcv-rate");
+      const fechaReferencia = referenceDate ?? programa?.fecha_inicio;
+      const { data, error } = await supabase.functions.invoke(
+        "bcv-rate",
+        fechaReferencia ? { body: { date: fechaReferencia } } : undefined,
+      );
       if (error) throw error;
       const tasa = Number(data?.tasa);
       if (!tasa || tasa <= 0) throw new Error("Tasa inválida");

@@ -12,7 +12,14 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   const url = new URL(req.url);
-  const dateParam = url.searchParams.get('date'); // ISO YYYY-MM-DD
+  let bodyDate: string | null = null;
+  if (req.method !== 'GET') {
+    try {
+      const body = await req.clone().json();
+      bodyDate = typeof body?.date === 'string' ? body.date : null;
+    } catch (_) { /* body opcional */ }
+  }
+  const dateParam = url.searchParams.get('date') ?? bodyDate; // ISO YYYY-MM-DD
   const today = new Date().toISOString().slice(0, 10);
 
   if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam < today) {
