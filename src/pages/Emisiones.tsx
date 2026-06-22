@@ -74,7 +74,7 @@ function csvNumber(n: number, decimals = 4): string {
   return Number(n).toFixed(decimals).replace(".", ",");
 }
 
-function downloadCSV(filename: string, rows: Row[]) {
+function downloadCSV(filename: string, rows: Row[], rateByRow: Map<string, number>) {
   const header = [
     "Simbolo CFB", "Programa", "Cedente", "Financista",
     "Valor Nominal USD", "Monto Efectivo USD", "Precio",
@@ -83,8 +83,9 @@ function downloadCSV(filename: string, rows: Row[]) {
   ];
   const lines = [`sep=${CSV_SEPARATOR}`, header.join(CSV_SEPARATOR)];
   for (const r of rows) {
+    const tasa = rateByRow.get(r.id) ?? Number(r.tasa_cambio_bs_usd);
     const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
-    const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
+    const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, tasa);
     const drRate = csvNumber(getDerechoRegistroRate(r.dias_colocados) * 100) + "%";
     lines.push([
       r.simbolo_cfb,
@@ -98,7 +99,7 @@ function downloadCSV(filename: string, rows: Row[]) {
       r.fecha_emision,
       r.fecha_vencimiento,
       r.estado,
-      csvNumber(Number(r.tasa_cambio_bs_usd)),
+      csvNumber(tasa),
       drRate,
       csvNumber(drUsd),
       csvNumber(drBs),
@@ -113,6 +114,32 @@ function downloadCSV(filename: string, rows: Row[]) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+async function resolveRatesByReferenceDate(rows: Row[]): Promise<Map<string, number>> {
+  const byDate = new Map<string, string[]>(); // refDate -> rowIds
+  for (const r of rows) {
+    const refDate = r.programas?.fecha_inicio || r.fecha_emision;
+    if (!refDate) continue;
+    if (!byDate.has(refDate)) byDate.set(refDate, []);
+    byDate.get(refDate)!.push(r.id);
+  }
+  const rateByDate = new Map<string, number>();
+  await Promise.all([...byDate.keys()].map(async (date) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("bcv-rate", { body: { date } });
+      if (!error && data?.tasa && Number(data.tasa) > 0) {
+        rateByDate.set(date, Number(data.tasa));
+      }
+    } catch { /* ignore */ }
+  }));
+  const rateByRow = new Map<string, number>();
+  for (const r of rows) {
+    const refDate = r.programas?.fecha_inicio || r.fecha_emision;
+    const rate = (refDate && rateByDate.get(refDate)) || Number(r.tasa_cambio_bs_usd);
+    rateByRow.set(r.id, rate);
+  }
+  return rateByRow;
 }
 
 type SortKey =
