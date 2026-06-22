@@ -32,7 +32,7 @@ function normRif(r: string | null | undefined): string {
 
 interface Cedente { id: string; razon_social: string; rif: string; }
 interface Descuento { id: string; descuento: number; etiqueta: string | null; es_default: boolean; activo: boolean; }
-interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; descuento_base: number; programa_descuentos?: Descuento[]; }
+interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; descuento_base: number; fecha_inicio: string; programa_descuentos?: Descuento[]; }
 interface Financista { id: string; razon_social: string; rif: string | null; representante_legal?: string | null; cedula?: string | null; }
 
 type RowMapping = ParsedRow & {
@@ -93,7 +93,7 @@ export default function EmisionMasiva() {
       try { await supabase.rpc("refresh_programas_estado"); } catch { /* no bloquea la carga */ }
       const [c, p, f] = await Promise.all([
         supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
-        supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base, programa_descuentos(id, descuento, etiqueta, es_default, activo)")
+        supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base, fecha_inicio, programa_descuentos(id, descuento, etiqueta, es_default, activo)")
           .eq("activo", true).eq("estado", "activa").order("codigo_pcfb"),
         supabase.from("financistas").select("id, razon_social, rif, representante_legal, cedula").eq("activo", true).order("razon_social"),
       ]);
@@ -124,10 +124,20 @@ export default function EmisionMasiva() {
   async function fetchBcv() {
     setLoadingBcv(true);
     try {
-      const { data } = await supabase.functions.invoke("bcv-rate");
-      if (data?.tasa) setTasaBcv(Number(data.tasa));
+      const tasa = await fetchBcvRate();
+      if (tasa) setTasaBcv(tasa);
     } catch { /* ignore */ }
     setLoadingBcv(false);
+  }
+
+  async function fetchBcvRate(referenceDate?: string): Promise<number | null> {
+    const { data, error } = await supabase.functions.invoke(
+      "bcv-rate",
+      referenceDate ? { body: { date: referenceDate } } : undefined,
+    );
+    if (error) throw error;
+    const tasa = Number(data?.tasa);
+    return tasa > 0 ? tasa : null;
   }
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -238,13 +248,15 @@ export default function EmisionMasiva() {
     };
   }, [rows]);
 
-  function generateVectorOnly() {
+  async function generateVectorOnly() {
     if (!stats.included) { toast({ title: "Nada que generar", variant: "destructive" }); return; }
     if (!tasaBcv || tasaBcv <= 0) { toast({ title: "Tasa BCV requerida", variant: "destructive" }); return; }
 
     setGenerating("vector");
     try {
-      const vectorXlsx = buildVectorXlsx(buildLocalVectorRows(rows.filter(r => r.include), cedentes, financistas, fechaEmision, tasaBcv), fechaEmision);
+      const includedRows = rows.filter(r => r.include);
+      const rateByDate = await resolveRatesByReferenceDate(includedRows, programas, fechaEmision, tasaBcv, fetchBcvRate);
+      const vectorXlsx = buildVectorXlsx(buildLocalVectorRows(includedRows, cedentes, financistas, programas, fechaEmision, tasaBcv, rateByDate), fechaEmision);
       downloadBlob(new Blob([vectorXlsx], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `VECTOR_${fechaEmision}_CONSOLIDADO.xlsx`);
       toast({ title: "Vector consolidado generado", description: `Descargado · ${fmtUSD(stats.totalUsd)}` });
     } catch (e: any) {
@@ -580,11 +592,13 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financistas: Financista[], fechaEmision: string, tasaBcv: number) {
+function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financistas: Financista[], programas: Programa[], fechaEmision: string, tasaBcv: number, rateByDate: Map<string, number>) {
   return rows.map(r => {
     const cedente = cedentes.find(c => c.id === r.cedente_id);
     const financista = financistas.find(f => f.id === r.financista_id);
     const rowFechaEmision = r.fecha_emision || fechaEmision;
+    const fechaReferenciaTasa = rateReferenceDateForRow(r, programas, fechaEmision);
+    const tasaFila = rateByDate.get(fechaReferenciaTasa) ?? tasaBcv;
     const precio = Math.round((1 - r.descuento_decimal) * 100000) / 100000;
     const vnUsd = Math.round(r.monto_total_usd * 100) / 100;
     const montoUsd = Math.round(vnUsd * precio * 100) / 100;
@@ -600,17 +614,42 @@ function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financist
       dias_colocados: r.plazo_dias,
       rendimiento: Math.round(((1 - precio) / precio) * (360 / r.plazo_dias) * 100000) / 100000,
       volumen_ordenes: r.cantidad_ordenes,
-      valor_nominal_bs: Math.round(vnUsd * tasaBcv * 100) / 100,
+      valor_nominal_bs: Math.round(vnUsd * tasaFila * 100) / 100,
       precio_emision: precio,
       tipo_sociedad: "COMERCIAL",
       moneda: "VES",
       valor_nominal_usd: vnUsd,
       monto_sibe_usd: Math.round(vnUsd),
-      tasa_cambio: tasaBcv,
+      tasa_cambio: tasaFila,
       inversionista: financista?.razon_social ?? "GRUPO CASHEA VE, C.A.",
       rif_inversionista: financista?.rif ?? "J-501934070",
     };
   });
+}
+
+function rateReferenceDateForRow(row: RowMapping, programas: Programa[], fechaEmision: string): string {
+  const programa = programas.find(p => p.id === row.programa_id);
+  return programa?.fecha_inicio || row.fecha_emision || fechaEmision;
+}
+
+async function resolveRatesByReferenceDate(
+  rows: RowMapping[],
+  programas: Programa[],
+  fechaEmision: string,
+  fallbackRate: number,
+  fetchRate: (referenceDate?: string) => Promise<number | null>,
+): Promise<Map<string, number>> {
+  const today = todayISO();
+  const dates = [...new Set(rows.map(r => rateReferenceDateForRow(r, programas, fechaEmision)))];
+  const entries = await Promise.all(dates.map(async (date) => {
+    if (date >= today) return [date, fallbackRate] as const;
+    try {
+      return [date, (await fetchRate(date)) ?? fallbackRate] as const;
+    } catch {
+      return [date, fallbackRate] as const;
+    }
+  }));
+  return new Map(entries);
 }
 
 function addDaysISO(iso: string, days: number): string {
