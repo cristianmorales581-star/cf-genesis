@@ -117,15 +117,14 @@ function downloadCSV(filename: string, rows: Row[], rateByRow: Map<string, numbe
 }
 
 async function resolveRatesByReferenceDate(rows: Row[]): Promise<Map<string, number>> {
-  const byDate = new Map<string, string[]>(); // refDate -> rowIds
+  // La fecha de inicio de vigencia del título = fecha_emision (fecha de la operación).
+  // Esa es la tasa BCV que debe usarse para TODOS los cálculos del certificado.
+  const uniqueDates = new Set<string>();
   for (const r of rows) {
-    const refDate = r.programas?.fecha_inicio || r.fecha_emision;
-    if (!refDate) continue;
-    if (!byDate.has(refDate)) byDate.set(refDate, []);
-    byDate.get(refDate)!.push(r.id);
+    if (r.fecha_emision) uniqueDates.add(r.fecha_emision);
   }
   const rateByDate = new Map<string, number>();
-  await Promise.all([...byDate.keys()].map(async (date) => {
+  await Promise.all([...uniqueDates].map(async (date) => {
     try {
       const { data, error } = await supabase.functions.invoke("bcv-rate", { body: { date } });
       if (!error && data?.tasa && Number(data.tasa) > 0) {
@@ -135,8 +134,7 @@ async function resolveRatesByReferenceDate(rows: Row[]): Promise<Map<string, num
   }));
   const rateByRow = new Map<string, number>();
   for (const r of rows) {
-    const refDate = r.programas?.fecha_inicio || r.fecha_emision;
-    const rate = (refDate && rateByDate.get(refDate)) || Number(r.tasa_cambio_bs_usd);
+    const rate = rateByDate.get(r.fecha_emision) ?? Number(r.tasa_cambio_bs_usd);
     rateByRow.set(r.id, rate);
   }
   return rateByRow;
