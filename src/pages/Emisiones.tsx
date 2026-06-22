@@ -339,13 +339,15 @@ export default function Emisiones() {
     setSelected(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
   }
 
-  function exportCSV(scope: "filtered" | "selected") {
+  async function exportCSV(scope: "filtered" | "selected") {
     const subset = scope === "selected"
       ? filtered.filter(r => selected.includes(r.id))
       : filtered;
     if (!subset.length) { toast.error("No hay filas para exportar"); return; }
     const stamp = new Date().toISOString().slice(0, 10);
-    downloadCSV(`emisiones_${scope}_${stamp}.csv`, subset);
+    toast.info("Obteniendo tasas BCV por fecha de inicio…");
+    const rateByRow = await resolveRatesByReferenceDate(subset);
+    downloadCSV(`emisiones_${scope}_${stamp}.csv`, subset, rateByRow);
     toast.success(`Exportadas ${subset.length} emisiones`);
   }
 
