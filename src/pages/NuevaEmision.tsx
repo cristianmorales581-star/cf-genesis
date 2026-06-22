@@ -283,7 +283,7 @@ export default function NuevaEmision() {
           <div>
             <h3 className="font-display text-sm uppercase tracking-[0.16em] text-muted-foreground mb-3 flex items-center justify-between">
               Tasa BCV
-              <Button size="sm" variant="ghost" onClick={fetchBCV} disabled={bcvLoading} className="h-7 text-xs">
+              <Button size="sm" variant="ghost" onClick={() => fetchBCV()} disabled={bcvLoading} className="h-7 text-xs">
                 {bcvLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
                 Actualizar BCV
               </Button>
