@@ -343,7 +343,7 @@ export default function Emisiones() {
       : filtered;
     if (!subset.length) { toast.error("No hay filas para exportar"); return; }
     const stamp = new Date().toISOString().slice(0, 10);
-    toast.info("Obteniendo tasas BCV por fecha de inicio…");
+    toast.info("Obteniendo tasas BCV por fecha de emisión…");
     const rateByRow = await resolveRatesByReferenceDate(subset);
     downloadCSV(`emisiones_${scope}_${stamp}.csv`, subset, rateByRow);
     toast.success(`Exportadas ${subset.length} emisiones`);
