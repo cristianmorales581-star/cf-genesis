@@ -61,11 +61,17 @@ const INITIAL_FILTERS = {
   vnMax: "",
 };
 
+const CSV_SEPARATOR = ";";
+
 function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return "";
   const s = String(v);
-  if (/[",\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  if (/["\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
+}
+
+function csvNumber(n: number, decimals = 4): string {
+  return Number(n).toFixed(decimals).replace(".", ",");
 }
 
 function downloadCSV(filename: string, rows: Row[]) {
@@ -75,28 +81,28 @@ function downloadCSV(filename: string, rows: Row[]) {
     "Rendimiento Anualizado", "Fecha Emisión", "Fecha Vencimiento", "Estado",
     "Tasa BCV Emisión", "Tasa Derecho Registro", "Derecho de Registro USD", "Derecho de Registro Bs",
   ];
-  const lines = [header.join(",")];
+  const lines = [`sep=${CSV_SEPARATOR}`, header.join(CSV_SEPARATOR)];
   for (const r of rows) {
     const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
     const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
-    const drRate = (getDerechoRegistroRate(r.dias_colocados) * 100).toFixed(4) + "%";
+    const drRate = csvNumber(getDerechoRegistroRate(r.dias_colocados) * 100) + "%";
     lines.push([
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
       r.programas?.cedentes?.razon_social ?? "",
       r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.",
-      Number(r.valor_nominal_usd).toFixed(4),
-      Number(r.monto_efectivo_usd).toFixed(4),
-      Number(r.precio).toFixed(4),
-      Number(r.rendimiento_anualizado).toFixed(4),
+      csvNumber(Number(r.valor_nominal_usd)),
+      csvNumber(Number(r.monto_efectivo_usd)),
+      csvNumber(Number(r.precio)),
+      csvNumber(Number(r.rendimiento_anualizado)),
       r.fecha_emision,
       r.fecha_vencimiento,
       r.estado,
-      Number(r.tasa_cambio_bs_usd).toFixed(4),
+      csvNumber(Number(r.tasa_cambio_bs_usd)),
       drRate,
-      drUsd.toFixed(4),
-      drBs.toFixed(4),
-    ].map(csvEscape).join(","));
+      csvNumber(drUsd),
+      csvNumber(drBs),
+    ].map(csvEscape).join(CSV_SEPARATOR));
   }
   const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
