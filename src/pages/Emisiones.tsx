@@ -242,7 +242,7 @@ export default function Emisiones() {
   async function load() {
     const { data } = await supabase
       .from("emisiones")
-      .select("*, programas(codigo_pcfb, cedentes(razon_social)), financistas(razon_social)")
+      .select("*, programas(codigo_pcfb, fecha_inicio, cedentes(razon_social)), financistas(razon_social)")
       .order("fecha_emision", { ascending: false });
     setRows((data ?? []) as Row[]);
   }
