@@ -47,12 +47,31 @@ export default function Financistas() {
   const [editing, setEditing] = useState<Financista | null>(null);
   const [form, setForm] = useState<FormState>(empty);
   const [busy, setBusy] = useState(false);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   async function load() {
     const { data } = await supabase.from("financistas").select("*").order("razon_social");
     setRows((data ?? []) as Financista[]);
   }
   useEffect(() => { load(); }, []);
+
+  async function applyRepresentante(target: Financista, source: Financista) {
+    if (target.id === source.id) return;
+    if (!source.representante_legal && !source.cedula && !source.cargo) {
+      toast.error("La fila origen no tiene datos de representante para copiar");
+      return;
+    }
+    const payload = {
+      representante_legal: source.representante_legal,
+      cargo: source.cargo,
+      cedula: source.cedula,
+    };
+    const { error } = await supabase.from("financistas").update(payload).eq("id", target.id);
+    if (error) { toast.error(error.message); return; }
+    await logAudit({ action: "update", resource_type: "financista", resource_id: target.id, details: { copied_from: source.id, ...payload } });
+    toast.success(`Representante copiado a ${target.razon_social}`);
+    load();
+  }
 
   function openNew() { setEditing(null); setForm(empty); setOpen(true); }
   function openEdit(f: Financista) {
