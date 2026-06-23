@@ -39,12 +39,31 @@ export default function Cedentes() {
   const [editing, setEditing] = useState<Cedente | null>(null);
   const [form, setForm] = useState(empty);
   const [busy, setBusy] = useState(false);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   async function load() {
     const { data } = await supabase.from("cedentes").select("*").order("razon_social");
     setRows(data ?? []);
   }
   useEffect(() => { load(); }, []);
+
+  async function applyRepresentante(target: Cedente, source: Cedente) {
+    if (target.id === source.id) return;
+    if (!source.representante_legal && !source.cedula && !source.cargo) {
+      toast.error("La fila origen no tiene datos de representante para copiar");
+      return;
+    }
+    const payload = {
+      representante_legal: source.representante_legal,
+      cargo: source.cargo,
+      cedula: source.cedula,
+    };
+    const { error } = await supabase.from("cedentes").update(payload).eq("id", target.id);
+    if (error) { toast.error(error.message); return; }
+    await logAudit({ action: "update", resource_type: "cedente", resource_id: target.id, details: { copied_from: source.id, ...payload } });
+    toast.success(`Representante copiado a ${target.razon_social}`);
+    load();
+  }
 
   function openNew() { setEditing(null); setForm(empty); setOpen(true); }
   function openEdit(c: Cedente) {
