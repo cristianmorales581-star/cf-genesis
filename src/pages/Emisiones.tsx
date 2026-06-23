@@ -33,7 +33,7 @@ interface Row {
   fecha_emision: string; fecha_vencimiento: string; estado: string;
   rendimiento_anualizado: number; monto_efectivo_usd: number;
   tasa_cambio_bs_usd: number; dias_colocados: number;
-  programas?: { codigo_pcfb: string; fecha_inicio?: string; cedentes?: { razon_social: string } };
+  programas?: { codigo_pcfb: string; cedentes?: { razon_social: string } };
   financistas?: { razon_social: string } | null;
 }
 
@@ -61,49 +61,42 @@ const INITIAL_FILTERS = {
   vnMax: "",
 };
 
-const CSV_SEPARATOR = ";";
-
 function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return "";
   const s = String(v);
-  if (/["\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  if (/[",\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
 
-function csvNumber(n: number, decimals = 4): string {
-  return Number(n).toFixed(decimals).replace(".", ",");
-}
-
-function downloadCSV(filename: string, rows: Row[], rateByRow: Map<string, number>) {
+function downloadCSV(filename: string, rows: Row[]) {
   const header = [
     "Simbolo CFB", "Programa", "Cedente", "Financista",
     "Valor Nominal USD", "Monto Efectivo USD", "Precio",
     "Rendimiento Anualizado", "Fecha Emisión", "Fecha Vencimiento", "Estado",
     "Tasa BCV Emisión", "Tasa Derecho Registro", "Derecho de Registro USD", "Derecho de Registro Bs",
   ];
-  const lines = [`sep=${CSV_SEPARATOR}`, header.join(CSV_SEPARATOR)];
+  const lines = [header.join(",")];
   for (const r of rows) {
-    const tasa = rateByRow.get(r.id) ?? Number(r.tasa_cambio_bs_usd);
     const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
-    const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, tasa);
-    const drRate = csvNumber(getDerechoRegistroRate(r.dias_colocados) * 100) + "%";
+    const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
+    const drRate = (getDerechoRegistroRate(r.dias_colocados) * 100).toFixed(4) + "%";
     lines.push([
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
       r.programas?.cedentes?.razon_social ?? "",
       r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.",
-      csvNumber(Number(r.valor_nominal_usd)),
-      csvNumber(Number(r.monto_efectivo_usd)),
-      csvNumber(Number(r.precio)),
-      csvNumber(Number(r.rendimiento_anualizado)),
+      Number(r.valor_nominal_usd).toFixed(4),
+      Number(r.monto_efectivo_usd).toFixed(4),
+      Number(r.precio).toFixed(4),
+      Number(r.rendimiento_anualizado).toFixed(4),
       r.fecha_emision,
       r.fecha_vencimiento,
       r.estado,
-      csvNumber(tasa),
+      Number(r.tasa_cambio_bs_usd).toFixed(4),
       drRate,
-      csvNumber(drUsd),
-      csvNumber(drBs),
-    ].map(csvEscape).join(CSV_SEPARATOR));
+      drUsd.toFixed(4),
+      drBs.toFixed(4),
+    ].map(csvEscape).join(","));
   }
   const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -114,30 +107,6 @@ function downloadCSV(filename: string, rows: Row[], rateByRow: Map<string, numbe
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-}
-
-async function resolveRatesByReferenceDate(rows: Row[]): Promise<Map<string, number>> {
-  // La fecha de inicio de vigencia del título = fecha_emision (fecha de la operación).
-  // Esa es la tasa BCV que debe usarse para TODOS los cálculos del certificado.
-  const uniqueDates = new Set<string>();
-  for (const r of rows) {
-    if (r.fecha_emision) uniqueDates.add(r.fecha_emision);
-  }
-  const rateByDate = new Map<string, number>();
-  await Promise.all([...uniqueDates].map(async (date) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("bcv-rate", { body: { date } });
-      if (!error && data?.tasa && Number(data.tasa) > 0) {
-        rateByDate.set(date, Number(data.tasa));
-      }
-    } catch { /* ignore */ }
-  }));
-  const rateByRow = new Map<string, number>();
-  for (const r of rows) {
-    const rate = rateByDate.get(r.fecha_emision) ?? Number(r.tasa_cambio_bs_usd);
-    rateByRow.set(r.id, rate);
-  }
-  return rateByRow;
 }
 
 type SortKey =
@@ -240,7 +209,7 @@ export default function Emisiones() {
   async function load() {
     const { data } = await supabase
       .from("emisiones")
-      .select("*, programas(codigo_pcfb, fecha_inicio, cedentes(razon_social)), financistas(razon_social)")
+      .select("*, programas(codigo_pcfb, cedentes(razon_social)), financistas(razon_social)")
       .order("fecha_emision", { ascending: false });
     setRows((data ?? []) as Row[]);
   }
@@ -337,15 +306,13 @@ export default function Emisiones() {
     setSelected(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
   }
 
-  async function exportCSV(scope: "filtered" | "selected") {
+  function exportCSV(scope: "filtered" | "selected") {
     const subset = scope === "selected"
       ? filtered.filter(r => selected.includes(r.id))
       : filtered;
     if (!subset.length) { toast.error("No hay filas para exportar"); return; }
     const stamp = new Date().toISOString().slice(0, 10);
-    toast.info("Obteniendo tasas BCV por fecha de emisión…");
-    const rateByRow = await resolveRatesByReferenceDate(subset);
-    downloadCSV(`emisiones_${scope}_${stamp}.csv`, subset, rateByRow);
+    downloadCSV(`emisiones_${scope}_${stamp}.csv`, subset);
     toast.success(`Exportadas ${subset.length} emisiones`);
   }
 
