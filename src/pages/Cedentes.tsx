@@ -158,19 +158,50 @@ export default function Cedentes() {
                 <th className="text-left px-5 py-3 font-semibold">Razón Social</th>
                 <th className="text-left px-5 py-3 font-semibold">RIF</th>
                 <th className="text-left px-5 py-3 font-semibold">Representante</th>
+                <th className="text-left px-5 py-3 font-semibold">Cargo</th>
+                <th className="text-left px-5 py-3 font-semibold">Cédula</th>
                 <th className="text-center px-5 py-3 font-semibold">Activo</th>
                 <th className="text-right px-5 py-3 font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(c => (
-                <tr key={c.id} className="border-t border-border hover:bg-secondary/30">
+              {rows.map(c => {
+                const missingCedula = !!c.representante_legal && !c.cedula;
+                const isDragOver = dragOverId === c.id;
+                return (
+                <tr
+                  key={c.id}
+                  draggable={isOperador && (!!c.representante_legal || !!c.cedula)}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("text/cedente-id", c.id);
+                    e.dataTransfer.effectAllowed = "copy";
+                  }}
+                  onDragOver={(e) => {
+                    if (!isOperador) return;
+                    const id = e.dataTransfer.types.includes("text/cedente-id");
+                    if (id) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setDragOverId(c.id); }
+                  }}
+                  onDragLeave={() => setDragOverId(prev => prev === c.id ? null : prev)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverId(null);
+                    const srcId = e.dataTransfer.getData("text/cedente-id");
+                    const src = rows.find(r => r.id === srcId);
+                    if (src) applyRepresentante(c, src);
+                  }}
+                  className={`border-t border-border hover:bg-secondary/30 ${isOperador ? "cursor-grab" : ""} ${isDragOver ? "bg-primary/10 ring-2 ring-primary/40" : ""}`}
+                  title={isOperador ? "Arrastra esta fila sobre otra para copiar representante, cargo y cédula" : undefined}
+                >
                   <td className="px-5 py-3">
                     <div className="font-medium text-primary">{c.razon_social}</div>
                     {c.nombre_comercial && <div className="text-xs text-muted-foreground">{c.nombre_comercial}</div>}
                   </td>
                   <td className="px-5 py-3 font-mono text-xs">{c.rif}</td>
                   <td className="px-5 py-3 text-muted-foreground">{c.representante_legal ?? "—"}</td>
+                  <td className="px-5 py-3 text-muted-foreground text-xs">{c.cargo ?? "—"}</td>
+                  <td className={`px-5 py-3 font-mono text-xs ${missingCedula ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
+                    {c.cedula ?? (missingCedula ? "⚠ Falta" : "—")}
+                  </td>
                   <td className="px-5 py-3 text-center">
                     {(isOperador || isAdmin) ? (
                       <Switch checked={c.activo} onCheckedChange={() => toggle(c)} />
@@ -186,11 +217,16 @@ export default function Cedentes() {
                     )}
                   </td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         )}
       </div>
+      {isOperador && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Tip: arrastra una fila sobre otra para copiar <strong>representante legal, cargo y cédula</strong>. Las cédulas faltantes aparecen marcadas en rojo.
+        </p>
+      )}
     </>
   );
 }
