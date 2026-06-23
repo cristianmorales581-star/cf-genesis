@@ -175,17 +175,52 @@ export default function Financistas() {
                 <th className="text-left px-5 py-3 font-semibold">Nombre / Razón Social</th>
                 <th className="text-left px-5 py-3 font-semibold">Tipo</th>
                 <th className="text-left px-5 py-3 font-semibold">RIF / C.I.</th>
+                <th className="text-left px-5 py-3 font-semibold">Representante</th>
+                <th className="text-left px-5 py-3 font-semibold">Cargo</th>
+                <th className="text-left px-5 py-3 font-semibold">Cédula Rep.</th>
                 <th className="text-left px-5 py-3 font-semibold">Contacto</th>
                 <th className="text-center px-5 py-3 font-semibold">Activo</th>
                 <th className="text-right px-5 py-3 font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(f => (
-                <tr key={f.id} className="border-t border-border hover:bg-secondary/30">
+              {rows.map(f => {
+                const needsRep = f.tipo === "juridica";
+                const missingCedula = needsRep && !!f.representante_legal && !f.cedula;
+                const isDragOver = dragOverId === f.id;
+                return (
+                <tr
+                  key={f.id}
+                  draggable={isOperador && (!!f.representante_legal || !!f.cedula)}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("text/financista-id", f.id);
+                    e.dataTransfer.effectAllowed = "copy";
+                  }}
+                  onDragOver={(e) => {
+                    if (!isOperador) return;
+                    if (e.dataTransfer.types.includes("text/financista-id")) {
+                      e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setDragOverId(f.id);
+                    }
+                  }}
+                  onDragLeave={() => setDragOverId(prev => prev === f.id ? null : prev)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverId(null);
+                    const srcId = e.dataTransfer.getData("text/financista-id");
+                    const src = rows.find(r => r.id === srcId);
+                    if (src) applyRepresentante(f, src);
+                  }}
+                  className={`border-t border-border hover:bg-secondary/30 ${isOperador ? "cursor-grab" : ""} ${isDragOver ? "bg-primary/10 ring-2 ring-primary/40" : ""}`}
+                  title={isOperador ? "Arrastra esta fila sobre otra para copiar representante, cargo y cédula" : undefined}
+                >
                   <td className="px-5 py-3 font-medium text-primary">{f.razon_social}</td>
                   <td className="px-5 py-3 capitalize text-muted-foreground">{f.tipo}</td>
                   <td className="px-5 py-3 font-mono text-xs">{f.rif ?? "—"}</td>
+                  <td className="px-5 py-3 text-muted-foreground">{f.representante_legal ?? "—"}</td>
+                  <td className="px-5 py-3 text-muted-foreground text-xs">{f.cargo ?? "—"}</td>
+                  <td className={`px-5 py-3 font-mono text-xs ${missingCedula ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
+                    {f.cedula ?? (missingCedula ? "⚠ Falta" : "—")}
+                  </td>
                   <td className="px-5 py-3 text-xs text-muted-foreground">
                     {f.correo && <div>{f.correo}</div>}
                     {f.celular && <div>{f.celular}</div>}
@@ -198,11 +233,16 @@ export default function Financistas() {
                     {isOperador && <Button size="sm" variant="ghost" onClick={() => openEdit(f)}><Pencil className="h-3.5 w-3.5" /></Button>}
                   </td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         )}
       </div>
+      {isOperador && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Tip: arrastra una fila sobre otra para copiar <strong>representante legal, cargo y cédula</strong>. Las cédulas faltantes aparecen marcadas en rojo.
+        </p>
+      )}
     </>
   );
 }
