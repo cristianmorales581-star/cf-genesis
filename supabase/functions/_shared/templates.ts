@@ -833,8 +833,10 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
   // En ODC el cliente es el financista (comprador). En ODV el cliente es el cedente (vendedor).
   const clienteNombre = esCompra ? c.financista_razon_social : c.cedente_razon_social;
   const clienteRif = esCompra ? c.financista_rif : c.cedente_rif;
-  const repNombre = esCompra ? (c.financista_rep_legal ?? c.deudor_rep_legal) : (c.cedente_rep_legal ?? c.deudor_rep_legal);
-  const repCedula = esCompra ? (c.financista_cedula ?? c.deudor_cedula) : (c.cedente_cedula ?? c.deudor_cedula);
+  // Siempre usar el representante legal registrado para el cedente/financista,
+  // nunca el del deudor cedido (Cashea), porque los firmantes son los de cada compañía.
+  const repNombre = esCompra ? (c.financista_rep_legal ?? '—') : (c.cedente_rep_legal ?? '—');
+  const repCedula = esCompra ? (c.financista_cedula ?? '—') : (c.cedente_cedula ?? '—');
   const repCorreo = c.deudor_correo ?? 'jesusrojas@cashea.app';
   const repTelefono = c.deudor_telefono ?? '+58 424-1885202';
   // Numeración: ODC = -2, ODV = -1 (convención observada en los PDFs reales)
