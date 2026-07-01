@@ -147,10 +147,13 @@ export default function Financistas() {
                   </div>
                   <div><Label>Razón Social / Nombre *</Label><Input value={form.razon_social} onChange={e => setForm({ ...form, razon_social: e.target.value })} maxLength={200} /></div>
                   {form.tipo === "juridica" && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>Representante</Label><Input value={form.representante_legal} onChange={e => setForm({ ...form, representante_legal: e.target.value })} maxLength={150} /></div>
-                      <div><Label>Cargo</Label><Input value={form.cargo} onChange={e => setForm({ ...form, cargo: e.target.value })} maxLength={100} /></div>
-                    </div>
+                    <>
+                      <div><Label>Representante Legal</Label><Input value={form.representante_legal} onChange={e => setForm({ ...form, representante_legal: e.target.value })} maxLength={150} /></div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><Label>Cargo</Label><Input value={form.cargo} onChange={e => setForm({ ...form, cargo: e.target.value })} maxLength={100} /></div>
+                        <div><Label>Cédula del Representante</Label><Input value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value })} placeholder="V-12345678" maxLength={20} /></div>
+                      </div>
+                    </>
                   )}
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label>Correo</Label><Input type="email" value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })} maxLength={255} /></div>
