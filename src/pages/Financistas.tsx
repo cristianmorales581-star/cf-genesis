@@ -41,7 +41,8 @@ type FormState = {
 const empty: FormState = { razon_social: "", rif: "", tipo: "juridica", representante_legal: "", cargo: "", cedula: "", correo: "", celular: "" };
 
 export default function Financistas() {
-  const { isOperador } = useAuth();
+  const { isOperador, isAdmin } = useAuth();
+  const canEdit = isOperador || isAdmin;
   const [rows, setRows] = useState<Financista[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Financista | null>(null);
@@ -118,7 +119,7 @@ export default function Financistas() {
   return (
     <>
       <PageHeader title="Financistas" subtitle="Personas o entidades que colocan capital en cada emisión">
-        {isOperador && (
+        {canEdit && (
           <div className="flex gap-2">
             <Button asChild variant="outline">
               <Link to="/importar"><Upload className="h-4 w-4 mr-1.5" /> Importar Excel</Link>
@@ -166,7 +167,7 @@ export default function Financistas() {
         )}
       </PageHeader>
 
-      <div className="rounded-lg border border-border bg-card shadow-sm-elegant overflow-hidden">
+      <div className="rounded-lg border border-border bg-card shadow-sm-elegant overflow-x-auto">
         {rows.length === 0 ? <EmptyState title="Sin financistas" /> : (
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-xs uppercase tracking-wider text-muted-foreground">
@@ -179,7 +180,7 @@ export default function Financistas() {
                 <th className="text-left px-5 py-3 font-semibold">Cédula Rep.</th>
                 <th className="text-left px-5 py-3 font-semibold">Contacto</th>
                 <th className="text-center px-5 py-3 font-semibold">Activo</th>
-                <th className="text-right px-5 py-3 font-semibold">Acciones</th>
+                <th className="sticky right-0 z-10 bg-secondary/95 text-right px-5 py-3 font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -190,13 +191,13 @@ export default function Financistas() {
                 return (
                 <tr
                   key={f.id}
-                  draggable={isOperador && (!!f.representante_legal || !!f.cedula)}
+                  draggable={canEdit && (!!f.representante_legal || !!f.cedula)}
                   onDragStart={(e) => {
                     e.dataTransfer.setData("text/financista-id", f.id);
                     e.dataTransfer.effectAllowed = "copy";
                   }}
                   onDragOver={(e) => {
-                    if (!isOperador) return;
+                    if (!canEdit) return;
                     if (e.dataTransfer.types.includes("text/financista-id")) {
                       e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setDragOverId(f.id);
                     }
@@ -209,8 +210,8 @@ export default function Financistas() {
                     const src = rows.find(r => r.id === srcId);
                     if (src) applyRepresentante(f, src);
                   }}
-                  className={`border-t border-border hover:bg-secondary/30 ${isOperador ? "cursor-grab" : ""} ${isDragOver ? "bg-primary/10 ring-2 ring-primary/40" : ""}`}
-                  title={isOperador ? "Arrastra esta fila sobre otra para copiar representante, cargo y cédula" : undefined}
+                  className={`border-t border-border hover:bg-secondary/30 ${canEdit ? "cursor-grab" : ""} ${isDragOver ? "bg-primary/10 ring-2 ring-primary/40" : ""}`}
+                  title={canEdit ? "Arrastra esta fila sobre otra para copiar representante, cargo y cédula" : undefined}
                 >
                   <td className="px-5 py-3 font-medium text-primary">{f.razon_social}</td>
                   <td className="px-5 py-3 capitalize text-muted-foreground">{f.tipo}</td>
@@ -225,11 +226,11 @@ export default function Financistas() {
                     {f.celular && <div>{f.celular}</div>}
                   </td>
                   <td className="px-5 py-3 text-center">
-                    {isOperador ? <Switch checked={f.activo} onCheckedChange={() => toggle(f)} /> :
+                    {canEdit ? <Switch checked={f.activo} onCheckedChange={() => toggle(f)} /> :
                       <span className={f.activo ? "text-success" : "text-muted-foreground"}>{f.activo ? "Sí" : "No"}</span>}
                   </td>
-                  <td className="px-5 py-3 text-right">
-                    {isOperador && <Button size="sm" variant="ghost" onClick={() => openEdit(f)}><Pencil className="h-3.5 w-3.5" /></Button>}
+                  <td className="sticky right-0 z-10 bg-card px-5 py-3 text-right">
+                    {canEdit && <Button size="sm" variant="ghost" onClick={() => openEdit(f)}><Pencil className="h-3.5 w-3.5" /></Button>}
                   </td>
                 </tr>
               );})}
@@ -237,7 +238,7 @@ export default function Financistas() {
           </table>
         )}
       </div>
-      {isOperador && (
+      {canEdit && (
         <p className="mt-2 text-xs text-muted-foreground">
           Tip: arrastra una fila sobre otra para copiar <strong>representante legal, cargo y cédula</strong>. Las cédulas faltantes aparecen marcadas en rojo.
         </p>
