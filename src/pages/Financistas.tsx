@@ -167,7 +167,7 @@ export default function Financistas() {
         )}
       </PageHeader>
 
-      <div className="rounded-lg border border-border bg-card shadow-sm-elegant overflow-hidden">
+      <div className="rounded-lg border border-border bg-card shadow-sm-elegant overflow-x-auto">
         {rows.length === 0 ? <EmptyState title="Sin financistas" /> : (
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-xs uppercase tracking-wider text-muted-foreground">
