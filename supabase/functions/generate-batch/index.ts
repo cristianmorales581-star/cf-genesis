@@ -106,27 +106,9 @@ Deno.serve(async (req) => {
   const vector: any[] = [];
   const failedRows: string[] = [];
 
-  // Resolver tasa BCV por fecha inicial de vigencia del programa
-  // (histórica si la vigencia inició en una fecha pasada).
-  const rateReferenceDateForRow = (r: BatchRow): string => {
-    const prog = r.programa_id ? progById.get(r.programa_id) : null;
-    return String(prog?.fecha_inicio || r.fecha_emision || body.fecha_emision);
-  };
-  const uniqueDates = [...new Set(body.rows.map(rateReferenceDateForRow))];
-  const tasaByDate = new Map<string, number>();
-  const today = new Date().toISOString().slice(0, 10);
-  await Promise.all(uniqueDates.map(async (d) => {
-    if (d >= today) { tasaByDate.set(d, body.tasa_bcv); return; }
-    try {
-      const u = `${Deno.env.get('SUPABASE_URL')!}/functions/v1/bcv-rate?date=${d}`;
-      const r = await fetch(u, { headers: { 'Authorization': auth!, 'apikey': Deno.env.get('SUPABASE_ANON_KEY')! } });
-      const j = await r.json();
-      const t = Number(j?.tasa);
-      tasaByDate.set(d, t > 0 ? t : body.tasa_bcv);
-    } catch {
-      tasaByDate.set(d, body.tasa_bcv);
-    }
-  }));
+  // Tasa BCV única para toda la corrida: la tasa del día publicada por el BCV
+  // (la misma con la que se procesan los títulos). No se resuelve por programa.
+  const tasaUnica = Number(body.tasa_bcv);
 
   for (const r of body.rows) {
     const ced = cedById.get(r.cedente_id);
