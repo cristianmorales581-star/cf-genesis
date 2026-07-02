@@ -115,8 +115,7 @@ Deno.serve(async (req) => {
     const prog = r.programa_id ? progById.get(r.programa_id) : null;
     if (!ced) continue;
     const fechaEmisionFila = r.fecha_emision || body.fecha_emision;
-    const fechaReferenciaTasa = rateReferenceDateForRow(r);
-    const tasaFila = tasaByDate.get(fechaReferenciaTasa) ?? body.tasa_bcv;
+    const tasaFila = tasaUnica;
 
     // Cálculos zero-coupon
     const precio = round5(1 - r.descuento_decimal);
