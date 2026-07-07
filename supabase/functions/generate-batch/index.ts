@@ -35,6 +35,8 @@ interface BatchRow {
   inversionista_rif?: string;
   inversionista_rep_legal?: string | null;
   inversionista_cedula?: string | null;
+  inversionista_correo?: string | null;
+  inversionista_telefono?: string | null;
 }
 
 interface Body {
