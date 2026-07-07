@@ -257,7 +257,7 @@ function addDaysISO(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: string, financistaRif?: string, financistaRepLegal?: string | null, financistaCedula?: string | null): TemplateContext {
+function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: string, financistaRif?: string, financistaRepLegal?: string | null, financistaCedula?: string | null, financistaCorreo?: string | null, financistaTelefono?: string | null): TemplateContext {
   return {
     simbolo_cfb: e.simbolo_cfb,
     fecha_emision: e.fecha_emision,
