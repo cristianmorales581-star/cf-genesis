@@ -292,6 +292,8 @@ function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: str
     financista_rep_legal: financistaRepLegal ?? null,
     financista_cedula: financistaCedula ?? null,
     financista_es_persona_natural: false,
+    financista_correo: financistaCorreo ?? null,
+    financista_telefono: financistaTelefono ?? null,
     gbv_razon_social: 'Grupo Bursatil Venezolano Casa de Bolsa, C.A.',
     gbv_rif: 'J-502409831',
     gbv_miembro_bvc: '3',
