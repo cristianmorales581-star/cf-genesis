@@ -60,6 +60,8 @@ export interface TemplateContext {
   financista_rep_legal: string | null;
   financista_cedula: string | null;
   financista_es_persona_natural: boolean;
+  financista_correo?: string | null;
+  financista_telefono?: string | null;
 
   // Constantes del sistema (de app_config)
   gbv_razon_social: string;
