@@ -35,6 +35,8 @@ interface BatchRow {
   inversionista_rif?: string;
   inversionista_rep_legal?: string | null;
   inversionista_cedula?: string | null;
+  inversionista_correo?: string | null;
+  inversionista_telefono?: string | null;
 }
 
 interface Body {
@@ -185,7 +187,7 @@ Deno.serve(async (req) => {
       details: { simbolo, programa: prog?.codigo_pcfb ?? null, vn_usd: vnUsd },
     });
 
-    const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif, r.inversionista_rep_legal, r.inversionista_cedula);
+    const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif, r.inversionista_rep_legal, r.inversionista_cedula, r.inversionista_correo, r.inversionista_telefono);
     const cedenteSlug = String(ced.razon_social ?? 'CEDENTE')
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z0-9]+/g, '')
@@ -255,7 +257,7 @@ function addDaysISO(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: string, financistaRif?: string, financistaRepLegal?: string | null, financistaCedula?: string | null): TemplateContext {
+function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: string, financistaRif?: string, financistaRepLegal?: string | null, financistaCedula?: string | null, financistaCorreo?: string | null, financistaTelefono?: string | null): TemplateContext {
   return {
     simbolo_cfb: e.simbolo_cfb,
     fecha_emision: e.fecha_emision,
@@ -290,6 +292,8 @@ function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: str
     financista_rep_legal: financistaRepLegal ?? null,
     financista_cedula: financistaCedula ?? null,
     financista_es_persona_natural: false,
+    financista_correo: financistaCorreo ?? null,
+    financista_telefono: financistaTelefono ?? null,
     gbv_razon_social: 'Grupo Bursatil Venezolano Casa de Bolsa, C.A.',
     gbv_rif: 'J-502409831',
     gbv_miembro_bvc: '3',

@@ -292,6 +292,8 @@ export default function EmisionMasiva() {
             inversionista_rif: fin?.rif || "J-501934070",
             inversionista_rep_legal: fin?.representante_legal || null,
             inversionista_cedula: fin?.cedula || null,
+            inversionista_correo: (fin as any)?.correo || null,
+            inversionista_telefono: (fin as any)?.celular || null,
           };
         }),
       };
@@ -597,8 +599,9 @@ function buildLocalVectorRows(rows: RowMapping[], cedentes: Cedente[], financist
     const cedente = cedentes.find(c => c.id === r.cedente_id);
     const financista = financistas.find(f => f.id === r.financista_id);
     const rowFechaEmision = r.fecha_emision || fechaEmision;
-    const fechaReferenciaTasa = rateReferenceDateForRow(r, programas, fechaEmision);
-    const tasaFila = rateByDate.get(fechaReferenciaTasa) ?? tasaBcv;
+    // Tasa única para toda la corrida: la del día publicada por el BCV
+    // (misma con la que se procesan los títulos). No se resuelve por programa.
+    const tasaFila = tasaBcv;
     const precio = Math.round((1 - r.descuento_decimal) * 100000) / 100000;
     const vnUsd = Math.round(r.monto_total_usd * 100) / 100;
     const montoUsd = Math.round(vnUsd * precio * 100) / 100;

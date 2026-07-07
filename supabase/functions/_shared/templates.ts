@@ -60,6 +60,8 @@ export interface TemplateContext {
   financista_rep_legal: string | null;
   financista_cedula: string | null;
   financista_es_persona_natural: boolean;
+  financista_correo?: string | null;
+  financista_telefono?: string | null;
 
   // Constantes del sistema (de app_config)
   gbv_razon_social: string;
@@ -837,8 +839,12 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
   // nunca el del deudor cedido (Cashea), porque los firmantes son los de cada compañía.
   const repNombre = esCompra ? (c.financista_rep_legal ?? '—') : (c.cedente_rep_legal ?? '—');
   const repCedula = esCompra ? (c.financista_cedula ?? '—') : (c.cedente_cedula ?? '—');
-  const repCorreo = c.deudor_correo ?? 'jesusrojas@cashea.app';
-  const repTelefono = c.deudor_telefono ?? '+58 424-1885202';
+  const repCorreo = esCompra
+    ? (c.financista_correo ?? c.deudor_correo ?? 'jesusrojas@cashea.app')
+    : (c.deudor_correo ?? 'jesusrojas@cashea.app');
+  const repTelefono = esCompra
+    ? (c.financista_telefono ?? c.deudor_telefono ?? '+58 424-1885202')
+    : (c.deudor_telefono ?? '+58 424-1885202');
   // Numeración: ODC = -2, ODV = -1 (convención observada en los PDFs reales)
   const numeroOrden = esCompra ? `${c.simbolo_cfb}-2` : `${c.simbolo_cfb}-1`;
   const fechaSolicitud = fmtFechaDDMMYYYY(addDaysISO(c.fecha_emision, -1));
