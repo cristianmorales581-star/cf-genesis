@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
       details: { simbolo, programa: prog?.codigo_pcfb ?? null, vn_usd: vnUsd },
     });
 
-    const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif, r.inversionista_rep_legal, r.inversionista_cedula);
+    const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif, r.inversionista_rep_legal, r.inversionista_cedula, r.inversionista_correo, r.inversionista_telefono);
     const cedenteSlug = String(ced.razon_social ?? 'CEDENTE')
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z0-9]+/g, '')
