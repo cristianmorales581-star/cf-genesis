@@ -292,6 +292,8 @@ export default function EmisionMasiva() {
             inversionista_rif: fin?.rif || "J-501934070",
             inversionista_rep_legal: fin?.representante_legal || null,
             inversionista_cedula: fin?.cedula || null,
+            inversionista_correo: (fin as any)?.correo || null,
+            inversionista_telefono: (fin as any)?.celular || null,
           };
         }),
       };
