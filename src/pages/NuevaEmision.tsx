@@ -143,8 +143,12 @@ export default function NuevaEmision() {
       return;
     }
     setBusy(true);
-    // Generate symbol now (atomic)
-    const { data: simbolo } = await supabase.rpc("next_simbolo_for_programa", { _programa_id: form.programa_id });
+    // Use manually entered symbol if provided, otherwise generate atomically
+    let simbolo = simboloPreview?.trim().toUpperCase() || "";
+    if (!simbolo) {
+      const { data: gen } = await supabase.rpc("next_simbolo_for_programa", { _programa_id: form.programa_id });
+      simbolo = gen ?? "";
+    }
     if (!simbolo) { toast.error("No se pudo generar el símbolo"); setBusy(false); return; }
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -221,8 +225,13 @@ export default function NuevaEmision() {
                 </Select>
               </div>
               <div>
-                <Label>Símbolo (auto)</Label>
-                <Input value={simboloPreview || "—"} readOnly disabled className="font-mono bg-muted/50" />
+                <Label>Símbolo (editable)</Label>
+                <Input
+                  value={simboloPreview}
+                  onChange={e => setSimboloPreview(e.target.value.toUpperCase())}
+                  placeholder="Se genera automáticamente"
+                  className="font-mono"
+                />
               </div>
             </div>
           </div>
