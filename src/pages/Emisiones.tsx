@@ -33,8 +33,8 @@ interface Row {
   fecha_emision: string; fecha_vencimiento: string; estado: string;
   rendimiento_anualizado: number; monto_efectivo_usd: number;
   tasa_cambio_bs_usd: number; dias_colocados: number;
-  programas?: { codigo_pcfb: string; cedentes?: { razon_social: string } };
-  financistas?: { razon_social: string } | null;
+  programas?: { codigo_pcfb: string; cedentes?: { razon_social: string; rif: string } };
+  financistas?: { razon_social: string; rif: string } | null;
 }
 
 function daysRemaining(iso: string): number {
