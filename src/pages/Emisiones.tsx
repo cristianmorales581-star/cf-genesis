@@ -70,7 +70,7 @@ function csvEscape(v: unknown): string {
 
 function downloadCSV(filename: string, rows: Row[]) {
   const header = [
-    "Simbolo CFB", "Programa", "Cedente", "Financista",
+    "Simbolo CFB", "Programa", "Cedente", "RIF Cedente", "Financista", "RIF Financista",
     "Valor Nominal USD", "Monto Efectivo USD", "Precio",
     "Rendimiento Anualizado", "Fecha Emisión", "Fecha Vencimiento", "Estado",
     "Tasa BCV Emisión", "Tasa Derecho Registro", "Derecho de Registro USD", "Derecho de Registro Bs",
@@ -84,7 +84,9 @@ function downloadCSV(filename: string, rows: Row[]) {
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
       r.programas?.cedentes?.razon_social ?? "",
+      r.programas?.cedentes?.rif ?? "",
       r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.",
+      r.financistas?.rif ?? "J-501934070",
       Number(r.valor_nominal_usd).toFixed(4),
       Number(r.monto_efectivo_usd).toFixed(4),
       Number(r.precio).toFixed(4),
