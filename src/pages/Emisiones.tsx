@@ -33,8 +33,8 @@ interface Row {
   fecha_emision: string; fecha_vencimiento: string; estado: string;
   rendimiento_anualizado: number; monto_efectivo_usd: number;
   tasa_cambio_bs_usd: number; dias_colocados: number;
-  programas?: { codigo_pcfb: string; cedentes?: { razon_social: string } };
-  financistas?: { razon_social: string } | null;
+  programas?: { codigo_pcfb: string; cedentes?: { razon_social: string; rif: string } };
+  financistas?: { razon_social: string; rif: string } | null;
 }
 
 function daysRemaining(iso: string): number {
@@ -70,7 +70,7 @@ function csvEscape(v: unknown): string {
 
 function downloadCSV(filename: string, rows: Row[]) {
   const header = [
-    "Simbolo CFB", "Programa", "Cedente", "Financista",
+    "Simbolo CFB", "Programa", "Cedente", "RIF Cedente", "Financista", "RIF Financista",
     "Valor Nominal USD", "Monto Efectivo USD", "Precio",
     "Rendimiento Anualizado", "Fecha Emisión", "Fecha Vencimiento", "Estado",
     "Tasa BCV Emisión", "Tasa Derecho Registro", "Derecho de Registro USD", "Derecho de Registro Bs",
@@ -84,7 +84,9 @@ function downloadCSV(filename: string, rows: Row[]) {
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
       r.programas?.cedentes?.razon_social ?? "",
+      r.programas?.cedentes?.rif ?? "",
       r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.",
+      r.financistas?.rif ?? "J-501934070",
       Number(r.valor_nominal_usd).toFixed(4),
       Number(r.monto_efectivo_usd).toFixed(4),
       Number(r.precio).toFixed(4),
@@ -209,7 +211,7 @@ export default function Emisiones() {
   async function load() {
     const { data } = await supabase
       .from("emisiones")
-      .select("*, programas(codigo_pcfb, cedentes(razon_social)), financistas(razon_social)")
+      .select("*, programas(codigo_pcfb, cedentes(razon_social, rif)), financistas(razon_social, rif)")
       .order("fecha_emision", { ascending: false });
     setRows((data ?? []) as Row[]);
   }
