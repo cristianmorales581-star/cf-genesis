@@ -58,6 +58,8 @@ export default function EmisionDetalle() {
   const [busy, setBusy] = useState(false);
   const [genTipo, setGenTipo] = useState<string | null>(null);
   const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
+  const [tasaBcv, setTasaBcv] = useState<number | null>(null);
+  const [tasaFecha, setTasaFecha] = useState<string | null>(null);
 
   async function load() {
     if (!id) return;
@@ -86,6 +88,25 @@ export default function EmisionDetalle() {
       setFinancistasList((data ?? []) as FinancistaOpt[]);
     })();
   }, []);
+
+  // Cargar tasa BCV del día al abrir el diálogo
+  useEffect(() => {
+    if (!openConf) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("bcv-rate", { body: {} });
+        if (!error && data?.tasa) {
+          const t = Number(data.tasa);
+          setTasaBcv(t);
+          setTasaFecha(data.fecha ?? null);
+          setConfForm(prev => ({
+            ...prev,
+            valor_efectivo_bs: +(Number(prev.monto_efectivo_usd) * t).toFixed(2),
+          }));
+        }
+      } catch (_) { /* noop */ }
+    })();
+  }, [openConf]);
 
   if (!e) return (
     <>
@@ -239,11 +260,31 @@ export default function EmisionDetalle() {
                       </div>
                       <div>
                         <Label>Monto USD</Label>
-                        <Input type="number" step="0.01" value={confForm.monto_efectivo_usd} onChange={ev => setConfForm({ ...confForm, monto_efectivo_usd: parseFloat(ev.target.value || "0") })} />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={confForm.monto_efectivo_usd}
+                          onChange={ev => {
+                            const usd = parseFloat(ev.target.value || "0");
+                            setConfForm(prev => ({
+                              ...prev,
+                              monto_efectivo_usd: usd,
+                              valor_efectivo_bs: tasaBcv ? +(usd * tasaBcv).toFixed(2) : prev.valor_efectivo_bs,
+                            }));
+                          }}
+                        />
                       </div>
                       <div>
-                        <Label>Valor Bs</Label>
-                        <Input type="number" step="0.01" value={confForm.valor_efectivo_bs} onChange={ev => setConfForm({ ...confForm, valor_efectivo_bs: parseFloat(ev.target.value || "0") })} />
+                        <Label>Valor Bs {tasaBcv ? <span className="text-[10px] text-muted-foreground font-normal">(auto · tasa BCV {tasaBcv.toFixed(4)})</span> : <span className="text-[10px] text-muted-foreground font-normal">(cargando tasa…)</span>}</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={confForm.valor_efectivo_bs}
+                          readOnly
+                          disabled
+                          className="bg-secondary/40"
+                        />
+                        {tasaFecha && <p className="text-[10px] text-muted-foreground mt-1">Fecha tasa: {tasaFecha}</p>}
                       </div>
                     </div>
                     <DialogFooter>
