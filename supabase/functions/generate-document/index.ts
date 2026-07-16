@@ -98,10 +98,11 @@ function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 
-function buildTemplateContext(e: any, contraparte?: string): TemplateContext {
+function buildTemplateContext(e: any, contraparte?: string, conf?: any): TemplateContext {
   const ced = e.cedentes ?? e.programas?.cedentes ?? {};
   const prog = e.programas ?? {};
   const fin = e.financistas ?? {};
+  const contraparteFinal = conf?.contraparte_razon_social || contraparte || fin.razon_social || 'Grupo Cashea Ve, C.A.';
   return {
     simbolo_cfb: e.simbolo_cfb,
     fecha_emision: e.fecha_emision,
@@ -113,9 +114,14 @@ function buildTemplateContext(e: any, contraparte?: string): TemplateContext {
     descuento: Number(e.descuento),
     rendimiento_anualizado: Number(e.rendimiento_anualizado),
     dias_colocados: Number(e.dias_colocados),
-    monto_efectivo_usd: Number(e.monto_efectivo_usd),
-    valor_efectivo_bs: Number(e.valor_efectivo_bs),
-    tasa_cambio_bs_usd: Number(e.tasa_cambio_bs_usd),
+    monto_efectivo_usd: conf ? Number(conf.monto_efectivo_usd) : Number(e.monto_efectivo_usd),
+    valor_efectivo_bs: conf ? Number(conf.valor_efectivo_bs) : Number(e.valor_efectivo_bs),
+    tasa_cambio_bs_usd: conf && conf.tasa_cambio_bs_usd != null
+      ? Number(conf.tasa_cambio_bs_usd)
+      : Number(e.tasa_cambio_bs_usd),
+    conf_fecha_operacion: conf?.fecha_operacion ?? null,
+    conf_fecha_valor: conf?.fecha_valor ?? null,
+    conf_tipo: conf?.tipo ?? null,
     cedente_razon_social: ced.razon_social ?? '—',
     cedente_rif: ced.rif ?? '—',
     cedente_rep_legal: ced.representante_legal ?? '—',
@@ -131,7 +137,7 @@ function buildTemplateContext(e: any, contraparte?: string): TemplateContext {
     deudor_cedula: prog.deudor_cedido_cedula ?? '—',
     deudor_correo: prog.deudor_cedido_correo ?? null,
     deudor_telefono: prog.deudor_cedido_telefono ?? null,
-    financista_razon_social: contraparte || fin.razon_social || 'Grupo Cashea Ve, C.A.',
+    financista_razon_social: contraparteFinal,
     financista_rif: fin.rif ?? 'J-501934070',
     financista_rep_legal: fin.representante_legal ?? null,
     financista_cedula: fin.cedula ?? null,
