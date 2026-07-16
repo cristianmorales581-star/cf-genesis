@@ -23,7 +23,7 @@ type Emision = any;
 interface Confirmacion {
   id: string; tipo: "CDC" | "CDV"; contraparte_razon_social: string;
   fecha_operacion: string; fecha_valor: string; monto_efectivo_usd: number;
-  valor_efectivo_bs: number; created_at: string;
+  valor_efectivo_bs: number; tasa_cambio_bs_usd: number | null; created_at: string;
 }
 
 const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
