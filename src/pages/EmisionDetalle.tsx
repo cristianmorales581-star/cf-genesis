@@ -200,8 +200,34 @@ export default function EmisionDetalle() {
                         </Select>
                       </div>
                       <div className="col-span-2">
-                        <Label>Contraparte</Label>
-                        <Input value={confForm.contraparte_razon_social} onChange={ev => setConfForm({ ...confForm, contraparte_razon_social: ev.target.value })} placeholder="Razón social" />
+                        <Label>Contraparte (Financista)</Label>
+                        <Select
+                          value={contraparteId}
+                          onValueChange={(v) => {
+                            setContraparteId(v);
+                            const f = financistasList.find(x => x.id === v);
+                            if (f) setConfForm(prev => ({ ...prev, contraparte_razon_social: f.razon_social }));
+                          }}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Seleccione un financista" /></SelectTrigger>
+                          <SelectContent>
+                            {financistasList.map(f => (
+                              <SelectItem key={f.id} value={f.id}>{f.razon_social}{f.rif ? ` · ${f.rif}` : ""}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {contraparteId && (() => {
+                          const f = financistasList.find(x => x.id === contraparteId);
+                          if (!f) return null;
+                          return (
+                            <div className="mt-2 rounded-md border border-border bg-secondary/40 p-2 text-[11px] text-muted-foreground space-y-0.5">
+                              {f.rif && <div><span className="uppercase tracking-wider">RIF:</span> <span className="font-mono text-foreground">{f.rif}</span></div>}
+                              {f.representante_legal && <div><span className="uppercase tracking-wider">Rep. legal:</span> <span className="text-foreground">{f.representante_legal}</span>{f.cedula ? ` · CI ${f.cedula}` : ""}</div>}
+                              {f.correo && <div><span className="uppercase tracking-wider">Correo:</span> <span className="text-foreground">{f.correo}</span></div>}
+                              {f.celular && <div><span className="uppercase tracking-wider">Tel:</span> <span className="text-foreground">{f.celular}</span></div>}
+                            </div>
+                          );
+                        })()}
                       </div>
                       <div>
                         <Label>Fecha operación</Label>
