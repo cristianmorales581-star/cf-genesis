@@ -33,6 +33,11 @@ export interface TemplateContext {
   valor_efectivo_bs: number;
   tasa_cambio_bs_usd: number;
 
+  // Override desde una confirmación específica (opcional)
+  conf_fecha_operacion?: string | null;
+  conf_fecha_valor?: string | null;
+  conf_tipo?: 'CDC' | 'CDV' | null;
+
   // Cedente
   cedente_razon_social: string;
   cedente_rif: string;
@@ -747,12 +752,18 @@ export function renderCDV(c: TemplateContext): string {
 function renderConfirmacion(c: TemplateContext, tipo: 'CDC' | 'CDV'): string {
   const esCompra = tipo === 'CDC';
   const accion = esCompra ? 'COMPRA' : 'VENTA';
-  // En CDC el destinatario es el comprador (financista). En CDV el destinatario es el vendedor (cedente).
-  const destinatario = esCompra ? c.financista_razon_social : c.cedente_razon_social;
-  // Vendedor es siempre el cedente, comprador es siempre el financista
-  const vendedor = c.cedente_razon_social;
-  const comprador = c.financista_razon_social;
-  const fechaConfirmacion = addDaysISO(c.fecha_emision, 1);
+  // La contraparte de la confirmación se guarda en financista_razon_social.
+  // - CDC (Grupo Cashea recompra): el vendedor es la contraparte (financista actual del título),
+  //   el comprador es el cedente (Grupo Cashea Ve).
+  // - CDV (Grupo Cashea vende): el vendedor es el cedente, el comprador es la contraparte.
+  const contraparte = c.financista_razon_social;
+  const vendedor = esCompra ? contraparte : c.cedente_razon_social;
+  const comprador = esCompra ? c.cedente_razon_social : contraparte;
+  // El destinatario de la carta es siempre la contraparte externa a Grupo Cashea.
+  const destinatario = contraparte;
+  const fechaOperacion = c.conf_fecha_operacion ?? c.fecha_emision;
+  const fechaValor = c.conf_fecha_valor ?? c.fecha_emision;
+  const fechaConfirmacion = addDaysISO(fechaOperacion, 1);
   return `<!doctype html>
 <html lang="es-VE"><head><meta charset="utf-8"/>
 <title>${tipo} ${c.simbolo_cfb} — ${destinatario}</title>
@@ -780,8 +791,8 @@ ${actionsBar()}
     <tr><td class="k">Vendedor</td><td class="v">${vendedor}</td></tr>
     <tr><td class="k">Comprador</td><td class="v">${comprador}</td></tr>
     <tr><td class="k">Título</td><td class="v"><strong>${c.simbolo_cfb}</strong></td></tr>
-    <tr><td class="k">Fecha de operación</td><td class="v">${fmtFechaDDMMYYYY(c.fecha_emision)}</td></tr>
-    <tr><td class="k">Fecha Valor</td><td class="v">${fmtFechaDDMMYYYY(c.fecha_emision)}</td></tr>
+    <tr><td class="k">Fecha de operación</td><td class="v">${fmtFechaDDMMYYYY(fechaOperacion)}</td></tr>
+    <tr><td class="k">Fecha Valor</td><td class="v">${fmtFechaDDMMYYYY(fechaValor)}</td></tr>
     <tr><td class="k">Valor Nominal</td><td class="v">${fmtUSD(c.valor_nominal_usd)}</td></tr>
     <tr><td class="k">Precio</td><td class="v">${fmtPct(c.precio, 2)}</td></tr>
     <tr><td class="k">Base</td><td class="v">ACT/360</td></tr>

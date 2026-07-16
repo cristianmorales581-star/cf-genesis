@@ -23,7 +23,7 @@ type Emision = any;
 interface Confirmacion {
   id: string; tipo: "CDC" | "CDV"; contraparte_razon_social: string;
   fecha_operacion: string; fecha_valor: string; monto_efectivo_usd: number;
-  valor_efectivo_bs: number; created_at: string;
+  valor_efectivo_bs: number; tasa_cambio_bs_usd: number | null; created_at: string;
 }
 
 const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
@@ -117,7 +117,11 @@ export default function EmisionDetalle() {
 
   const cedente = e.programas?.cedentes;
 
-  async function generarDoc(tipo: "CFB" | "HOJA_TERMINOS" | "CDC" | "CDV", contraparte?: string) {
+  async function generarDoc(
+    tipo: "CFB" | "HOJA_TERMINOS" | "CDC" | "CDV",
+    contraparte?: string,
+    confirmacion_id?: string,
+  ) {
     setGenTipo(tipo);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -128,7 +132,7 @@ export default function EmisionDetalle() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ emision_id: e.id, tipo, contraparte }),
+        body: JSON.stringify({ emision_id: e.id, tipo, contraparte, confirmacion_id }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -155,6 +159,7 @@ export default function EmisionDetalle() {
       fecha_valor: confForm.fecha_valor,
       monto_efectivo_usd: confForm.monto_efectivo_usd,
       valor_efectivo_bs: confForm.valor_efectivo_bs,
+      tasa_cambio_bs_usd: tasaBcv,
     }).select().single();
     if (error) toast.error(error.message);
     else {
@@ -318,7 +323,7 @@ export default function EmisionDetalle() {
                       <td className="py-2.5 text-right"><Numeric>{fmtUSD(c.monto_efectivo_usd)}</Numeric></td>
                       <td className="py-2.5 text-right"><Numeric>{fmtBs(c.valor_efectivo_bs)}</Numeric></td>
                       <td className="py-2.5 text-right">
-                        <Button size="sm" variant="ghost" onClick={() => generarDoc(c.tipo, c.contraparte_razon_social)} disabled={genTipo === c.tipo}>
+                        <Button size="sm" variant="ghost" onClick={() => generarDoc(c.tipo, c.contraparte_razon_social, c.id)} disabled={genTipo === c.tipo}>
                           <FileDown className="h-3.5 w-3.5" />
                         </Button>
                       </td>
