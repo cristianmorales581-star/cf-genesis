@@ -93,6 +93,7 @@ export type Database = {
           id: string
           monto_efectivo_usd: number
           pdf_url: string | null
+          tasa_cambio_bs_usd: number | null
           tipo: Database["public"]["Enums"]["tipo_confirmacion"]
           valor_efectivo_bs: number
         }
@@ -105,6 +106,7 @@ export type Database = {
           id?: string
           monto_efectivo_usd: number
           pdf_url?: string | null
+          tasa_cambio_bs_usd?: number | null
           tipo: Database["public"]["Enums"]["tipo_confirmacion"]
           valor_efectivo_bs: number
         }
@@ -117,6 +119,7 @@ export type Database = {
           id?: string
           monto_efectivo_usd?: number
           pdf_url?: string | null
+          tasa_cambio_bs_usd?: number | null
           tipo?: Database["public"]["Enums"]["tipo_confirmacion"]
           valor_efectivo_bs?: number
         }

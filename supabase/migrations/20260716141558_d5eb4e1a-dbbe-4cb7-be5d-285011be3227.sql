@@ -1,0 +1,1 @@
+ALTER TABLE public.confirmaciones ADD COLUMN IF NOT EXISTS tasa_cambio_bs_usd numeric;
