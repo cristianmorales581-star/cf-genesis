@@ -89,6 +89,25 @@ export default function EmisionDetalle() {
     })();
   }, []);
 
+  // Cargar tasa BCV del día al abrir el diálogo
+  useEffect(() => {
+    if (!openConf) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("bcv-rate", { body: {} });
+        if (!error && data?.tasa) {
+          const t = Number(data.tasa);
+          setTasaBcv(t);
+          setTasaFecha(data.fecha ?? null);
+          setConfForm(prev => ({
+            ...prev,
+            valor_efectivo_bs: +(Number(prev.monto_efectivo_usd) * t).toFixed(2),
+          }));
+        }
+      } catch (_) { /* noop */ }
+    })();
+  }, [openConf]);
+
   if (!e) return (
     <>
       <PageHeader title="Emisión" subtitle="Cargando…" />
