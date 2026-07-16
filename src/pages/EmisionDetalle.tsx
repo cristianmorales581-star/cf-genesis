@@ -78,6 +78,16 @@ export default function EmisionDetalle() {
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("financistas")
+        .select("id, razon_social, rif, representante_legal, representante_cedula, email, telefono, direccion")
+        .order("razon_social", { ascending: true });
+      setFinancistasList((data ?? []) as FinancistaOpt[]);
+    })();
+  }, []);
+
   if (!e) return (
     <>
       <PageHeader title="Emisión" subtitle="Cargando…" />
