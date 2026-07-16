@@ -28,6 +28,17 @@ interface Confirmacion {
 
 const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
 
+interface FinancistaOpt {
+  id: string;
+  razon_social: string;
+  rif?: string | null;
+  representante_legal?: string | null;
+  representante_cedula?: string | null;
+  email?: string | null;
+  telefono?: string | null;
+  direccion?: string | null;
+}
+
 export default function EmisionDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,6 +46,8 @@ export default function EmisionDetalle() {
   const [e, setE] = useState<Emision | null>(null);
   const [confs, setConfs] = useState<Confirmacion[]>([]);
   const [openConf, setOpenConf] = useState(false);
+  const [financistasList, setFinancistasList] = useState<FinancistaOpt[]>([]);
+  const [contraparteId, setContraparteId] = useState<string>("");
   const [confForm, setConfForm] = useState({
     tipo: "CDC" as "CDC" | "CDV",
     contraparte_razon_social: "",
