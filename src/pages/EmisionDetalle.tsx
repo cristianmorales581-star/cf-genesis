@@ -33,10 +33,9 @@ interface FinancistaOpt {
   razon_social: string;
   rif?: string | null;
   representante_legal?: string | null;
-  representante_cedula?: string | null;
-  email?: string | null;
-  telefono?: string | null;
-  direccion?: string | null;
+  cedula?: string | null;
+  correo?: string | null;
+  celular?: string | null;
 }
 
 export default function EmisionDetalle() {
