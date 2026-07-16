@@ -81,7 +81,7 @@ export default function EmisionDetalle() {
     (async () => {
       const { data } = await supabase
         .from("financistas")
-        .select("id, razon_social, rif, representante_legal, representante_cedula, email, telefono, direccion")
+        .select("id, razon_social, rif, representante_legal, cedula, correo, celular")
         .order("razon_social", { ascending: true });
       setFinancistasList((data ?? []) as FinancistaOpt[]);
     })();
