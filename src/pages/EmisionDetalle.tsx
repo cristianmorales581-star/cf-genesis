@@ -58,6 +58,8 @@ export default function EmisionDetalle() {
   const [busy, setBusy] = useState(false);
   const [genTipo, setGenTipo] = useState<string | null>(null);
   const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
+  const [tasaBcv, setTasaBcv] = useState<number | null>(null);
+  const [tasaFecha, setTasaFecha] = useState<string | null>(null);
 
   async function load() {
     if (!id) return;
