@@ -32,6 +32,7 @@ interface Body {
   emision_id: string;
   tipo: 'CFB' | 'HOJA_TERMINOS' | 'CDC' | 'CDV' | 'CARTA_SUNAVAL' | 'CARTA_BVC' | 'ODC' | 'ODV';
   contraparte?: string;
+  confirmacion_id?: string;
 }
 
 Deno.serve(async (req) => {
@@ -66,7 +67,17 @@ Deno.serve(async (req) => {
 
   if (eErr || !e) return json({ error: eErr?.message ?? 'Emisión no encontrada' }, 404);
 
-  const ctx = buildTemplateContext(e, body.contraparte);
+  let conf: any = null;
+  if (body.confirmacion_id) {
+    const { data: c } = await supabase
+      .from('confirmaciones')
+      .select('*')
+      .eq('id', body.confirmacion_id)
+      .maybeSingle();
+    conf = c;
+  }
+
+  const ctx = buildTemplateContext(e, body.contraparte, conf);
   const renderers: Record<Body['tipo'], (c: TemplateContext) => string> = {
     CFB: renderTemplateCFB,
     HOJA_TERMINOS: renderTemplateHojaTerminos,
