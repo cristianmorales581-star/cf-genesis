@@ -33,6 +33,11 @@ export interface TemplateContext {
   valor_efectivo_bs: number;
   tasa_cambio_bs_usd: number;
 
+  // Override desde una confirmación específica (opcional)
+  conf_fecha_operacion?: string | null;
+  conf_fecha_valor?: string | null;
+  conf_tipo?: 'CDC' | 'CDV' | null;
+
   // Cedente
   cedente_razon_social: string;
   cedente_rif: string;
