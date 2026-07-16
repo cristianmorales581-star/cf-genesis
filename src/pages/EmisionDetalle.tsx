@@ -323,7 +323,7 @@ export default function EmisionDetalle() {
                       <td className="py-2.5 text-right"><Numeric>{fmtUSD(c.monto_efectivo_usd)}</Numeric></td>
                       <td className="py-2.5 text-right"><Numeric>{fmtBs(c.valor_efectivo_bs)}</Numeric></td>
                       <td className="py-2.5 text-right">
-                        <Button size="sm" variant="ghost" onClick={() => generarDoc(c.tipo, c.contraparte_razon_social)} disabled={genTipo === c.tipo}>
+                        <Button size="sm" variant="ghost" onClick={() => generarDoc(c.tipo, c.contraparte_razon_social, c.id)} disabled={genTipo === c.tipo}>
                           <FileDown className="h-3.5 w-3.5" />
                         </Button>
                       </td>
