@@ -117,7 +117,11 @@ export default function EmisionDetalle() {
 
   const cedente = e.programas?.cedentes;
 
-  async function generarDoc(tipo: "CFB" | "HOJA_TERMINOS" | "CDC" | "CDV", contraparte?: string) {
+  async function generarDoc(
+    tipo: "CFB" | "HOJA_TERMINOS" | "CDC" | "CDV",
+    contraparte?: string,
+    confirmacion_id?: string,
+  ) {
     setGenTipo(tipo);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -128,7 +132,7 @@ export default function EmisionDetalle() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ emision_id: e.id, tipo, contraparte }),
+        body: JSON.stringify({ emision_id: e.id, tipo, contraparte, confirmacion_id }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -155,6 +159,7 @@ export default function EmisionDetalle() {
       fecha_valor: confForm.fecha_valor,
       monto_efectivo_usd: confForm.monto_efectivo_usd,
       valor_efectivo_bs: confForm.valor_efectivo_bs,
+      tasa_cambio_bs_usd: tasaBcv,
     }).select().single();
     if (error) toast.error(error.message);
     else {
