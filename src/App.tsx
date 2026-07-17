@@ -43,6 +43,7 @@ const App = () => (
               <Route path="/programas" element={<Programas />} />
               <Route path="/emisiones" element={<Emisiones />} />
               <Route path="/emisiones/nueva" element={<ProtectedRoute requireAdmin><NuevaEmision /></ProtectedRoute>} />
+              <Route path="/emisiones/papelera" element={<ProtectedRoute requireAdmin><Papelera /></ProtectedRoute>} />
               <Route path="/emisiones/masiva" element={<ProtectedRoute requireAdmin><EmisionMasiva /></ProtectedRoute>} />
               <Route path="/importar" element={<CargaMasiva />} />
               <Route path="/emisiones/:id" element={<EmisionDetalle />} />
