@@ -331,11 +331,18 @@ export default function Emisiones() {
     <>
       <PageHeader title="Emisiones" subtitle="Listado completo de Certificados de Financiamiento Bursátil">
         {isAdmin && (
-          <Link to="/emisiones/nueva">
-            <Button className="bg-gradient-gold text-accent-foreground hover:opacity-95">
-              <FilePlus2 className="h-4 w-4 mr-1.5" /> Nueva Emisión
-            </Button>
-          </Link>
+          <>
+            <Link to="/emisiones/papelera">
+              <Button variant="outline">
+                <Trash2 className="h-4 w-4 mr-1.5" /> Papelera
+              </Button>
+            </Link>
+            <Link to="/emisiones/nueva">
+              <Button className="bg-gradient-gold text-accent-foreground hover:opacity-95">
+                <FilePlus2 className="h-4 w-4 mr-1.5" /> Nueva Emisión
+              </Button>
+            </Link>
+          </>
         )}
       </PageHeader>
 
