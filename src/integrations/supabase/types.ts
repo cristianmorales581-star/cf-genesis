@@ -138,6 +138,8 @@ export type Database = {
           cantidad_ordenes_compra: number
           cedente_id: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           descuento: number
           dias_colocados: number
           estado: string
@@ -159,6 +161,8 @@ export type Database = {
           cantidad_ordenes_compra?: number
           cedente_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           descuento: number
           dias_colocados: number
           estado?: string
@@ -180,6 +184,8 @@ export type Database = {
           cantidad_ordenes_compra?: number
           cedente_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           descuento?: number
           dias_colocados?: number
           estado?: string
