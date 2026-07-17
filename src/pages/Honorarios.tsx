@@ -73,6 +73,7 @@ export default function Honorarios() {
       const { data } = await supabase
         .from("emisiones")
         .select("id, valor_nominal_usd, fecha_emision, programas(cedentes(razon_social))")
+        .is("deleted_at", null)
         .order("fecha_emision", { ascending: false });
       setRows((data ?? []) as Row[]);
     })();

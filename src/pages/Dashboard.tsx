@@ -30,10 +30,10 @@ export default function Dashboard() {
       const in7 = addDaysISO(today, 7);
       try { await supabase.rpc("refresh_programas_estado"); } catch { /* no bloquea el dashboard */ }
       const [{ data: live }, { data: vto }, { data: acts }, { data: byCed }, { data: progsAlert }] = await Promise.all([
-        supabase.from("emisiones").select("*").eq("estado", "activa").gte("fecha_vencimiento", today).order("fecha_emision", { ascending: false }).limit(8),
-        supabase.from("emisiones").select("*").gte("fecha_vencimiento", today).lte("fecha_vencimiento", in30).order("fecha_vencimiento", { ascending: true }).limit(10),
+        supabase.from("emisiones").select("*").is("deleted_at", null).eq("estado", "activa").gte("fecha_vencimiento", today).order("fecha_emision", { ascending: false }).limit(8),
+        supabase.from("emisiones").select("*").is("deleted_at", null).gte("fecha_vencimiento", today).lte("fecha_vencimiento", in30).order("fecha_vencimiento", { ascending: true }).limit(10),
         supabase.from("audit_log").select("id,action,resource_type,user_email,created_at").order("created_at", { ascending: false }).limit(8),
-        supabase.from("emisiones").select("valor_nominal_usd, programas!inner(cedentes!inner(razon_social))").eq("estado", "activa").gte("fecha_vencimiento", today),
+        supabase.from("emisiones").select("valor_nominal_usd, programas!inner(cedentes!inner(razon_social))").is("deleted_at", null).eq("estado", "activa").gte("fecha_vencimiento", today),
         supabase.from("programas").select("id, codigo_pcfb, fecha_vencimiento, estado, cedentes(razon_social)")
           .or(`estado.eq.vencida,and(estado.eq.activa,fecha_vencimiento.lte.${in7})`)
           .order("fecha_vencimiento", { ascending: true }).limit(20),

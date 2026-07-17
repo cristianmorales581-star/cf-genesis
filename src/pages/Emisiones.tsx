@@ -212,35 +212,38 @@ export default function Emisiones() {
     const { data } = await supabase
       .from("emisiones")
       .select("*, programas(codigo_pcfb, cedentes(razon_social, rif)), financistas(razon_social, rif)")
+      .is("deleted_at", null)
       .order("fecha_emision", { ascending: false });
     setRows((data ?? []) as Row[]);
   }
   useEffect(() => { load(); }, []);
 
   async function deleteEmission(row: Row) {
-    if (!window.confirm(`¿Eliminar definitivamente el certificado ${row.simbolo_cfb}?`)) return;
-    const { error } = await supabase.from("emisiones").delete().eq("id", row.id);
+    if (!window.confirm(`¿Enviar a la papelera el certificado ${row.simbolo_cfb}? Podrás restaurarlo desde Papelera.`)) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from("emisiones").update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null }).eq("id", row.id);
     if (error) { toast.error(error.message); return; }
-    await logAudit({ action: "delete", resource_type: "emision", resource_id: row.id, details: { simbolo_cfb: row.simbolo_cfb } });
+    await logAudit({ action: "delete", resource_type: "emision", resource_id: row.id, details: { simbolo_cfb: row.simbolo_cfb, soft: true } });
     setRows(prev => prev.filter(r => r.id !== row.id));
-    toast.success(`Certificado ${row.simbolo_cfb} eliminado`);
+    toast.success(`Certificado ${row.simbolo_cfb} enviado a la papelera`);
   }
 
   async function deleteSelected() {
     const selectedRows = rows.filter(r => selected.includes(r.id));
     if (!selectedRows.length) return;
-    if (!window.confirm(`¿Eliminar definitivamente ${selectedRows.length} certificado(s) seleccionado(s)?`)) return;
+    if (!window.confirm(`¿Enviar a la papelera ${selectedRows.length} certificado(s) seleccionado(s)? Podrás restaurarlos desde Papelera.`)) return;
     setDeleting(true);
-    const { error } = await supabase.from("emisiones").delete().in("id", selected);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from("emisiones").update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null }).in("id", selected);
     if (error) { toast.error(error.message); setDeleting(false); return; }
     await logAudit({
       action: "bulk_delete", resource_type: "emision",
-      details: { count: selectedRows.length, simbolos_cfb: selectedRows.map(r => r.simbolo_cfb) },
+      details: { count: selectedRows.length, simbolos_cfb: selectedRows.map(r => r.simbolo_cfb), soft: true },
     });
     setRows(prev => prev.filter(r => !selected.includes(r.id)));
     setSelected([]);
     setDeleting(false);
-    toast.success(`${selectedRows.length} certificado(s) eliminado(s)`);
+    toast.success(`${selectedRows.length} certificado(s) enviado(s) a la papelera`);
   }
 
   const cedentes = useMemo(() => {
@@ -328,11 +331,18 @@ export default function Emisiones() {
     <>
       <PageHeader title="Emisiones" subtitle="Listado completo de Certificados de Financiamiento Bursátil">
         {isAdmin && (
-          <Link to="/emisiones/nueva">
-            <Button className="bg-gradient-gold text-accent-foreground hover:opacity-95">
-              <FilePlus2 className="h-4 w-4 mr-1.5" /> Nueva Emisión
-            </Button>
-          </Link>
+          <>
+            <Link to="/emisiones/papelera">
+              <Button variant="outline">
+                <Trash2 className="h-4 w-4 mr-1.5" /> Papelera
+              </Button>
+            </Link>
+            <Link to="/emisiones/nueva">
+              <Button className="bg-gradient-gold text-accent-foreground hover:opacity-95">
+                <FilePlus2 className="h-4 w-4 mr-1.5" /> Nueva Emisión
+              </Button>
+            </Link>
+          </>
         )}
       </PageHeader>
 

@@ -46,6 +46,7 @@ export default function Portafolio() {
         .from("emisiones")
         .select("id, simbolo_cfb, valor_nominal_usd, precio, fecha_emision, fecha_vencimiento, rendimiento_anualizado, estado, financista_id, financistas(id, razon_social), programas(cedentes(razon_social))")
         .eq("estado", "activa")
+        .is("deleted_at", null)
         .gte("fecha_vencimiento", today)
         .order("fecha_vencimiento", { ascending: true });
       setRows((data ?? []) as unknown as EmisionRow[]);
