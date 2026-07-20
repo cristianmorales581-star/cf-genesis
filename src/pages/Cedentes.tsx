@@ -108,6 +108,27 @@ export default function Cedentes() {
     else { await logAudit({ action: newVal ? "enable" : "disable", resource_type: "cedente", resource_id: c.id }); load(); }
   }
 
+  function exportCsv() {
+    const headers = ["Razón Social","Nombre Comercial","RIF","Representante Legal","Cargo","Cédula","Activo","Creado"];
+    const esc = (v: any) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [headers.join(",")];
+    rows.forEach(c => lines.push([
+      c.razon_social, c.nombre_comercial ?? "", c.rif,
+      c.representante_legal ?? "", c.cargo ?? "", c.cedula ?? "",
+      c.activo ? "Sí" : "No", new Date(c.created_at).toISOString().slice(0,10),
+    ].map(esc).join(",")));
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cedentes_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <PageHeader title="Cedentes" subtitle="Empresas emisoras de los programas CFB">
