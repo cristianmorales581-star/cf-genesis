@@ -141,17 +141,21 @@ export default function Financistas() {
   return (
     <>
       <PageHeader title="Financistas" subtitle="Personas o entidades que colocan capital en cada emisión">
-        {canEdit && (
-          <div className="flex gap-2">
-            <Button asChild variant="outline">
-              <Link to="/importar"><Upload className="h-4 w-4 mr-1.5" /> Importar Excel</Link>
-            </Button>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openNew} className="bg-gradient-primary shadow-elegant hover:opacity-95">
-                  <Plus className="h-4 w-4 mr-1.5" /> Nuevo Financista
-                </Button>
-              </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportCsv} disabled={rows.length === 0}>
+            <Download className="h-4 w-4 mr-1.5" /> Exportar CSV
+          </Button>
+          {canEdit && (
+            <>
+              <Button asChild variant="outline">
+                <Link to="/importar"><Upload className="h-4 w-4 mr-1.5" /> Importar Excel</Link>
+              </Button>
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openNew} className="bg-gradient-primary shadow-elegant hover:opacity-95">
+                    <Plus className="h-4 w-4 mr-1.5" /> Nuevo Financista
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-lg">
                 <DialogHeader><DialogTitle className="font-display text-xl text-primary">{editing ? "Editar" : "Nuevo"} Financista</DialogTitle></DialogHeader>
                 <div className="grid gap-4 py-2">
