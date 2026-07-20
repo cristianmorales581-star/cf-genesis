@@ -9,7 +9,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Upload } from "lucide-react";
+import { Plus, Pencil, Upload, Download } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import { z } from "zod";
@@ -108,20 +108,45 @@ export default function Cedentes() {
     else { await logAudit({ action: newVal ? "enable" : "disable", resource_type: "cedente", resource_id: c.id }); load(); }
   }
 
+  function exportCsv() {
+    const headers = ["Razón Social","Nombre Comercial","RIF","Representante Legal","Cargo","Cédula","Activo","Creado"];
+    const esc = (v: any) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [headers.join(",")];
+    rows.forEach(c => lines.push([
+      c.razon_social, c.nombre_comercial ?? "", c.rif,
+      c.representante_legal ?? "", c.cargo ?? "", c.cedula ?? "",
+      c.activo ? "Sí" : "No", new Date(c.created_at).toISOString().slice(0,10),
+    ].map(esc).join(",")));
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cedentes_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <PageHeader title="Cedentes" subtitle="Empresas emisoras de los programas CFB">
-        {isOperador && (
-          <div className="flex gap-2">
-            <Button asChild variant="outline">
-              <Link to="/importar"><Upload className="h-4 w-4 mr-1.5" /> Importar Excel</Link>
-            </Button>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openNew} className="bg-gradient-primary shadow-elegant hover:opacity-95">
-                  <Plus className="h-4 w-4 mr-1.5" /> Nuevo Cedente
-                </Button>
-              </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportCsv} disabled={rows.length === 0}>
+            <Download className="h-4 w-4 mr-1.5" /> Exportar CSV
+          </Button>
+          {isOperador && (
+            <>
+              <Button asChild variant="outline">
+                <Link to="/importar"><Upload className="h-4 w-4 mr-1.5" /> Importar Excel</Link>
+              </Button>
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openNew} className="bg-gradient-primary shadow-elegant hover:opacity-95">
+                    <Plus className="h-4 w-4 mr-1.5" /> Nuevo Cedente
+                  </Button>
+                </DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle className="font-display text-xl text-primary">
@@ -146,8 +171,9 @@ export default function Cedentes() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </PageHeader>
 
       <div className="rounded-lg border border-border bg-card shadow-sm-elegant overflow-hidden">
