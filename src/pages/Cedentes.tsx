@@ -150,8 +150,9 @@ export default function Cedentes() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </PageHeader>
 
       <div className="rounded-lg border border-border bg-card shadow-sm-elegant overflow-hidden">
