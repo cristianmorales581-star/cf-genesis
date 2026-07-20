@@ -116,6 +116,28 @@ export default function Financistas() {
     else { await logAudit({ action: newVal ? "enable" : "disable", resource_type: "financista", resource_id: f.id }); load(); }
   }
 
+  function exportCsv() {
+    const headers = ["Razón Social / Nombre","Tipo","RIF / C.I.","Representante Legal","Cargo","Cédula Rep.","Correo","Celular","Activo"];
+    const esc = (v: any) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [headers.join(",")];
+    rows.forEach(f => lines.push([
+      f.razon_social, f.tipo, f.rif ?? "",
+      f.representante_legal ?? "", f.cargo ?? "", f.cedula ?? "",
+      f.correo ?? "", f.celular ?? "",
+      f.activo ? "Sí" : "No",
+    ].map(esc).join(",")));
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `financistas_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <PageHeader title="Financistas" subtitle="Personas o entidades que colocan capital en cada emisión">
