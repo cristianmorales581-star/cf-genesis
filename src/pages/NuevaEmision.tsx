@@ -37,7 +37,7 @@ const schema = z.object({
   valor_nominal_usd: z.number().positive("Debe ser > 0").max(100_000_000),
   descuento_pct: z.number().min(0).max(20),
   tasa_cambio_bs_usd: z.number().positive("Tasa BCV requerida"),
-  cantidad_ordenes_compra: z.number().int().positive().max(99),
+  cantidad_ordenes_compra: z.number().int().positive().max(9999),
 });
 
 export default function NuevaEmision() {
@@ -279,7 +279,7 @@ export default function NuevaEmision() {
               </div>
               <div>
                 <Label>Cantidad órdenes de compra</Label>
-                <Input type="number" min={1} max={99} value={form.cantidad_ordenes_compra}
+                <Input type="number" min={1} max={9999} value={form.cantidad_ordenes_compra}
                   onChange={e => setForm({ ...form, cantidad_ordenes_compra: parseInt(e.target.value || "1") })} />
               </div>
               <div>
