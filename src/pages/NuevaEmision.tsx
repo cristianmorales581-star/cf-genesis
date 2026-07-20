@@ -279,7 +279,7 @@ export default function NuevaEmision() {
               </div>
               <div>
                 <Label>Cantidad órdenes de compra</Label>
-                <Input type="number" min={1} max={99} value={form.cantidad_ordenes_compra}
+                <Input type="number" min={1} max={9999} value={form.cantidad_ordenes_compra}
                   onChange={e => setForm({ ...form, cantidad_ordenes_compra: parseInt(e.target.value || "1") })} />
               </div>
               <div>
