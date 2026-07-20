@@ -189,9 +189,10 @@ export default function Financistas() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
+          </>
         )}
-      </PageHeader>
+      </div>
+    </PageHeader>
 
       <div className="rounded-lg border border-border bg-card shadow-sm-elegant overflow-x-auto">
         {rows.length === 0 ? <EmptyState title="Sin financistas" /> : (
