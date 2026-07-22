@@ -319,6 +319,77 @@ export default function CargaHistorica() {
   const okRows = rows.filter((r) => r.status === "ok");
   const errRows = rows.filter((r) => r.status === "error");
 
+  function revalidateRow(r: ParsedRow, seenOtherSyms: Set<string>): ParsedRow {
+    const errs: string[] = [];
+    const simbolo = (r.simbolo ?? "").trim();
+    const rif = normRif(r.rif);
+    const precio = Number(r.precio) || 0;
+    const vn = Number(r.valorNominalUsd) || 0;
+    const tdc = Number(r.tdc) || 0;
+    let plazo = r.plazo ? Number(r.plazo) : undefined;
+    if ((!plazo || plazo <= 0) && r.fechaEmision && r.fechaVencimiento) {
+      plazo = diffDays(r.fechaEmision, r.fechaVencimiento);
+    }
+    let rendimiento = r.rendimiento;
+    if ((rendimiento === undefined || isNaN(rendimiento as number)) && precio > 0 && plazo && plazo > 0) {
+      rendimiento = ((1 - precio) / precio) * (360 / plazo);
+    }
+    const montoEfectivo = vn * precio;
+    const valorEfBs = montoEfectivo * tdc;
+    const fechaVencFinal =
+      r.fechaVencimiento || (r.fechaEmision && plazo ? addDaysISO(r.fechaEmision, plazo) : undefined);
+
+    if (!simbolo) errs.push("Falta símbolo");
+    if (!r.fechaEmision) errs.push("Falta fecha emisión");
+    if (!precio || precio <= 0 || precio >= 1) errs.push("Precio inválido");
+    if (!vn || vn <= 0) errs.push("VN inválido");
+    if (!tdc || tdc <= 0) errs.push("TDC inválida");
+    if (!plazo || plazo <= 0) errs.push("Plazo inválido");
+
+    let cedente_id: string | undefined;
+    let programa_id: string | null = null;
+    const ced = cedByRif.get(rif);
+    if (!ced) errs.push(`RIF no registrado: ${rif}`);
+    else {
+      cedente_id = ced.id;
+      programa_id = pickProgramaForCedente(ced.id, r.fechaEmision ?? "");
+    }
+    if (existingSimbolos.has(simbolo)) errs.push("Símbolo ya existe en BD");
+    if (seenOtherSyms.has(simbolo)) errs.push("Símbolo duplicado en archivo");
+
+    return {
+      ...r,
+      simbolo,
+      rif,
+      precio,
+      valorNominalUsd: vn,
+      tdc,
+      plazo,
+      rendimiento,
+      montoEfectivoUsd: montoEfectivo,
+      valorEfectivoBs: valorEfBs,
+      fechaVencimiento: fechaVencFinal,
+      cedente_id,
+      programa_id,
+      status: errs.length ? "error" : "ok",
+      motivo: errs.length ? errs.join("; ") : undefined,
+    };
+  }
+
+  function updateRow(rowNum: number, patch: Partial<ParsedRow>) {
+    setRows((prev) => {
+      const idx = prev.findIndex((r) => r.rowNum === rowNum);
+      if (idx < 0) return prev;
+      const merged = { ...prev[idx], ...patch };
+      const others = new Set(
+        prev.filter((_, i) => i !== idx).map((r) => (r.simbolo ?? "").trim()).filter(Boolean),
+      );
+      const next = prev.slice();
+      next[idx] = revalidateRow(merged, others);
+      return next;
+    });
+  }
+
   async function insertAll() {
     if (!okRows.length) return;
     setInserting(true);
@@ -460,29 +531,75 @@ export default function CargaHistorica() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.slice(0, 500).map((r) => (
-                    <tr key={r.rowNum} className={r.status === "error" ? "bg-red-50" : ""}>
-                      <td className="px-2 py-1 text-muted-foreground">{r.rowNum}</td>
-                      <td className="px-2 py-1">
-                        {r.status === "ok" ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                        ) : (
-                          <AlertCircle className="h-3.5 w-3.5 text-red-600" />
-                        )}
-                      </td>
-                      <td className="px-2 py-1 font-mono">{r.simbolo}</td>
-                      <td className="px-2 py-1 font-mono">{r.rif}</td>
-                      <td className="px-2 py-1">{r.cedenteLabel}</td>
-                      <td className="px-2 py-1">{r.fechaEmision}</td>
-                      <td className="px-2 py-1">{r.fechaVencimiento}</td>
-                      <td className="px-2 py-1 text-right">{r.plazo}</td>
-                      <td className="px-2 py-1 text-right">{r.precio?.toFixed(4)}</td>
-                      <td className="px-2 py-1 text-right">{r.valorNominalUsd?.toLocaleString()}</td>
-                      <td className="px-2 py-1 text-right">{r.montoEfectivoUsd?.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
-                      <td className="px-2 py-1 text-right">{r.tdc}</td>
-                      <td className="px-2 py-1 text-red-700">{r.motivo}</td>
-                    </tr>
-                  ))}
+                  {rows.slice(0, 500).map((r) => {
+                    const editable = r.status === "error";
+                    const numInput = (val: any, onCh: (v: number | undefined) => void, step = "any") => (
+                      <Input
+                        type="number"
+                        step={step}
+                        value={val ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          onCh(v === "" ? undefined : Number(v));
+                        }}
+                        className="h-7 px-1 text-xs w-24"
+                      />
+                    );
+                    const txtInput = (val: any, onCh: (v: string) => void, w = "w-32") => (
+                      <Input
+                        value={val ?? ""}
+                        onChange={(e) => onCh(e.target.value)}
+                        className={`h-7 px-1 text-xs ${w}`}
+                      />
+                    );
+                    const dateInput = (val: any, onCh: (v: string) => void) => (
+                      <Input
+                        type="date"
+                        value={val ?? ""}
+                        onChange={(e) => onCh(e.target.value)}
+                        className="h-7 px-1 text-xs w-36"
+                      />
+                    );
+                    return (
+                      <tr key={r.rowNum} className={r.status === "error" ? "bg-red-50" : ""}>
+                        <td className="px-2 py-1 text-muted-foreground">{r.rowNum}</td>
+                        <td className="px-2 py-1">
+                          {r.status === "ok" ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          ) : (
+                            <AlertCircle className="h-3.5 w-3.5 text-red-600" />
+                          )}
+                        </td>
+                        <td className="px-2 py-1 font-mono">
+                          {editable ? txtInput(r.simbolo, (v) => updateRow(r.rowNum, { simbolo: v }), "w-44") : r.simbolo}
+                        </td>
+                        <td className="px-2 py-1 font-mono">
+                          {editable ? txtInput(r.rif, (v) => updateRow(r.rowNum, { rif: v }), "w-28") : r.rif}
+                        </td>
+                        <td className="px-2 py-1">{r.cedenteLabel}</td>
+                        <td className="px-2 py-1">
+                          {editable ? dateInput(r.fechaEmision, (v) => updateRow(r.rowNum, { fechaEmision: v })) : r.fechaEmision}
+                        </td>
+                        <td className="px-2 py-1">
+                          {editable ? dateInput(r.fechaVencimiento, (v) => updateRow(r.rowNum, { fechaVencimiento: v })) : r.fechaVencimiento}
+                        </td>
+                        <td className="px-2 py-1 text-right">
+                          {editable ? numInput(r.plazo, (v) => updateRow(r.rowNum, { plazo: v }), "1") : r.plazo}
+                        </td>
+                        <td className="px-2 py-1 text-right">
+                          {editable ? numInput(r.precio, (v) => updateRow(r.rowNum, { precio: v ?? 0 })) : r.precio?.toFixed(4)}
+                        </td>
+                        <td className="px-2 py-1 text-right">
+                          {editable ? numInput(r.valorNominalUsd, (v) => updateRow(r.rowNum, { valorNominalUsd: v ?? 0 })) : r.valorNominalUsd?.toLocaleString()}
+                        </td>
+                        <td className="px-2 py-1 text-right">{r.montoEfectivoUsd?.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+                        <td className="px-2 py-1 text-right">
+                          {editable ? numInput(r.tdc, (v) => updateRow(r.rowNum, { tdc: v ?? 0 })) : r.tdc}
+                        </td>
+                        <td className="px-2 py-1 text-red-700">{r.motivo}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               {rows.length > 500 && (
