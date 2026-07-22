@@ -149,6 +149,7 @@ export default function CargaHistorica() {
   const [cedentes, setCedentes] = useState<Array<{ id: string; rif: string; razon_social: string }>>([]);
   const [programas, setProgramas] = useState<Array<{ id: string; codigo_pcfb: string; cedente_id: string; fecha_inicio?: string; fecha_vencimiento?: string }>>([]);
   const [existingSimbolos, setExistingSimbolos] = useState<Set<string>>(new Set());
+  const [overwriteExisting, setOverwriteExisting] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -162,6 +163,22 @@ export default function CargaHistorica() {
       setExistingSimbolos(new Set((e.data ?? []).map((r) => r.simbolo_cfb)));
     })();
   }, []);
+
+  // Re-validar todas las filas cuando cambia el toggle de sobrescritura
+  useEffect(() => {
+    setRows((prev) => {
+      if (!prev.length) return prev;
+      const next = prev.slice();
+      for (let i = 0; i < next.length; i++) {
+        const others = new Set(
+          next.filter((_, j) => j !== i).map((r) => (r.simbolo ?? "").trim()).filter(Boolean),
+        );
+        next[i] = revalidateRow(next[i], others);
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overwriteExisting, existingSimbolos, cedentes, programas]);
 
   if (!isAdmin) {
     return (
@@ -297,7 +314,7 @@ export default function CargaHistorica() {
           row.programa_id = pickProgramaForCedente(ced.id, fechaEmision ?? "");
           // programa_id puede quedar null para histórico — la columna es nullable.
         }
-        if (existingSimbolos.has(simbolo)) errs.push("Símbolo ya existe en BD");
+        if (existingSimbolos.has(simbolo) && !overwriteExisting) errs.push("Símbolo ya existe en BD");
         if (seenSym.has(simbolo)) errs.push("Símbolo duplicado en archivo");
         seenSym.add(simbolo);
 
@@ -354,7 +371,7 @@ export default function CargaHistorica() {
       cedente_id = ced.id;
       programa_id = pickProgramaForCedente(ced.id, r.fechaEmision ?? "");
     }
-    if (existingSimbolos.has(simbolo)) errs.push("Símbolo ya existe en BD");
+    if (existingSimbolos.has(simbolo) && !overwriteExisting) errs.push("Símbolo ya existe en BD");
     if (seenOtherSyms.has(simbolo)) errs.push("Símbolo duplicado en archivo");
 
     return {
@@ -417,7 +434,10 @@ export default function CargaHistorica() {
         cantidad_ordenes_compra: Math.max(1, Math.round(r.volumenOrdenes ?? 1)),
         estado: "activa" as const,
       }));
-      const { error, count } = await supabase.from("emisiones").insert(payload, { count: "exact" });
+      const q = overwriteExisting
+        ? supabase.from("emisiones").upsert(payload, { onConflict: "simbolo_cfb", count: "exact" })
+        : supabase.from("emisiones").insert(payload, { count: "exact" });
+      const { error, count } = await q;
       if (error) {
         failures.push(`Lote ${i}-${i + slice.length}: ${error.message}`);
       } else {
@@ -485,6 +505,14 @@ export default function CargaHistorica() {
               <Loader2 className="h-4 w-4 animate-spin" /> Procesando...
             </div>
           )}
+          <label className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={overwriteExisting}
+              onChange={(e) => setOverwriteExisting(e.target.checked)}
+            />
+            Sobrescribir emisiones existentes con el mismo símbolo (en lugar de marcarlas como error)
+          </label>
           <p className="text-xs text-muted-foreground">
             Se buscan columnas: SIMBOLO CFB, R.I.F., FECHA EMISIÓN, FECHA DE VCTO, Plazo, Rendimiento, Volumen de Órdenes,
             PRECIO DE EMISIÓN (%), VALOR NOMINAL $, VALOR EFECTIVO $, TDC, VALOR EFECTIVO BS. Los faltantes se recalculan.
