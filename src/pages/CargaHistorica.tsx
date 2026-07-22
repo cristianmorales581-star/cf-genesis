@@ -298,7 +298,7 @@ export default function CargaHistorica() {
           row.programa_id = pickProgramaForCedente(ced.id, fechaEmision ?? "");
           // programa_id puede quedar null para histórico — la columna es nullable.
         }
-        if (existingSimbolos.has(simbolo)) errs.push("Símbolo ya existe en BD");
+        if (existingSimbolos.has(simbolo) && !overwriteExisting) errs.push("Símbolo ya existe en BD");
         if (seenSym.has(simbolo)) errs.push("Símbolo duplicado en archivo");
         seenSym.add(simbolo);
 
