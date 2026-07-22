@@ -164,6 +164,22 @@ export default function CargaHistorica() {
     })();
   }, []);
 
+  // Re-validar todas las filas cuando cambia el toggle de sobrescritura
+  useEffect(() => {
+    setRows((prev) => {
+      if (!prev.length) return prev;
+      const next = prev.slice();
+      for (let i = 0; i < next.length; i++) {
+        const others = new Set(
+          next.filter((_, j) => j !== i).map((r) => (r.simbolo ?? "").trim()).filter(Boolean),
+        );
+        next[i] = revalidateRow(next[i], others);
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overwriteExisting, existingSimbolos, cedentes, programas]);
+
   if (!isAdmin) {
     return (
       <div className="p-8 text-sm text-muted-foreground">
