@@ -531,29 +531,75 @@ export default function CargaHistorica() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.slice(0, 500).map((r) => (
-                    <tr key={r.rowNum} className={r.status === "error" ? "bg-red-50" : ""}>
-                      <td className="px-2 py-1 text-muted-foreground">{r.rowNum}</td>
-                      <td className="px-2 py-1">
-                        {r.status === "ok" ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                        ) : (
-                          <AlertCircle className="h-3.5 w-3.5 text-red-600" />
-                        )}
-                      </td>
-                      <td className="px-2 py-1 font-mono">{r.simbolo}</td>
-                      <td className="px-2 py-1 font-mono">{r.rif}</td>
-                      <td className="px-2 py-1">{r.cedenteLabel}</td>
-                      <td className="px-2 py-1">{r.fechaEmision}</td>
-                      <td className="px-2 py-1">{r.fechaVencimiento}</td>
-                      <td className="px-2 py-1 text-right">{r.plazo}</td>
-                      <td className="px-2 py-1 text-right">{r.precio?.toFixed(4)}</td>
-                      <td className="px-2 py-1 text-right">{r.valorNominalUsd?.toLocaleString()}</td>
-                      <td className="px-2 py-1 text-right">{r.montoEfectivoUsd?.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
-                      <td className="px-2 py-1 text-right">{r.tdc}</td>
-                      <td className="px-2 py-1 text-red-700">{r.motivo}</td>
-                    </tr>
-                  ))}
+                  {rows.slice(0, 500).map((r) => {
+                    const editable = r.status === "error";
+                    const numInput = (val: any, onCh: (v: number | undefined) => void, step = "any") => (
+                      <Input
+                        type="number"
+                        step={step}
+                        value={val ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          onCh(v === "" ? undefined : Number(v));
+                        }}
+                        className="h-7 px-1 text-xs w-24"
+                      />
+                    );
+                    const txtInput = (val: any, onCh: (v: string) => void, w = "w-32") => (
+                      <Input
+                        value={val ?? ""}
+                        onChange={(e) => onCh(e.target.value)}
+                        className={`h-7 px-1 text-xs ${w}`}
+                      />
+                    );
+                    const dateInput = (val: any, onCh: (v: string) => void) => (
+                      <Input
+                        type="date"
+                        value={val ?? ""}
+                        onChange={(e) => onCh(e.target.value)}
+                        className="h-7 px-1 text-xs w-36"
+                      />
+                    );
+                    return (
+                      <tr key={r.rowNum} className={r.status === "error" ? "bg-red-50" : ""}>
+                        <td className="px-2 py-1 text-muted-foreground">{r.rowNum}</td>
+                        <td className="px-2 py-1">
+                          {r.status === "ok" ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          ) : (
+                            <AlertCircle className="h-3.5 w-3.5 text-red-600" />
+                          )}
+                        </td>
+                        <td className="px-2 py-1 font-mono">
+                          {editable ? txtInput(r.simbolo, (v) => updateRow(r.rowNum, { simbolo: v }), "w-44") : r.simbolo}
+                        </td>
+                        <td className="px-2 py-1 font-mono">
+                          {editable ? txtInput(r.rif, (v) => updateRow(r.rowNum, { rif: v }), "w-28") : r.rif}
+                        </td>
+                        <td className="px-2 py-1">{r.cedenteLabel}</td>
+                        <td className="px-2 py-1">
+                          {editable ? dateInput(r.fechaEmision, (v) => updateRow(r.rowNum, { fechaEmision: v })) : r.fechaEmision}
+                        </td>
+                        <td className="px-2 py-1">
+                          {editable ? dateInput(r.fechaVencimiento, (v) => updateRow(r.rowNum, { fechaVencimiento: v })) : r.fechaVencimiento}
+                        </td>
+                        <td className="px-2 py-1 text-right">
+                          {editable ? numInput(r.plazo, (v) => updateRow(r.rowNum, { plazo: v }), "1") : r.plazo}
+                        </td>
+                        <td className="px-2 py-1 text-right">
+                          {editable ? numInput(r.precio, (v) => updateRow(r.rowNum, { precio: v ?? 0 })) : r.precio?.toFixed(4)}
+                        </td>
+                        <td className="px-2 py-1 text-right">
+                          {editable ? numInput(r.valorNominalUsd, (v) => updateRow(r.rowNum, { valorNominalUsd: v ?? 0 })) : r.valorNominalUsd?.toLocaleString()}
+                        </td>
+                        <td className="px-2 py-1 text-right">{r.montoEfectivoUsd?.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+                        <td className="px-2 py-1 text-right">
+                          {editable ? numInput(r.tdc, (v) => updateRow(r.rowNum, { tdc: v ?? 0 })) : r.tdc}
+                        </td>
+                        <td className="px-2 py-1 text-red-700">{r.motivo}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               {rows.length > 500 && (
