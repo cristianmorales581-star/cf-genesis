@@ -149,6 +149,7 @@ export default function CargaHistorica() {
   const [cedentes, setCedentes] = useState<Array<{ id: string; rif: string; razon_social: string }>>([]);
   const [programas, setProgramas] = useState<Array<{ id: string; codigo_pcfb: string; cedente_id: string; fecha_inicio?: string; fecha_vencimiento?: string }>>([]);
   const [existingSimbolos, setExistingSimbolos] = useState<Set<string>>(new Set());
+  const [overwriteExisting, setOverwriteExisting] = useState(true);
 
   useEffect(() => {
     (async () => {
