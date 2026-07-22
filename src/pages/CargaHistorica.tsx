@@ -418,7 +418,10 @@ export default function CargaHistorica() {
         cantidad_ordenes_compra: Math.max(1, Math.round(r.volumenOrdenes ?? 1)),
         estado: "activa" as const,
       }));
-      const { error, count } = await supabase.from("emisiones").insert(payload, { count: "exact" });
+      const q = overwriteExisting
+        ? supabase.from("emisiones").upsert(payload, { onConflict: "simbolo_cfb", count: "exact" })
+        : supabase.from("emisiones").insert(payload, { count: "exact" });
+      const { error, count } = await q;
       if (error) {
         failures.push(`Lote ${i}-${i + slice.length}: ${error.message}`);
       } else {
