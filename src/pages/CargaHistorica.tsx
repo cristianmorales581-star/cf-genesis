@@ -8,7 +8,67 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Upload, Loader2, CheckCircle2, AlertCircle, Database } from "lucide-react";
+import { Upload, Loader2, CheckCircle2, AlertCircle, Database, Download } from "lucide-react";
+
+function downloadTemplate() {
+  const headers = [
+    "SIMBOLO CFB",
+    "R.I.F.",
+    "CEDENTE",
+    "FECHA EMISIÓN",
+    "FECHA DE VCTO",
+    "PLAZO",
+    "RENDIMIENTO",
+    "VOLUMEN DE ORDENES DE COMPRA",
+    "PRECIO DE EMISIÓN (%)",
+    "VALOR NOMINAL $",
+    "VALOR EFECTIVO $",
+    "TDC",
+    "VALOR EFECTIVO BS",
+  ];
+  const example = [
+    "CFB-EJEMPLO-2026-001",
+    "J-123456789",
+    "EJEMPLO C.A.",
+    "2026-01-15",
+    "2026-01-29",
+    14,
+    0.36,
+    10,
+    0.986,
+    100000,
+    98600,
+    36.5,
+    3598900,
+  ];
+  const notas = [
+    "Formato requerido:",
+    "• Los encabezados deben estar EXACTAMENTE en la fila 4 (deja filas 1-3 vacías o con títulos).",
+    "• SIMBOLO CFB: único, no puede repetirse ni existir ya en la base.",
+    "• R.I.F.: debe existir en el módulo de Cedentes (ej: J-123456789).",
+    "• FECHA EMISIÓN / FECHA DE VCTO: formato yyyy-mm-dd o dd/mm/yyyy.",
+    "• PRECIO DE EMISIÓN (%): decimal entre 0 y 1 (ej: 0.986 = 98.6%).",
+    "• PLAZO: en días (si falta, se calcula de las fechas).",
+    "• RENDIMIENTO: decimal anual (si falta, se calcula del precio y plazo).",
+    "• VALOR NOMINAL $ y TDC son obligatorios.",
+    "• VALOR EFECTIVO $ y VALOR EFECTIVO BS se recalculan si faltan.",
+  ];
+  const aoa: any[][] = [
+    ["PLANTILLA CARGA HISTÓRICA — SICEBOP"],
+    [],
+    [],
+    headers,
+    example,
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"] = headers.map(() => ({ wch: 22 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "BITACORA DE EMISIONES");
+  const wsNotas = XLSX.utils.aoa_to_sheet(notas.map((n) => [n]));
+  wsNotas["!cols"] = [{ wch: 100 }];
+  XLSX.utils.book_append_sheet(wb, wsNotas, "INSTRUCCIONES");
+  XLSX.writeFile(wb, "plantilla_carga_historica.xlsx");
+}
 
 interface ParsedRow {
   rowNum: number;
@@ -319,10 +379,13 @@ export default function CargaHistorica() {
       />
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <Upload className="h-4 w-4" /> 1. Subir archivo
           </CardTitle>
+          <Button variant="outline" size="sm" onClick={downloadTemplate}>
+            <Download className="h-4 w-4 mr-2" /> Descargar plantilla
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
