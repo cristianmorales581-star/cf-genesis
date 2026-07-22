@@ -505,6 +505,14 @@ export default function CargaHistorica() {
               <Loader2 className="h-4 w-4 animate-spin" /> Procesando...
             </div>
           )}
+          <label className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={overwriteExisting}
+              onChange={(e) => setOverwriteExisting(e.target.checked)}
+            />
+            Sobrescribir emisiones existentes con el mismo símbolo (en lugar de marcarlas como error)
+          </label>
           <p className="text-xs text-muted-foreground">
             Se buscan columnas: SIMBOLO CFB, R.I.F., FECHA EMISIÓN, FECHA DE VCTO, Plazo, Rendimiento, Volumen de Órdenes,
             PRECIO DE EMISIÓN (%), VALOR NOMINAL $, VALOR EFECTIVO $, TDC, VALOR EFECTIVO BS. Los faltantes se recalculan.
