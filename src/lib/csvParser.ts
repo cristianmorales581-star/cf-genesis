@@ -118,8 +118,11 @@ function parseDescuentoDecimal(raw: string, tipo: "Express" | "Masivo" | "Paquet
 }
 
 export function parseCSVText(text: string): ParseResult {
+  // Quitar BOM UTF-8 si viene
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
   const sep = detectSeparator(text);
   const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+
   if (lines.length < 2) {
     return { rows: [], detectedFormat: "Desconocido", warnings: ["CSV vacío"] };
   }
