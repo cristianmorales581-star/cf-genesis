@@ -118,8 +118,11 @@ function parseDescuentoDecimal(raw: string, tipo: "Express" | "Masivo" | "Paquet
 }
 
 export function parseCSVText(text: string): ParseResult {
+  // Quitar BOM UTF-8 si viene
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
   const sep = detectSeparator(text);
   const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+
   if (lines.length < 2) {
     return { rows: [], detectedFormat: "Desconocido", warnings: ["CSV vacío"] };
   }
@@ -152,12 +155,16 @@ export function parseCSVText(text: string): ParseResult {
   for (let i = 1; i < lines.length; i++) {
     const cols = parseCSVLine(lines[i], sep);
     if (cols.length < 5) continue;
+    // Salta filas totalmente vacías (típico de archivos con columnas extra en cero)
+    const nonEmpty = cols.filter(c => clean(c) !== "").length;
+    if (nonEmpty < 3) continue;
     const tipoRaw = clean(cols[idx.tipo] ?? "");
-    if (!tipoRaw) continue;
+    // Si el CSV no trae columna TIPO (formato viejo) inferimos "Express" por defecto.
     let tipo: ParsedRow["tipo"] = "Express";
     if (/masivo/i.test(tipoRaw)) tipo = "Masivo";
     else if (/paquetizado/i.test(tipoRaw)) tipo = "Paquetizado";
     if (detected === "Desconocido") detected = tipo;
+
 
     const row: ParsedRow = {
       nro: parseInt(clean(cols[idx.nro] ?? "0"), 10) || (i),
