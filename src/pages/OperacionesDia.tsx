@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { fmtBs, fmtDate, fmtPct, fmtUSD, todayISO } from "@/lib/format";
+import { fmtBs, fmtDate, fmtNumber, fmtPct, fmtUSD, todayISO } from "@/lib/format";
 import { Download, Search, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 const DERECHO_REGISTRO_RATE_DEFAULT = 0.001;
@@ -52,7 +52,7 @@ function downloadCSV(filename: string, rows: Row[]) {
       r.programas?.cedentes?.rif ?? "",
       r.fecha_emision,
       Number(r.precio),
-      Math.round(Number(r.monto_efectivo_usd)),
+      Math.round(Number(r.valor_nominal_usd)),
       r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.",
       r.financistas?.rif ?? "J-501934070",
     ].map(csvEscape).join(","));
@@ -161,7 +161,7 @@ export default function OperacionesDia() {
     let vn = 0, sibe = 0, drUsd = 0, drBs = 0;
     for (const r of filtered) {
       vn += Number(r.valor_nominal_usd) || 0;
-      sibe += Number(r.monto_efectivo_usd) || 0;
+      sibe += Math.round(Number(r.valor_nominal_usd)) || 0;
       drUsd += calcDrUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
       drBs += calcDrBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
     }
@@ -190,7 +190,7 @@ export default function OperacionesDia() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard label="Operaciones" value={String(totals.count)} hint={fmtDate(fecha)} accent />
         <StatCard label="Total VN USD" value={fmtUSD(totals.vn)} hint="Valor nominal" />
-        <StatCard label="Monto efectivo USD" value={fmtUSD(totals.sibe)} hint="Monto SIBE" />
+        <StatCard label="Monto SIBE" value={fmtNumber(totals.sibe, 0)} hint="Monto nominal redondeado" />
         <StatCard label="Derecho de registro" value={fmtUSD(totals.drUsd)} hint={fmtBs(totals.drBs)} />
       </div>
 
@@ -244,7 +244,7 @@ export default function OperacionesDia() {
                   <SortTh keyName="simbolo_cfb" label="Símbolo" align="left" sort={sort} onSort={toggleSort} />
                   <SortTh keyName="cedente" label="Cedente / Financista" align="left" sort={sort} onSort={toggleSort} />
                   <SortTh keyName="valor_nominal_usd" label="VN USD" align="right" sort={sort} onSort={toggleSort} />
-                  <SortTh keyName="monto_efectivo_usd" label="Monto SIBE" align="right" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="valor_nominal_usd" label="Monto SIBE" align="right" sort={sort} onSort={toggleSort} />
                   <th className="text-right px-5 py-3 font-semibold" title="0.078% a 14 días, 0.1% otros plazos">Der. Registro</th>
                   <SortTh keyName="precio" label="Precio" align="right" sort={sort} onSort={toggleSort} />
                   <SortTh keyName="rendimiento_anualizado" label="Rend." align="right" sort={sort} onSort={toggleSort} />
@@ -275,7 +275,7 @@ export default function OperacionesDia() {
                         <div className="text-[11px] text-muted-foreground">Financista: {r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A."}</div>
                       </td>
                       <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.valor_nominal_usd)}</Numeric></td>
-                      <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.monto_efectivo_usd)}</Numeric></td>
+                      <td className="px-5 py-3 text-right"><Numeric>{fmtNumber(r.valor_nominal_usd, 0)}</Numeric></td>
                       <td className="px-5 py-3 text-right">
                         <Numeric>{fmtUSD(drUsd)}</Numeric>
                         <div className="text-[10px] text-muted-foreground tabular-nums">{fmtBs(drBs)}</div>
@@ -299,7 +299,7 @@ export default function OperacionesDia() {
                   <td className="px-5 py-3 text-xs uppercase tracking-wide">Total ({totals.count})</td>
                   <td className="px-5 py-3"></td>
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.vn)}</Numeric></td>
-                  <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.sibe)}</Numeric></td>
+                  <td className="px-5 py-3 text-right"><Numeric>{fmtNumber(totals.sibe, 0)}</Numeric></td>
                   <td className="px-5 py-3 text-right">
                     <Numeric>{fmtUSD(totals.drUsd)}</Numeric>
                     <div className="text-[10px] text-muted-foreground tabular-nums">{fmtBs(totals.drBs)}</div>
