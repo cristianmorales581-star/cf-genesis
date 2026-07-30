@@ -244,7 +244,7 @@ export default function OperacionesDia() {
                   <SortTh keyName="simbolo_cfb" label="Símbolo" align="left" sort={sort} onSort={toggleSort} />
                   <SortTh keyName="cedente" label="Cedente / Financista" align="left" sort={sort} onSort={toggleSort} />
                   <SortTh keyName="valor_nominal_usd" label="VN USD" align="right" sort={sort} onSort={toggleSort} />
-                  <SortTh keyName="monto_efectivo_usd" label="Monto SIBE" align="right" sort={sort} onSort={toggleSort} />
+                  <SortTh keyName="valor_nominal_usd" label="Monto SIBE" align="right" sort={sort} onSort={toggleSort} />
                   <th className="text-right px-5 py-3 font-semibold" title="0.078% a 14 días, 0.1% otros plazos">Der. Registro</th>
                   <SortTh keyName="precio" label="Precio" align="right" sort={sort} onSort={toggleSort} />
                   <SortTh keyName="rendimiento_anualizado" label="Rend." align="right" sort={sort} onSort={toggleSort} />
