@@ -275,7 +275,7 @@ export default function OperacionesDia() {
                         <div className="text-[11px] text-muted-foreground">Financista: {r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A."}</div>
                       </td>
                       <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.valor_nominal_usd)}</Numeric></td>
-                      <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.monto_efectivo_usd)}</Numeric></td>
+                      <td className="px-5 py-3 text-right"><Numeric>{fmtNumber(r.valor_nominal_usd, 0)}</Numeric></td>
                       <td className="px-5 py-3 text-right">
                         <Numeric>{fmtUSD(drUsd)}</Numeric>
                         <div className="text-[10px] text-muted-foreground tabular-nums">{fmtBs(drBs)}</div>
