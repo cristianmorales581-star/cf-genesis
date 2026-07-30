@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { fmtBs, fmtDate, fmtPct, fmtUSD, todayISO } from "@/lib/format";
+import { fmtBs, fmtDate, fmtNumber, fmtPct, fmtUSD, todayISO } from "@/lib/format";
 import { Download, Search, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 const DERECHO_REGISTRO_RATE_DEFAULT = 0.001;
