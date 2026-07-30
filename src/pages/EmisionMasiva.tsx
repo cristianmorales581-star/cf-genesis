@@ -82,6 +82,8 @@ export default function EmisionMasiva() {
   const [filename, setFilename] = useState<string>(persisted?.filename ?? "");
   const [pastedCsv, setPastedCsv] = useState(persisted?.pastedCsv ?? "");
   const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
+  const [descuentosNuevos, setDescuentosNuevos] = useState<{ programa: string; descuento: number; etiqueta: string }[]>([]);
+
   const initialSavedAt = persisted?.savedAt ?? 0;
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(initialSavedAt ? "saved" : "idle");
   const [lastSavedAt, setLastSavedAt] = useState<number>(initialSavedAt);
@@ -167,7 +169,10 @@ export default function EmisionMasiva() {
       if (!matchedPrograma) matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id);
       return {
         ...r,
-        descuento_decimal: matchedPrograma ? Number(matchedPrograma.descuento_base) : r.descuento_decimal,
+        // El descuento del título es SIEMPRE el que viene en el CSV.
+        descuento_decimal: Number.isFinite(r.descuento_decimal) && r.descuento_decimal > 0
+          ? r.descuento_decimal
+          : (matchedPrograma ? Number(matchedPrograma.descuento_base) : r.descuento_decimal),
         cedente_id: matchedCedente.id,
         programa_id: matchedPrograma?.id,
         financista_id: defaultFinancista?.id,
@@ -176,7 +181,57 @@ export default function EmisionMasiva() {
     });
     setRows(mapped);
     toast({ title: `${parsed.length} filas leídas`, description: `Formato: ${detectedFormat}` });
+    void syncCsvDiscounts(mapped);
   }
+
+  /** Registra en cada programa los descuentos del CSV que aún no existen (etiqueta = fecha de alta). */
+  async function syncCsvDiscounts(mapped: RowMapping[]) {
+    const round = (n: number) => Math.round(n * 1e6) / 1e6;
+    const pending = new Map<string, number>(); // `${programaId}|${desc}`
+    for (const r of mapped) {
+      if (!r.programa_id || !Number.isFinite(r.descuento_decimal) || r.descuento_decimal <= 0) continue;
+      const prog = programas.find(p => p.id === r.programa_id);
+      if (!prog) continue;
+      const d = round(r.descuento_decimal);
+      const registrados = [
+        round(Number(prog.descuento_base)),
+        ...(prog.programa_descuentos ?? []).filter(x => x.activo).map(x => round(Number(x.descuento))),
+      ];
+      if (!registrados.includes(d)) pending.set(`${r.programa_id}|${d}`, d);
+    }
+    if (!pending.size) { setDescuentosNuevos([]); return; }
+
+    const etiqueta = new Date().toLocaleDateString("es-VE");
+    const inserts = [...pending.keys()].map(k => ({
+      programa_id: k.split("|")[0],
+      descuento: pending.get(k)!,
+      etiqueta,
+      es_default: false,
+      activo: true,
+    }));
+    const { error } = await supabase.from("programa_descuentos").insert(inserts);
+    if (error) {
+      toast({ title: "No se pudieron registrar descuentos nuevos", description: error.message, variant: "destructive" });
+      return;
+    }
+    const avisos = inserts.map(i => ({
+      programa: programas.find(p => p.id === i.programa_id)?.codigo_pcfb ?? i.programa_id,
+      descuento: i.descuento,
+      etiqueta,
+    }));
+    setDescuentosNuevos(avisos);
+    // Refrescar catálogo de programas con los nuevos descuentos
+    const { data } = await supabase
+      .from("programas")
+      .select("id, codigo_pcfb, cedente_id, linea, descuento_base, fecha_inicio, programa_descuentos(id, descuento, etiqueta, es_default, activo)")
+      .eq("activo", true).eq("estado", "activa").order("codigo_pcfb");
+    if (data) setProgramas(data as Programa[]);
+    toast({
+      title: `${avisos.length} descuento(s) nuevo(s) agregados`,
+      description: avisos.map(a => `${a.programa}: ${(a.descuento * 100).toFixed(2)}%`).join(" · "),
+    });
+  }
+
 
   function onPasteCsvImport() {
     if (!pastedCsv.trim()) {
@@ -334,6 +389,27 @@ export default function EmisionMasiva() {
     <>
       <PageHeader title="Emisión Masiva" subtitle="Carga un CSV (Express, Masivo o Paquetizado) y genera todos los CFBs + el vector consolidado del día" />
       {pdfDebug && <PdfDebugPanel snapshot={pdfDebug} onClose={() => setPdfDebug(null)} />}
+
+      {descuentosNuevos.length > 0 && (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium">
+                Se detectaron descuentos en el CSV que no estaban registrados en el programa y se agregaron automáticamente (etiqueta = fecha de alta):
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {descuentosNuevos.map((d, i) => (
+                  <li key={i}>
+                    <span className="font-mono">{d.programa}</span> · {(d.descuento * 100).toFixed(2)}% · etiqueta “{d.etiqueta}”
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Step 1: Configuración */}
       <Card title="1. Parámetros del lote">
