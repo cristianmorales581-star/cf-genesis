@@ -1,0 +1,1 @@
+INSERT INTO public.role_section_permissions (role, section) VALUES ('backoffice', 'operaciones_dia') ON CONFLICT DO NOTHING;

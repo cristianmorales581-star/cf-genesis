@@ -24,6 +24,7 @@ import UsuariosAdmin from "./pages/UsuariosAdmin";
 import Honorarios from "./pages/Honorarios";
 import CargaHistorica from "./pages/CargaHistorica";
 import Papelera from "./pages/Papelera";
+import OperacionesDia from "./pages/OperacionesDia";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/financistas" element={<Financistas />} />
               <Route path="/programas" element={<Programas />} />
               <Route path="/emisiones" element={<Emisiones />} />
+              <Route path="/operaciones-dia" element={<OperacionesDia />} />
               <Route path="/emisiones/nueva" element={<ProtectedRoute requireAdmin><NuevaEmision /></ProtectedRoute>} />
               <Route path="/emisiones/papelera" element={<ProtectedRoute requireAdmin><Papelera /></ProtectedRoute>} />
               <Route path="/emisiones/masiva" element={<ProtectedRoute requireAdmin><EmisionMasiva /></ProtectedRoute>} />
