@@ -190,7 +190,7 @@ export default function OperacionesDia() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard label="Operaciones" value={String(totals.count)} hint={fmtDate(fecha)} accent />
         <StatCard label="Total VN USD" value={fmtUSD(totals.vn)} hint="Valor nominal" />
-        <StatCard label="Monto efectivo USD" value={fmtUSD(totals.sibe)} hint="Monto SIBE" />
+        <StatCard label="Monto SIBE" value={fmtNumber(totals.sibe, 0)} hint="Monto nominal redondeado" />
         <StatCard label="Derecho de registro" value={fmtUSD(totals.drUsd)} hint={fmtBs(totals.drBs)} />
       </div>
 
