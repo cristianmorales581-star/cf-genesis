@@ -161,7 +161,7 @@ export default function OperacionesDia() {
     let vn = 0, sibe = 0, drUsd = 0, drBs = 0;
     for (const r of filtered) {
       vn += Number(r.valor_nominal_usd) || 0;
-      sibe += Number(r.monto_efectivo_usd) || 0;
+      sibe += Math.round(Number(r.valor_nominal_usd)) || 0;
       drUsd += calcDrUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
       drBs += calcDrBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
     }
