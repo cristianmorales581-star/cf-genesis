@@ -390,6 +390,27 @@ export default function EmisionMasiva() {
       <PageHeader title="Emisión Masiva" subtitle="Carga un CSV (Express, Masivo o Paquetizado) y genera todos los CFBs + el vector consolidado del día" />
       {pdfDebug && <PdfDebugPanel snapshot={pdfDebug} onClose={() => setPdfDebug(null)} />}
 
+      {descuentosNuevos.length > 0 && (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium">
+                Se detectaron descuentos en el CSV que no estaban registrados en el programa y se agregaron automáticamente (etiqueta = fecha de alta):
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {descuentosNuevos.map((d, i) => (
+                  <li key={i}>
+                    <span className="font-mono">{d.programa}</span> · {(d.descuento * 100).toFixed(2)}% · etiqueta “{d.etiqueta}”
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* Step 1: Configuración */}
       <Card title="1. Parámetros del lote">
         <div className="grid md:grid-cols-3 gap-4">
