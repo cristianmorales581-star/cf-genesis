@@ -167,7 +167,10 @@ export default function EmisionMasiva() {
       if (!matchedPrograma) matchedPrograma = programas.find(p => p.cedente_id === matchedCedente.id);
       return {
         ...r,
-        descuento_decimal: matchedPrograma ? Number(matchedPrograma.descuento_base) : r.descuento_decimal,
+        // El descuento del título es SIEMPRE el que viene en el CSV.
+        descuento_decimal: Number.isFinite(r.descuento_decimal) && r.descuento_decimal > 0
+          ? r.descuento_decimal
+          : (matchedPrograma ? Number(matchedPrograma.descuento_base) : r.descuento_decimal),
         cedente_id: matchedCedente.id,
         programa_id: matchedPrograma?.id,
         financista_id: defaultFinancista?.id,
@@ -176,7 +179,57 @@ export default function EmisionMasiva() {
     });
     setRows(mapped);
     toast({ title: `${parsed.length} filas leídas`, description: `Formato: ${detectedFormat}` });
+    void syncCsvDiscounts(mapped);
   }
+
+  /** Registra en cada programa los descuentos del CSV que aún no existen (etiqueta = fecha de alta). */
+  async function syncCsvDiscounts(mapped: RowMapping[]) {
+    const round = (n: number) => Math.round(n * 1e6) / 1e6;
+    const pending = new Map<string, number>(); // `${programaId}|${desc}`
+    for (const r of mapped) {
+      if (!r.programa_id || !Number.isFinite(r.descuento_decimal) || r.descuento_decimal <= 0) continue;
+      const prog = programas.find(p => p.id === r.programa_id);
+      if (!prog) continue;
+      const d = round(r.descuento_decimal);
+      const registrados = [
+        round(Number(prog.descuento_base)),
+        ...(prog.programa_descuentos ?? []).filter(x => x.activo).map(x => round(Number(x.descuento))),
+      ];
+      if (!registrados.includes(d)) pending.set(`${r.programa_id}|${d}`, d);
+    }
+    if (!pending.size) { setDescuentosNuevos([]); return; }
+
+    const etiqueta = new Date().toLocaleDateString("es-VE");
+    const inserts = [...pending.keys()].map(k => ({
+      programa_id: k.split("|")[0],
+      descuento: pending.get(k)!,
+      etiqueta,
+      es_default: false,
+      activo: true,
+    }));
+    const { error } = await supabase.from("programa_descuentos").insert(inserts);
+    if (error) {
+      toast({ title: "No se pudieron registrar descuentos nuevos", description: error.message, variant: "destructive" });
+      return;
+    }
+    const avisos = inserts.map(i => ({
+      programa: programas.find(p => p.id === i.programa_id)?.codigo_pcfb ?? i.programa_id,
+      descuento: i.descuento,
+      etiqueta,
+    }));
+    setDescuentosNuevos(avisos);
+    // Refrescar catálogo de programas con los nuevos descuentos
+    const { data } = await supabase
+      .from("programas")
+      .select("id, codigo_pcfb, cedente_id, linea, descuento_base, fecha_inicio, programa_descuentos(id, descuento, etiqueta, es_default, activo)")
+      .eq("activo", true).eq("estado", "activa").order("codigo_pcfb");
+    if (data) setProgramas(data as Programa[]);
+    toast({
+      title: `${avisos.length} descuento(s) nuevo(s) agregados`,
+      description: avisos.map(a => `${a.programa}: ${(a.descuento * 100).toFixed(2)}%`).join(" · "),
+    });
+  }
+
 
   function onPasteCsvImport() {
     if (!pastedCsv.trim()) {
