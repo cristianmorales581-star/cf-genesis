@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, Building2, BookOpenCheck,
   FilePlus2, FileStack, Upload, ScrollText, LogOut, FileSpreadsheet,
-  Database, Briefcase, ShieldCheck,
+  Database, Briefcase, ShieldCheck, CalendarClock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import gbvLogo from "@/assets/gbv-logo-white.png.asset.json";
 
 const NAV = [
   { to: "/",                 icon: LayoutDashboard,  label: "Dashboard",       end: true, group: "general",   section: "dashboard" },
+  { to: "/operaciones-dia",  icon: CalendarClock,    label: "Operaciones del día",         group: "operación", section: "operaciones_dia" },
   { to: "/emisiones",        icon: FileStack,        label: "Emisiones",                   group: "operación", section: "emisiones" },
   { to: "/emisiones/nueva",  icon: FilePlus2,        label: "Nueva Emisión",               group: "operación", section: "emisiones_nueva" },
   { to: "/emisiones/masiva", icon: FileSpreadsheet,  label: "Emisión Masiva",              group: "operación", section: "emisiones_masiva" },
