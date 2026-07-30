@@ -53,7 +53,7 @@ function downloadCSV(filename: string, rows: Row[]) {
       r.fecha_emision,
       Number(r.precio),
       Math.round(Number(r.monto_efectivo_usd)),
-      r.programas?.codigo_pcfb ?? "",
+      r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.",
       r.financistas?.rif ?? "J-501934070",
     ].map(csvEscape).join(","));
   }
