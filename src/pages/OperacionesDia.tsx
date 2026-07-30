@@ -36,34 +36,25 @@ function csvEscape(v: unknown): string {
   return s;
 }
 
+/** Formato idéntico a la hoja "Resumen" que acompaña al vector */
 function downloadCSV(filename: string, rows: Row[]) {
-  const header = [
-    "Simbolo CFB", "Programa", "Cedente", "RIF Cedente", "Financista", "RIF Financista",
-    "Valor Nominal USD", "Monto Efectivo USD", "Precio",
-    "Rendimiento Anualizado", "Días", "Fecha Emisión", "Fecha Vencimiento", "Estado",
-    "Tasa BCV Emisión", "Tasa Derecho Registro", "Derecho de Registro USD", "Derecho de Registro Bs",
-  ];
-  const lines = [header.join(",")];
+  const lines: string[] = [];
+  lines.push(["", "Identificador del Estructurador: Grupo Bursatil Venezolano Casa de Bolsa, C.A."].map(csvEscape).join(","));
+  lines.push("");
+  lines.push([
+    "SIMBOLO CFB", "CEDENTE", "R.I.F.", "FECHA EMISIÓN",
+    "PRECIO DE EMISIÓN Bs.", "MONTO SIBE", "INVERSIONISTA", "RIF INVERSIONISTA",
+  ].map(csvEscape).join(","));
   for (const r of rows) {
     lines.push([
       r.simbolo_cfb,
-      r.programas?.codigo_pcfb ?? "",
       r.programas?.cedentes?.razon_social ?? "",
       r.programas?.cedentes?.rif ?? "",
-      r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.",
-      r.financistas?.rif ?? "J-501934070",
-      Number(r.valor_nominal_usd).toFixed(4),
-      Number(r.monto_efectivo_usd).toFixed(4),
-      Number(r.precio).toFixed(4),
-      Number(r.rendimiento_anualizado).toFixed(4),
-      String(r.dias_colocados ?? ""),
       r.fecha_emision,
-      r.fecha_vencimiento,
-      r.estado,
-      Number(r.tasa_cambio_bs_usd).toFixed(4),
-      (getDerechoRegistroRate(r.dias_colocados) * 100).toFixed(4) + "%",
-      calcDrUsd(Number(r.monto_efectivo_usd), r.dias_colocados).toFixed(4),
-      calcDrBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd)).toFixed(4),
+      Number(r.precio),
+      Math.round(Number(r.monto_efectivo_usd)),
+      r.programas?.codigo_pcfb ?? "",
+      r.financistas?.rif ?? "J-501934070",
     ].map(csvEscape).join(","));
   }
   const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -76,6 +67,7 @@ function downloadCSV(filename: string, rows: Row[]) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
 
 type SortKey = "simbolo_cfb" | "cedente" | "valor_nominal_usd" | "monto_efectivo_usd" | "precio" | "rendimiento_anualizado" | "fecha_vencimiento" | "estado";
 interface SortConfig { key: SortKey; direction: "asc" | "desc" }
