@@ -299,7 +299,7 @@ export default function OperacionesDia() {
                   <td className="px-5 py-3 text-xs uppercase tracking-wide">Total ({totals.count})</td>
                   <td className="px-5 py-3"></td>
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.vn)}</Numeric></td>
-                  <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(totals.sibe)}</Numeric></td>
+                  <td className="px-5 py-3 text-right"><Numeric>{fmtNumber(totals.sibe, 0)}</Numeric></td>
                   <td className="px-5 py-3 text-right">
                     <Numeric>{fmtUSD(totals.drUsd)}</Numeric>
                     <div className="text-[10px] text-muted-foreground tabular-nums">{fmtBs(totals.drBs)}</div>
