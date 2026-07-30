@@ -39,7 +39,7 @@ function csvEscape(v: unknown): string {
 /** Formato idéntico a la hoja "Resumen" que acompaña al vector */
 function downloadCSV(filename: string, rows: Row[]) {
   const lines: string[] = [];
-  lines.push([",", ""].length ? ["", "Identificador del Estructurador: Grupo Bursatil Venezolano Casa de Bolsa, C.A."].map(csvEscape).join(",") : "");
+  lines.push(["", "Identificador del Estructurador: Grupo Bursatil Venezolano Casa de Bolsa, C.A."].map(csvEscape).join(","));
   lines.push("");
   lines.push([
     "SIMBOLO CFB", "CEDENTE", "R.I.F.", "FECHA EMISIÓN",
