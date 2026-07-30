@@ -24,6 +24,7 @@ import UsuariosAdmin from "./pages/UsuariosAdmin";
 import Honorarios from "./pages/Honorarios";
 import CargaHistorica from "./pages/CargaHistorica";
 import Papelera from "./pages/Papelera";
+import OperacionesDia from "./pages/OperacionesDia";
 
 const queryClient = new QueryClient();
 
