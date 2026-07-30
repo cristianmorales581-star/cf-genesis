@@ -82,6 +82,8 @@ export default function EmisionMasiva() {
   const [filename, setFilename] = useState<string>(persisted?.filename ?? "");
   const [pastedCsv, setPastedCsv] = useState(persisted?.pastedCsv ?? "");
   const [pdfDebug, setPdfDebug] = useState<PdfDebugSnapshot | null>(null);
+  const [descuentosNuevos, setDescuentosNuevos] = useState<{ programa: string; descuento: number; etiqueta: string }[]>([]);
+
   const initialSavedAt = persisted?.savedAt ?? 0;
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(initialSavedAt ? "saved" : "idle");
   const [lastSavedAt, setLastSavedAt] = useState<number>(initialSavedAt);
