@@ -367,6 +367,13 @@ export default function Emisiones() {
           <SlidersHorizontal className="h-4 w-4 mr-1.5" />
           Filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
         </Button>
+        <Select value={csvFmt} onValueChange={(v) => setCsvFmt(v as CsvFormat)}>
+          <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="es">Excel es-VE (;  1.234,5678)</SelectItem>
+            <SelectItem value="us">Excel EN (,  1234.5678)</SelectItem>
+          </SelectContent>
+        </Select>
         <Button variant="outline" onClick={() => exportCSV("filtered")}>
           <Download className="h-4 w-4 mr-1.5" /> CSV ({filtered.length})
         </Button>
