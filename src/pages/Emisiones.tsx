@@ -328,7 +328,7 @@ export default function Emisiones() {
       : filtered;
     if (!subset.length) { toast.error("No hay filas para exportar"); return; }
     const stamp = new Date().toISOString().slice(0, 10);
-    downloadCSV(`emisiones_${scope}_${stamp}.csv`, subset);
+    downloadCSV(`emisiones_${scope}_${stamp}.csv`, subset, csvFormat);
     toast.success(`Exportadas ${subset.length} emisiones`);
   }
 
