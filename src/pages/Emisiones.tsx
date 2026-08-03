@@ -370,8 +370,8 @@ export default function Emisiones() {
         <Select value={csvFmt} onValueChange={(v) => setCsvFmt(v as CsvFormat)}>
           <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="es">Excel es-VE (;  1.234,5678)</SelectItem>
-            <SelectItem value="us">Excel EN (,  1234.5678)</SelectItem>
+            <SelectItem value="es">Excel es-VE (; decimal ,)</SelectItem>
+            <SelectItem value="us">Excel EN (, decimal .)</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={() => exportCSV("filtered")}>
