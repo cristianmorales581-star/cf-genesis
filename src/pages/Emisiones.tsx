@@ -61,25 +61,35 @@ const INITIAL_FILTERS = {
   vnMax: "",
 };
 
+type CsvFormat = "es" | "us";
+
+/** Escapa SIEMPRE entre comillas: evita que Excel rompa filas por comas/;/saltos de línea. */
 function csvEscape(v: unknown): string {
-  if (v === null || v === undefined) return "";
-  const s = String(v);
-  if (/[",\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
+  if (v === null || v === undefined) return '""';
+  return `"${String(v).replace(/"/g, '""')}"`;
 }
 
-function downloadCSV(filename: string, rows: Row[]) {
+/** Número plano, sin separador de miles, con el decimal que espera Excel según el formato. */
+function csvNum(n: number | null | undefined, fmt: CsvFormat, decimals = 4): string {
+  const v = Number(n);
+  if (!isFinite(v)) return "";
+  const s = v.toFixed(decimals);
+  return fmt === "es" ? s.replace(".", ",") : s;
+}
+
+function downloadCSV(filename: string, rows: Row[], fmt: CsvFormat) {
+  const sep = fmt === "es" ? ";" : ",";
   const header = [
     "Simbolo CFB", "Programa", "Cedente", "RIF Cedente", "Financista", "RIF Financista",
     "Valor Nominal USD", "Monto Efectivo USD", "Precio",
     "Rendimiento Anualizado", "Fecha Emisión", "Fecha Vencimiento", "Estado",
-    "Tasa BCV Emisión", "Tasa Derecho Registro", "Derecho de Registro USD", "Derecho de Registro Bs",
+    "Tasa BCV Emisión", "Tasa Derecho Registro %", "Derecho de Registro USD", "Derecho de Registro Bs",
   ];
-  const lines = [header.join(",")];
+  const lines = [`sep=${sep}`, header.map(csvEscape).join(sep)];
   for (const r of rows) {
     const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
     const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
-    const drRate = (getDerechoRegistroRate(r.dias_colocados) * 100).toFixed(4) + "%";
+    const drRate = getDerechoRegistroRate(r.dias_colocados) * 100;
     lines.push([
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
@@ -87,20 +97,20 @@ function downloadCSV(filename: string, rows: Row[]) {
       r.programas?.cedentes?.rif ?? "",
       r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.",
       r.financistas?.rif ?? "J-501934070",
-      Number(r.valor_nominal_usd).toFixed(4),
-      Number(r.monto_efectivo_usd).toFixed(4),
-      Number(r.precio).toFixed(4),
-      Number(r.rendimiento_anualizado).toFixed(4),
+      csvNum(r.valor_nominal_usd, fmt),
+      csvNum(r.monto_efectivo_usd, fmt),
+      csvNum(r.precio, fmt),
+      csvNum(r.rendimiento_anualizado, fmt),
       r.fecha_emision,
       r.fecha_vencimiento,
       r.estado,
-      Number(r.tasa_cambio_bs_usd).toFixed(4),
-      drRate,
-      drUsd.toFixed(4),
-      drBs.toFixed(4),
-    ].map(csvEscape).join(","));
+      csvNum(r.tasa_cambio_bs_usd, fmt),
+      csvNum(drRate, fmt),
+      csvNum(drUsd, fmt),
+      csvNum(drBs, fmt),
+    ].map(csvEscape).join(sep));
   }
-  const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["\uFEFF" + lines.join("\r\n") + "\r\n"], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -110,6 +120,7 @@ function downloadCSV(filename: string, rows: Row[]) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
 
 type SortKey =
   | "simbolo_cfb"
