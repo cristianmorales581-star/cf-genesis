@@ -322,7 +322,7 @@ export default function Emisiones() {
     setSelected(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
   }
 
-  function exportCSV(scope: "filtered" | "selected") {
+  function exportCSV(scope: "filtered" | "selected", csvFormat: CsvFormat = csvFmt) {
     const subset = scope === "selected"
       ? filtered.filter(r => selected.includes(r.id))
       : filtered;
