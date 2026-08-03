@@ -201,7 +201,7 @@ export default function Emisiones() {
   const { isOperador, isAdmin } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [csvFmt, setCsvFmt] = useState<CsvFormat>("es");
+  const [csvFmt, setCsvFmt] = useState<CsvFormat>("us");
   const [deleting, setDeleting] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [f, setF] = useState(INITIAL_FILTERS);
@@ -368,10 +368,10 @@ export default function Emisiones() {
           Filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
         </Button>
         <Select value={csvFmt} onValueChange={(v) => setCsvFmt(v as CsvFormat)}>
-          <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="es">Excel es-VE (; decimal ,)</SelectItem>
-            <SelectItem value="us">Excel EN (, decimal .)</SelectItem>
+            <SelectItem value="us">CSV inglés: , sep | . decimal</SelectItem>
+            <SelectItem value="es">CSV Excel es-VE: ; sep | , decimal</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={() => exportCSV("filtered")}>
