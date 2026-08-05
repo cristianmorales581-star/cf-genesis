@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, Numeric } from "@/components/ui-bits";
@@ -81,9 +81,12 @@ export default function NuevaEmision() {
     [programa]
   );
 
-  // Preselect default descuento when programa changes
+  // Preselect default descuento when programa changes (solo al cambiar de programa,
+  // sin recortar el plazo por la vigencia del programa)
+  const lastProgramaId = useRef<string>("");
   useEffect(() => {
-    if (programa) {
+    if (programa && lastProgramaId.current !== programa.id) {
+      lastProgramaId.current = programa.id;
       const def = (programa.programa_descuentos ?? []).find(d => d.es_default && d.activo)
         ?? (programa.programa_descuentos ?? []).find(d => d.activo);
       const descPct = def ? Number(def.descuento) * 100 : Number(programa.descuento_base) * 100;
@@ -95,7 +98,8 @@ export default function NuevaEmision() {
       fetchBCV(programa.fecha_inicio);
       supabase.rpc("next_simbolo_for_programa", { _programa_id: programa.id })
         .then(({ data }) => setSimboloPreview(data ?? ""));
-    } else {
+    } else if (!programa) {
+      lastProgramaId.current = "";
       setSimboloPreview("");
     }
   }, [programa]);
@@ -138,8 +142,11 @@ export default function NuevaEmision() {
     });
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     if (!fechaVencimiento) { toast.error("Fecha de vencimiento inválida"); return; }
-    if (programa && fechaVencimiento > programa.fecha_vencimiento) {
-      toast.warning(`Aviso: el vencimiento excede la vigencia del programa (${programa.fecha_vencimiento})`);
+    // Un CFB puede vencer después del programa; lo que no se permite es emitir
+    // con un programa ya vencido a la fecha de emisión.
+    if (programa && programa.fecha_vencimiento < form.fecha_emision) {
+      toast.error(`El programa venció el ${programa.fecha_vencimiento}. No se puede emitir con un programa vencido.`);
+      return;
     }
     setBusy(true);
     // Use manually entered symbol if provided, otherwise generate atomically
