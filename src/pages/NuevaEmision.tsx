@@ -139,8 +139,7 @@ export default function NuevaEmision() {
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     if (!fechaVencimiento) { toast.error("Fecha de vencimiento inválida"); return; }
     if (programa && fechaVencimiento > programa.fecha_vencimiento) {
-      toast.error(`El vencimiento excede la vigencia del programa (${programa.fecha_vencimiento})`);
-      return;
+      toast.warning(`Aviso: el vencimiento excede la vigencia del programa (${programa.fecha_vencimiento})`);
     }
     setBusy(true);
     // Use manually entered symbol if provided, otherwise generate atomically
