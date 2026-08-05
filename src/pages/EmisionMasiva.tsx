@@ -21,7 +21,7 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
 import { fmtUSD, fmtPct, todayISO } from "@/lib/format";
 import { parseCSVText, inferCedenteName, type ParsedRow } from "@/lib/csvParser";
 import JSZip from "jszip";
-import * as XLSX from "xlsx";
+
 import { buildVectorXlsx } from "@/lib/vectorXlsx";
 import { htmlToPdfBlob, type PdfDebugSnapshot } from "@/lib/pdfDebug";
 import { PdfDebugPanel } from "@/components/PdfDebugPanel";
