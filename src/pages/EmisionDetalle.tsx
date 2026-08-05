@@ -198,7 +198,7 @@ export default function EmisionDetalle() {
       a.download = `PAQUETE_${e.simbolo_cfb}.zip`;
       a.click();
       URL.revokeObjectURL(a.href);
-      await logAudit({ action: "generate_package", resource_type: "emision", resource_id: e.id });
+      await logAudit({ action: "download", resource_type: "emision", resource_id: e.id });
       toast.success("Paquete ZIP generado");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Error generando paquete");
