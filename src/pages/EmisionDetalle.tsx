@@ -146,6 +146,54 @@ export default function EmisionDetalle() {
     return await res.text();
   }
 
+  /** Fila del vector consolidado (formato espejo SIBE) para esta emisión. */
+  function buildVectorRow() {
+    const fin = e.financistas;
+    const vnUsd = Number(e.valor_nominal_usd);
+    const tasa = Number(e.tasa_cambio_bs_usd);
+    return {
+      simbolo_cfb: e.simbolo_cfb,
+      cedente: cedente?.razon_social ?? "",
+      rif_cedente: cedente?.rif ?? "",
+      deudor_cedido: "GRUPO CASHEA VE, C.A.",
+      rif_deudor: "J-501934070",
+      cantidad_certificados: 1,
+      fecha_emision: e.fecha_emision,
+      fecha_vencimiento: e.fecha_vencimiento,
+      dias_colocados: Number(e.dias_colocados),
+      rendimiento: Number(e.rendimiento_anualizado),
+      volumen_ordenes: Number(e.cantidad_ordenes_compra),
+      valor_nominal_bs: +(vnUsd * tasa).toFixed(2),
+      precio_emision: Number(e.precio),
+      tipo_sociedad: "COMERCIAL",
+      moneda: "VES",
+      valor_nominal_usd: vnUsd,
+      monto_sibe_usd: Math.round(vnUsd),
+      tasa_cambio: tasa,
+      inversionista: fin?.razon_social ?? "GRUPO CASHEA VE, C.A.",
+      rif_inversionista: fin?.rif ?? "J-501934070",
+    };
+  }
+
+  async function generarVector() {
+    setGenTipo("VECTOR");
+    try {
+      const xlsx = buildVectorXlsx([buildVectorRow()], e.fecha_emision);
+      const blob = new Blob([xlsx], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `VECTOR_${e.simbolo_cfb}_${e.fecha_emision}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      await logAudit({ action: "download", resource_type: "vector", resource_id: e.id });
+      toast.success("Vector generado");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Error generando vector");
+    } finally {
+      setGenTipo(null);
+    }
+  }
+
   async function generarPaquete() {
     setGenTipo("ZIP");
     try {
@@ -163,33 +211,7 @@ export default function EmisionDetalle() {
         carpeta.file(`${tipo}_${e.simbolo_cfb}_${slug}.pdf`, pdf);
       }
 
-      // Vector consolidado (una sola fila, formato espejo SIBE)
-      const fin = e.financistas;
-      const vnUsd = Number(e.valor_nominal_usd);
-      const tasa = Number(e.tasa_cambio_bs_usd);
-      const vectorRow = {
-        simbolo_cfb: e.simbolo_cfb,
-        cedente: cedente?.razon_social ?? "",
-        rif_cedente: cedente?.rif ?? "",
-        deudor_cedido: "GRUPO CASHEA VE, C.A.",
-        rif_deudor: "J-501934070",
-        cantidad_certificados: 1,
-        fecha_emision: e.fecha_emision,
-        fecha_vencimiento: e.fecha_vencimiento,
-        dias_colocados: Number(e.dias_colocados),
-        rendimiento: Number(e.rendimiento_anualizado),
-        volumen_ordenes: Number(e.cantidad_ordenes_compra),
-        valor_nominal_bs: +(vnUsd * tasa).toFixed(2),
-        precio_emision: Number(e.precio),
-        tipo_sociedad: "COMERCIAL",
-        moneda: "VES",
-        valor_nominal_usd: vnUsd,
-        monto_sibe_usd: Math.round(vnUsd),
-        tasa_cambio: tasa,
-        inversionista: fin?.razon_social ?? "GRUPO CASHEA VE, C.A.",
-        rif_inversionista: fin?.rif ?? "J-501934070",
-      };
-      const xlsx = buildVectorXlsx([vectorRow], e.fecha_emision);
+      const xlsx = buildVectorXlsx([buildVectorRow()], e.fecha_emision);
       zip.file(`VECTOR_${e.simbolo_cfb}_${e.fecha_emision}.xlsx`, xlsx);
 
       const blob = await zip.generateAsync({ type: "blob" });
@@ -420,6 +442,7 @@ export default function EmisionDetalle() {
           <DocBtn label="Orden de Venta (ODV)" onClick={() => generarDoc("ODV")} loading={genTipo === "ODV"} />
           <DocBtn label="Carta BVC" onClick={() => generarDoc("CARTA_BVC")} loading={genTipo === "CARTA_BVC"} />
           <DocBtn label="Carta SUNAVAL" onClick={() => generarDoc("CARTA_SUNAVAL")} loading={genTipo === "CARTA_SUNAVAL"} />
+          <DocBtn label="Vector (.xlsx)" onClick={generarVector} loading={genTipo === "VECTOR"} />
           <Button
             onClick={generarPaquete}
             disabled={!!genTipo}
