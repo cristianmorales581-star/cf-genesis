@@ -9,12 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { ArrowLeft, FileDown, Loader2, Plus } from "lucide-react";
+import { ArrowLeft, FileDown, Loader2, Package, Plus } from "lucide-react";
 import { fmtBs, fmtDate, fmtPct, fmtUSD, todayISO } from "@/lib/format";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import { useAuth } from "@/contexts/AuthContext";
-import { htmlToPdfDownload, type PdfDebugSnapshot } from "@/lib/pdfDebug";
+import { htmlToPdfBlob, htmlToPdfDownload, type PdfDebugSnapshot } from "@/lib/pdfDebug";
+import { buildVectorXlsx } from "@/lib/vectorXlsx";
+import JSZip from "jszip";
 import { PdfDebugPanel } from "@/components/PdfDebugPanel";
 
 // deno-lint-ignore no-explicit-any
@@ -27,6 +29,11 @@ interface Confirmacion {
 }
 
 const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
+
+type TipoDoc = "CFB" | "HOJA_TERMINOS" | "CDC" | "CDV" | "ODC" | "ODV" | "CARTA_BVC" | "CARTA_SUNAVAL";
+
+/** Documentos incluidos en el paquete ZIP de la emisión individual. */
+const PAQUETE_TIPOS: TipoDoc[] = ["CFB", "HOJA_TERMINOS", "ODC", "ODV", "CARTA_BVC", "CARTA_SUNAVAL"];
 
 interface FinancistaOpt {
   id: string;
@@ -117,28 +124,97 @@ export default function EmisionDetalle() {
 
   const cedente = e.programas?.cedentes;
 
+  async function fetchDocHtml(
+    tipo: TipoDoc,
+    contraparte?: string,
+    confirmacion_id?: string,
+  ): Promise<string> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const url = `https://${PROJECT_ID}.functions.supabase.co/generate-document`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({ emision_id: e!.id, tipo, contraparte, confirmacion_id }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error ?? "Error generando documento");
+    }
+    return await res.text();
+  }
+
+  async function generarPaquete() {
+    setGenTipo("ZIP");
+    try {
+      const slug = String(cedente?.razon_social ?? "CEDENTE")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "").toUpperCase() || "CEDENTE";
+      const zip = new JSZip();
+      const carpeta = zip.folder("documentos")!;
+      let debugCaptured = false;
+      for (const tipo of PAQUETE_TIPOS) {
+        const html = await fetchDocHtml(tipo);
+        const pdf = await htmlToPdfBlob(html, `${tipo}_${e.simbolo_cfb}_${slug}`, {
+          onDebug: debugCaptured ? undefined : (snap) => { debugCaptured = true; setPdfDebug(snap); },
+        });
+        carpeta.file(`${tipo}_${e.simbolo_cfb}_${slug}.pdf`, pdf);
+      }
+
+      // Vector consolidado (una sola fila, formato espejo SIBE)
+      const fin = e.financistas;
+      const vnUsd = Number(e.valor_nominal_usd);
+      const tasa = Number(e.tasa_cambio_bs_usd);
+      const vectorRow = {
+        simbolo_cfb: e.simbolo_cfb,
+        cedente: cedente?.razon_social ?? "",
+        rif_cedente: cedente?.rif ?? "",
+        deudor_cedido: "GRUPO CASHEA VE, C.A.",
+        rif_deudor: "J-501934070",
+        cantidad_certificados: 1,
+        fecha_emision: e.fecha_emision,
+        fecha_vencimiento: e.fecha_vencimiento,
+        dias_colocados: Number(e.dias_colocados),
+        rendimiento: Number(e.rendimiento_anualizado),
+        volumen_ordenes: Number(e.cantidad_ordenes_compra),
+        valor_nominal_bs: +(vnUsd * tasa).toFixed(2),
+        precio_emision: Number(e.precio),
+        tipo_sociedad: "COMERCIAL",
+        moneda: "VES",
+        valor_nominal_usd: vnUsd,
+        monto_sibe_usd: Math.round(vnUsd),
+        tasa_cambio: tasa,
+        inversionista: fin?.razon_social ?? "GRUPO CASHEA VE, C.A.",
+        rif_inversionista: fin?.rif ?? "J-501934070",
+      };
+      const xlsx = buildVectorXlsx([vectorRow], e.fecha_emision);
+      zip.file(`VECTOR_${e.simbolo_cfb}_${e.fecha_emision}.xlsx`, xlsx);
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `PAQUETE_${e.simbolo_cfb}.zip`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      await logAudit({ action: "download", resource_type: "emision", resource_id: e.id });
+      toast.success("Paquete ZIP generado");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Error generando paquete");
+    } finally {
+      setGenTipo(null);
+    }
+  }
+
   async function generarDoc(
-    tipo: "CFB" | "HOJA_TERMINOS" | "CDC" | "CDV",
+    tipo: TipoDoc,
     contraparte?: string,
     confirmacion_id?: string,
   ) {
     setGenTipo(tipo);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const url = `https://${PROJECT_ID}.functions.supabase.co/generate-document`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ emision_id: e.id, tipo, contraparte, confirmacion_id }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error ?? "Error generando documento");
-      }
-      const html = await res.text();
+      const html = await fetchDocHtml(tipo, contraparte, confirmacion_id);
       await htmlToPdfDownload(html, `${tipo}_${e.simbolo_cfb}_CEDENTE.pdf`, { onDebug: setPdfDebug });
       await logAudit({ action: "generate_pdf", resource_type: tipo.toLowerCase(), resource_id: e.id });
     } catch (err: unknown) {
@@ -340,6 +416,18 @@ export default function EmisionDetalle() {
           <h3 className="font-display text-sm uppercase tracking-[0.16em] text-accent mb-2">Documentos</h3>
           <DocBtn label="Certificado CFB" onClick={() => generarDoc("CFB")} loading={genTipo === "CFB"} />
           <DocBtn label="Hoja de Términos" onClick={() => generarDoc("HOJA_TERMINOS")} loading={genTipo === "HOJA_TERMINOS"} />
+          <DocBtn label="Orden de Compra (ODC)" onClick={() => generarDoc("ODC")} loading={genTipo === "ODC"} />
+          <DocBtn label="Orden de Venta (ODV)" onClick={() => generarDoc("ODV")} loading={genTipo === "ODV"} />
+          <DocBtn label="Carta BVC" onClick={() => generarDoc("CARTA_BVC")} loading={genTipo === "CARTA_BVC"} />
+          <DocBtn label="Carta SUNAVAL" onClick={() => generarDoc("CARTA_SUNAVAL")} loading={genTipo === "CARTA_SUNAVAL"} />
+          <Button
+            onClick={generarPaquete}
+            disabled={!!genTipo}
+            className="w-full justify-between bg-gradient-gold text-accent-foreground hover:opacity-95"
+          >
+            Paquete completo (ZIP)
+            {genTipo === "ZIP" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
+          </Button>
           <p className="text-[10px] text-muted-foreground leading-relaxed pt-2 border-t border-border mt-3">
             Los documentos se abren en nueva pestaña con el botón "Imprimir / Guardar como PDF" para exportar.
           </p>
