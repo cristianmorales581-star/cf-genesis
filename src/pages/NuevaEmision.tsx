@@ -31,7 +31,7 @@ interface Financista {
 
 const schema = z.object({
   programa_id: z.string().uuid("Selecciona un programa"),
-  financista_id: z.string().uuid().nullable().optional(),
+  financista_id: z.string().uuid("Selecciona un financista"),
   fecha_emision: z.string().min(1),
   dias_colocados: z.number().int().positive().max(720),
   valor_nominal_usd: z.number().positive("Debe ser > 0").max(100_000_000),
@@ -220,9 +220,9 @@ export default function NuevaEmision() {
               </div>
 
               <div>
-                <Label>Financista (opcional)</Label>
+                <Label>Financista (obligatorio)</Label>
                 <Select value={form.financista_id} onValueChange={v => setForm({ ...form, financista_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Sin financista" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Selecciona un financista" /></SelectTrigger>
                   <SelectContent>
                     {financistas.map(f => (
                       <SelectItem key={f.id} value={f.id}>{f.razon_social} ({f.tipo})</SelectItem>
