@@ -422,6 +422,35 @@ export default function Emisiones() {
         )}
       </div>
 
+      {isAdmin && sinFinancista > 0 && (
+        <div className="surface-card p-3 mb-4 flex flex-wrap items-center gap-3 text-sm border-l-4 border-warning">
+          <span>
+            <span className="font-semibold">{sinFinancista}</span> certificado(s) sin financista. Ningún título debería quedar sin financista.
+          </span>
+          <Button variant="outline" size="sm" onClick={() => { setFilter("financista", "__none__"); setShowFilters(true); }}>
+            Ver solo esos
+          </Button>
+        </div>
+      )}
+
+      {isAdmin && selected.length > 0 && (
+        <div className="surface-card p-3 mb-4 flex flex-wrap items-end gap-3">
+          <div>
+            <Label className="text-xs">Asignar financista a {selected.length} seleccionado(s)</Label>
+            <Select value={bulkFin} onValueChange={setBulkFin}>
+              <SelectTrigger className="w-[320px]"><SelectValue placeholder="Selecciona un financista" /></SelectTrigger>
+              <SelectContent>
+                {finOptions.map(o => <SelectItem key={o.id} value={o.id}>{o.razon_social}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={assignFinancista} disabled={!bulkFin || assigning}>
+            <Users className="h-4 w-4 mr-1.5" /> {assigning ? "Asignando…" : "Asignar"}
+          </Button>
+        </div>
+      )}
+
+
       {showFilters && (
         <div className="surface-card p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
