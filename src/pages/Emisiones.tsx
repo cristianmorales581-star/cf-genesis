@@ -591,7 +591,10 @@ export default function Emisiones() {
                       <Pill tone={r.estado === "activa" ? "success" : r.estado === "vencida" ? "warning" : "default"}>{r.estado}</Pill>
                     </td>
                     {isAdmin && (
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-5 py-3 text-right whitespace-nowrap">
+                        <Button variant="ghost" size="icon" onClick={() => setEditing(r as EditableEmision)} aria-label={`Editar ${r.simbolo_cfb}`}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => deleteEmission(r)} aria-label={`Eliminar ${r.simbolo_cfb}`}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
