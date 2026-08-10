@@ -148,10 +148,12 @@ export default function EmisionMasiva() {
     if (!f) return;
     const reader = new FileReader();
     reader.onload = () => {
-      loadCsvText(String(reader.result ?? ""), f.name);
+      const buf = reader.result as ArrayBuffer;
+      loadCsvText(decodeCsvBuffer(buf), f.name);
     };
-    reader.readAsText(f, "latin1");
+    reader.readAsArrayBuffer(f);
   }
+
 
   function loadCsvText(text: string, sourceName: string) {
     setFilename(sourceName);
