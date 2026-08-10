@@ -296,17 +296,20 @@ export default function Emisiones() {
 
   const financistas = useMemo(() => {
     const s = new Set<string>();
-    rows.forEach(r => { const n = r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A."; s.add(n); });
+    rows.forEach(r => { const n = r.financistas?.razon_social; if (n) s.add(n); });
     return [...s].sort();
   }, [rows]);
+
+  const sinFinancista = useMemo(() => rows.filter(r => !r.financista_id).length, [rows]);
 
   const filtered = useMemo(() => {
     const fRows = rows.filter(r => {
       if (f.estado !== "todos" && r.estado !== f.estado) return false;
       if (f.cedente !== "__all__" && r.programas?.cedentes?.razon_social !== f.cedente) return false;
-      if (f.financista !== "__all__") {
-        const name = r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.";
-        if (name !== f.financista) return false;
+      if (f.financista === "__none__") {
+        if (r.financista_id) return false;
+      } else if (f.financista !== "__all__") {
+        if (r.financistas?.razon_social !== f.financista) return false;
       }
       if (f.fechaEmDesde && r.fecha_emision < f.fechaEmDesde) return false;
       if (f.fechaEmHasta && r.fecha_emision > f.fechaEmHasta) return false;
