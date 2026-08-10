@@ -416,6 +416,7 @@ export default function CargaHistorica() {
 
   async function insertAll() {
     if (!okRows.length) return;
+    if (!financistaId) { toast.error("Selecciona el financista antes de cargar"); return; }
     setInserting(true);
     let inserted = 0;
     const failures: string[] = [];
@@ -426,7 +427,7 @@ export default function CargaHistorica() {
         simbolo_cfb: r.simbolo,
         cedente_id: r.cedente_id!,
         programa_id: r.programa_id,
-        financista_id: null,
+        financista_id: financistaId,
         operador_id: user?.id ?? null,
         fecha_emision: r.fechaEmision,
         fecha_vencimiento: r.fechaVencimiento!,
