@@ -150,17 +150,24 @@ export default function CargaHistorica() {
   const [programas, setProgramas] = useState<Array<{ id: string; codigo_pcfb: string; cedente_id: string; fecha_inicio?: string; fecha_vencimiento?: string }>>([]);
   const [existingSimbolos, setExistingSimbolos] = useState<Set<string>>(new Set());
   const [overwriteExisting, setOverwriteExisting] = useState(true);
+  const [financistas, setFinancistas] = useState<Array<{ id: string; razon_social: string }>>([]);
+  const [financistaId, setFinancistaId] = useState("");
 
   useEffect(() => {
     (async () => {
-      const [c, p, e] = await Promise.all([
+      const [c, p, e, fi] = await Promise.all([
         supabase.from("cedentes").select("id, rif, razon_social"),
         supabase.from("programas").select("id, codigo_pcfb, cedente_id, fecha_inicio, fecha_vencimiento"),
         supabase.from("emisiones").select("simbolo_cfb"),
+        supabase.from("financistas").select("id, razon_social").order("razon_social"),
       ]);
       setCedentes(c.data ?? []);
       setProgramas((p.data as any) ?? []);
       setExistingSimbolos(new Set((e.data ?? []).map((r) => r.simbolo_cfb)));
+      const fins = fi.data ?? [];
+      setFinancistas(fins);
+      const def = fins.find((f) => /grupo\s+cashea\s+ve/i.test(f.razon_social)) ?? fins[0];
+      if (def) setFinancistaId(def.id);
     })();
   }, []);
 
