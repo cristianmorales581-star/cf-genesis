@@ -116,9 +116,8 @@ export default function ReporteRas() {
 
       {loading ? null : rows.length === 0 ? (
         <EmptyState
-          icon={FileSpreadsheet}
           title="Sin operaciones reportables"
-          description="No hay certificados iguales o mayores a 50.000,00 USD en el mes seleccionado."
+          hint="No hay certificados iguales o mayores a 50.000,00 USD en el mes seleccionado."
         />
       ) : (
         <div className="rounded-lg border border-border bg-card overflow-x-auto">
