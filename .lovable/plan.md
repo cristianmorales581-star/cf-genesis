@@ -10,11 +10,13 @@
 
 ## Cambios propuestos
 
-1. **Lápiz de edición en la tabla de Emisiones** (igual al de Programas, solo admin): abre un diálogo para corregir financista, cedente/programa, fechas, plazo, nominal, precio/descuento, tasa y cantidad de órdenes, recalculando monto efectivo y valor en Bs al guardar. Queda registrado en auditoría.
-2. **Asignación masiva de financista**: con filas seleccionadas, poder asignar un financista a todas de una vez (útil para los ~1.170 registros vacíos).
-3. **Filtro "sin financista"** en el panel de filtros, para ubicarlos rápido.
-4. **Carga Histórica**: selector de financista para el lote (por defecto Grupo Cashea Ve, C.A.) y, si el archivo trae columna de inversionista/RIF, usarla por fila; al sobrescribir un símbolo existente no borrar el financista ya registrado.
-5. **Reporte RAS**: aviso con el conteo de certificados del mes sin financista y resaltado de esas filas en la vista previa, para no descargar compradores en blanco.
+1. **Lápiz de edición en la tabla de Emisiones** (igual al de Programas, solo admin): diálogo caso por caso para corregir todos los campos que componen el título — financista, cedente/programa, símbolo, fecha de emisión y vencimiento, plazo, valor nominal, precio/descuento, rendimiento, tasa de cambio y cantidad de órdenes — recalculando monto efectivo y valor en Bs al guardar. Queda registrado en auditoría.
+2. **Financista obligatorio**: no se podrá guardar ni emitir un título sin financista, en emisión individual, emisión masiva, carga histórica y en el diálogo de edición.
+3. **Asignación masiva de financista**: con filas seleccionadas, asignar un financista a todas de una vez (útil para los ~1.170 registros vacíos).
+4. **Filtro "sin financista"** en el panel de filtros, para ubicarlos rápido.
+5. **Carga Histórica**: selector de financista obligatorio para el lote (por defecto Grupo Cashea Ve, C.A.) y, si el archivo trae columna de inversionista/RIF, usarla por fila; al sobrescribir un símbolo existente no borrar el financista ya registrado.
+6. **Reporte RAS**: aviso con el conteo de certificados del mes sin financista y resaltado de esas filas en la vista previa, para no descargar compradores en blanco.
+
 
 ## Detalles técnicos
 
