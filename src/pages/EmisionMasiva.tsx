@@ -326,6 +326,11 @@ export default function EmisionMasiva() {
   async function generate() {
     if (!stats.included) { toast({ title: "Nada que generar", variant: "destructive" }); return; }
     if (!tasaBcv || tasaBcv <= 0) { toast({ title: "Tasa BCV requerida", variant: "destructive" }); return; }
+    const sinFin = rows.filter(r => r.include && !r.financista_id);
+    if (sinFin.length) {
+      toast({ title: "Financista obligatorio", description: `${sinFin.length} fila(s) sin financista. Asígnalo antes de emitir.`, variant: "destructive" });
+      return;
+    }
 
     setGenerating("zip");
     try {
