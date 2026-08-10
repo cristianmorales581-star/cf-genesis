@@ -136,10 +136,7 @@ export default function NuevaEmision() {
   }
 
   async function save() {
-    const parsed = schema.safeParse({
-      ...form,
-      financista_id: form.financista_id || null,
-    });
+    const parsed = schema.safeParse(form);
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     if (!fechaVencimiento) { toast.error("Fecha de vencimiento inválida"); return; }
     // Un CFB puede vencer después del programa; lo que no se permite es emitir
