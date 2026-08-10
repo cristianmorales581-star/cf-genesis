@@ -553,7 +553,7 @@ export default function CargaHistorica() {
               <Badge variant="destructive">{errRows.length} con error</Badge>
               <Button
                 onClick={insertAll}
-                disabled={!okRows.length || inserting}
+                disabled={!okRows.length || inserting || !financistaId}
                 size="sm"
               >
                 {inserting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Insertando…</> : <><CheckCircle2 className="h-4 w-4 mr-2" />Insertar {okRows.length} filas</>}
