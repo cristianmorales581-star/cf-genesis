@@ -568,7 +568,11 @@ export default function Emisiones() {
                     </td>
                     <td className="px-5 py-3">
                       <div className="text-xs font-medium text-foreground">{r.programas?.cedentes?.razon_social}</div>
-                      <div className="text-[11px] text-muted-foreground">Financista: {r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A."}</div>
+                      {r.financistas?.razon_social ? (
+                        <div className="text-[11px] text-muted-foreground">Financista: {r.financistas.razon_social}</div>
+                      ) : (
+                        <div className="text-[11px] font-medium text-warning">Sin financista</div>
+                      )}
                     </td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.valor_nominal_usd)}</Numeric></td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.monto_efectivo_usd)}</Numeric></td>
