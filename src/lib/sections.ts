@@ -9,6 +9,7 @@ export const SECTIONS: { id: string; label: string; path: string; group: string 
   { id: "confirmaciones",   label: "Confirmaciones",    path: "/confirmaciones",   group: "operación" },
   { id: "portafolio",       label: "Portafolio",        path: "/portafolio",       group: "operación" },
   { id: "honorarios",       label: "Honorarios",        path: "/honorarios",       group: "backoffice" },
+  { id: "reporte_ras",      label: "Reporte RAS",       path: "/backoffice/reporte-ras", group: "backoffice" },
   { id: "carga_historica",  label: "Carga Histórica",   path: "/backoffice/carga-historica", group: "backoffice" },
   { id: "programas",        label: "Programas",         path: "/programas",        group: "maestros" },
   { id: "cedentes",         label: "Cedentes",          path: "/cedentes",         group: "maestros" },

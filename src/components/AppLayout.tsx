@@ -18,6 +18,7 @@ const NAV = [
   { to: "/confirmaciones",   icon: Upload,           label: "Confirmaciones",              group: "operación", section: "confirmaciones" },
   { to: "/portafolio",       icon: Briefcase,        label: "Portafolio",                  group: "operación", section: "portafolio" },
   { to: "/honorarios",       icon: FileSpreadsheet,  label: "Honorarios",                  group: "backoffice", section: "honorarios" },
+  { to: "/backoffice/reporte-ras", icon: FileSpreadsheet, label: "Reporte RAS",            group: "backoffice", section: "reporte_ras" },
   { to: "/backoffice/carga-historica", icon: Upload, label: "Carga Histórica",            group: "backoffice", section: "carga_historica", adminOnly: true },
   { to: "/programas",        icon: BookOpenCheck,    label: "Programas",                   group: "maestros",  section: "programas" },
   { to: "/cedentes",         icon: Building2,        label: "Cedentes",                    group: "maestros",  section: "cedentes" },
