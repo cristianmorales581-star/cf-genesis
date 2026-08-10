@@ -157,7 +157,7 @@ export default function NuevaEmision() {
     const { data: { user } } = await supabase.auth.getUser();
     const payload = {
       programa_id: form.programa_id,
-      financista_id: form.financista_id || null,
+      financista_id: form.financista_id,
       operador_id: user?.id ?? null,
       simbolo_cfb: simbolo,
       fecha_emision: form.fecha_emision,
