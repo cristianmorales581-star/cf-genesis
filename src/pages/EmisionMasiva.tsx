@@ -19,7 +19,7 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
   );
 }
 import { fmtUSD, fmtPct, todayISO } from "@/lib/format";
-import { parseCSVText, inferCedenteName, type ParsedRow } from "@/lib/csvParser";
+import { parseCSVText, inferCedenteName, decodeCsvBuffer, type ParsedRow } from "@/lib/csvParser";
 import JSZip from "jszip";
 
 import { buildVectorXlsx } from "@/lib/vectorXlsx";
