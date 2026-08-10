@@ -625,6 +625,14 @@ export default function Emisiones() {
           </div>
         )}
       </div>
+
+      <EmisionEditDialog
+        emision={editing}
+        open={!!editing}
+        onOpenChange={(v) => { if (!v) setEditing(null); }}
+        onSaved={load}
+      />
     </>
+
   );
 }
