@@ -9,10 +9,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { fmtBs, fmtDate, fmtPct, fmtUSD } from "@/lib/format";
-import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
+import EmisionEditDialog, { type EditableEmision } from "@/components/EmisionEditDialog";
 
 const DERECHO_REGISTRO_RATE_DEFAULT = 0.001; // 0.1%
 const DERECHO_REGISTRO_RATE_14D = 0.00078;   // 0.078%
@@ -33,6 +34,8 @@ interface Row {
   fecha_emision: string; fecha_vencimiento: string; estado: string;
   rendimiento_anualizado: number; monto_efectivo_usd: number;
   tasa_cambio_bs_usd: number; dias_colocados: number;
+  programa_id?: string | null; cedente_id?: string | null; financista_id?: string | null;
+  cantidad_ordenes_compra?: number | null;
   programas?: { codigo_pcfb: string; cedentes?: { razon_social: string; rif: string } };
   financistas?: { razon_social: string; rif: string } | null;
 }
@@ -97,8 +100,8 @@ function downloadCSV(filename: string, rows: Row[], fmt: CsvFormat) {
       r.programas?.codigo_pcfb ?? "",
       r.programas?.cedentes?.razon_social ?? "",
       r.programas?.cedentes?.rif ?? "",
-      r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.",
-      r.financistas?.rif ?? "J-501934070",
+      r.financistas?.razon_social ?? "SIN FINANCISTA",
+      r.financistas?.rif ?? "",
       csvNum(r.valor_nominal_usd, fmt),
       csvNum(r.monto_efectivo_usd, fmt),
       csvNum(r.precio, fmt),
@@ -208,6 +211,31 @@ export default function Emisiones() {
   const [showFilters, setShowFilters] = useState(false);
   const [f, setF] = useState(INITIAL_FILTERS);
   const [sort, setSort] = useState<SortConfig>({ key: "fecha_emision", direction: "desc" });
+  const [editing, setEditing] = useState<EditableEmision | null>(null);
+  const [finOptions, setFinOptions] = useState<{ id: string; razon_social: string }[]>([]);
+  const [bulkFin, setBulkFin] = useState("");
+  const [assigning, setAssigning] = useState(false);
+
+  useEffect(() => {
+    supabase.from("financistas").select("id, razon_social").order("razon_social")
+      .then(({ data }) => setFinOptions((data ?? []) as { id: string; razon_social: string }[]));
+  }, []);
+
+  async function assignFinancista() {
+    if (!bulkFin || !selected.length) return;
+    setAssigning(true);
+    const { error } = await supabase.from("emisiones").update({ financista_id: bulkFin }).in("id", selected);
+    setAssigning(false);
+    if (error) { toast.error(error.message); return; }
+    await logAudit({
+      action: "bulk_update", resource_type: "emision",
+      details: { count: selected.length, financista_id: bulkFin },
+    });
+    toast.success(`Financista asignado a ${selected.length} certificado(s)`);
+    setSelected([]);
+    setBulkFin("");
+    load();
+  }
 
   function setFilter<K extends keyof typeof INITIAL_FILTERS>(k: K, v: (typeof INITIAL_FILTERS)[K]) {
     setF(prev => ({ ...prev, [k]: v }));
@@ -268,17 +296,20 @@ export default function Emisiones() {
 
   const financistas = useMemo(() => {
     const s = new Set<string>();
-    rows.forEach(r => { const n = r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A."; s.add(n); });
+    rows.forEach(r => { const n = r.financistas?.razon_social; if (n) s.add(n); });
     return [...s].sort();
   }, [rows]);
+
+  const sinFinancista = useMemo(() => rows.filter(r => !r.financista_id).length, [rows]);
 
   const filtered = useMemo(() => {
     const fRows = rows.filter(r => {
       if (f.estado !== "todos" && r.estado !== f.estado) return false;
       if (f.cedente !== "__all__" && r.programas?.cedentes?.razon_social !== f.cedente) return false;
-      if (f.financista !== "__all__") {
-        const name = r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A.";
-        if (name !== f.financista) return false;
+      if (f.financista === "__none__") {
+        if (r.financista_id) return false;
+      } else if (f.financista !== "__all__") {
+        if (r.financistas?.razon_social !== f.financista) return false;
       }
       if (f.fechaEmDesde && r.fecha_emision < f.fechaEmDesde) return false;
       if (f.fechaEmHasta && r.fecha_emision > f.fechaEmHasta) return false;
@@ -391,6 +422,35 @@ export default function Emisiones() {
         )}
       </div>
 
+      {isAdmin && sinFinancista > 0 && (
+        <div className="surface-card p-3 mb-4 flex flex-wrap items-center gap-3 text-sm border-l-4 border-warning">
+          <span>
+            <span className="font-semibold">{sinFinancista}</span> certificado(s) sin financista. Ningún título debería quedar sin financista.
+          </span>
+          <Button variant="outline" size="sm" onClick={() => { setFilter("financista", "__none__"); setShowFilters(true); }}>
+            Ver solo esos
+          </Button>
+        </div>
+      )}
+
+      {isAdmin && selected.length > 0 && (
+        <div className="surface-card p-3 mb-4 flex flex-wrap items-end gap-3">
+          <div>
+            <Label className="text-xs">Asignar financista a {selected.length} seleccionado(s)</Label>
+            <Select value={bulkFin} onValueChange={setBulkFin}>
+              <SelectTrigger className="w-[320px]"><SelectValue placeholder="Selecciona un financista" /></SelectTrigger>
+              <SelectContent>
+                {finOptions.map(o => <SelectItem key={o.id} value={o.id}>{o.razon_social}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={assignFinancista} disabled={!bulkFin || assigning}>
+            <Users className="h-4 w-4 mr-1.5" /> {assigning ? "Asignando…" : "Asignar"}
+          </Button>
+        </div>
+      )}
+
+
       {showFilters && (
         <div className="surface-card p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
@@ -421,6 +481,7 @@ export default function Emisiones() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">Todos</SelectItem>
+                <SelectItem value="__none__">Sin financista</SelectItem>
                 {financistas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -507,7 +568,11 @@ export default function Emisiones() {
                     </td>
                     <td className="px-5 py-3">
                       <div className="text-xs font-medium text-foreground">{r.programas?.cedentes?.razon_social}</div>
-                      <div className="text-[11px] text-muted-foreground">Financista: {r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A."}</div>
+                      {r.financistas?.razon_social ? (
+                        <div className="text-[11px] text-muted-foreground">Financista: {r.financistas.razon_social}</div>
+                      ) : (
+                        <div className="text-[11px] font-medium text-warning">Sin financista</div>
+                      )}
                     </td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.valor_nominal_usd)}</Numeric></td>
                     <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.monto_efectivo_usd)}</Numeric></td>
@@ -526,7 +591,10 @@ export default function Emisiones() {
                       <Pill tone={r.estado === "activa" ? "success" : r.estado === "vencida" ? "warning" : "default"}>{r.estado}</Pill>
                     </td>
                     {isAdmin && (
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-5 py-3 text-right whitespace-nowrap">
+                        <Button variant="ghost" size="icon" onClick={() => setEditing(r as EditableEmision)} aria-label={`Editar ${r.simbolo_cfb}`}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => deleteEmission(r)} aria-label={`Eliminar ${r.simbolo_cfb}`}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -557,6 +625,14 @@ export default function Emisiones() {
           </div>
         )}
       </div>
+
+      <EmisionEditDialog
+        emision={editing}
+        open={!!editing}
+        onOpenChange={(v) => { if (!v) setEditing(null); }}
+        onSaved={load}
+      />
     </>
+
   );
 }

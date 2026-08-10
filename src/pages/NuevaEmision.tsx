@@ -31,7 +31,7 @@ interface Financista {
 
 const schema = z.object({
   programa_id: z.string().uuid("Selecciona un programa"),
-  financista_id: z.string().uuid().nullable().optional(),
+  financista_id: z.string().uuid("Selecciona un financista"),
   fecha_emision: z.string().min(1),
   dias_colocados: z.number().int().positive().max(720),
   valor_nominal_usd: z.number().positive("Debe ser > 0").max(100_000_000),
@@ -136,10 +136,7 @@ export default function NuevaEmision() {
   }
 
   async function save() {
-    const parsed = schema.safeParse({
-      ...form,
-      financista_id: form.financista_id || null,
-    });
+    const parsed = schema.safeParse(form);
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     if (!fechaVencimiento) { toast.error("Fecha de vencimiento inválida"); return; }
     // Un CFB puede vencer después del programa; lo que no se permite es emitir
@@ -160,7 +157,7 @@ export default function NuevaEmision() {
     const { data: { user } } = await supabase.auth.getUser();
     const payload = {
       programa_id: form.programa_id,
-      financista_id: form.financista_id || null,
+      financista_id: form.financista_id,
       operador_id: user?.id ?? null,
       simbolo_cfb: simbolo,
       fecha_emision: form.fecha_emision,
@@ -220,9 +217,9 @@ export default function NuevaEmision() {
               </div>
 
               <div>
-                <Label>Financista (opcional)</Label>
+                <Label>Financista (obligatorio)</Label>
                 <Select value={form.financista_id} onValueChange={v => setForm({ ...form, financista_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Sin financista" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Selecciona un financista" /></SelectTrigger>
                   <SelectContent>
                     {financistas.map(f => (
                       <SelectItem key={f.id} value={f.id}>{f.razon_social} ({f.tipo})</SelectItem>

@@ -71,6 +71,15 @@ export default function ReporteRas() {
     [emisiones, month]
   );
 
+  const sinFinancista = useMemo(
+    () => emisiones.filter(e =>
+      e.fecha_emision.slice(0, 7) === month &&
+      Number(e.monto_efectivo_usd) >= RAS_UMBRAL_USD &&
+      !e.financistas?.razon_social
+    ).length,
+    [emisiones, month]
+  );
+
   function download() {
     if (!rows.length) { toast.error("No hay operaciones para el mes seleccionado"); return; }
     const buf = buildRasXlsx(rows);
@@ -108,6 +117,11 @@ export default function ReporteRas() {
         <div className="text-sm text-muted-foreground">
           <div><span className="font-medium text-foreground">{rows.length}</span> operaciones ({rows.length / 2} certificados)</div>
           {excluidas > 0 && <div className="text-xs">{excluidas} certificado(s) excluido(s) por ser menores a 50.000,00 USD</div>}
+          {sinFinancista > 0 && (
+            <div className="text-xs font-medium text-warning">
+              {sinFinancista} certificado(s) sin financista: sus filas de compra saldrán incompletas. Corrígelos en Emisiones.
+            </div>
+          )}
         </div>
         <Button onClick={download} disabled={!rows.length} className="ml-auto gap-2">
           <Download className="h-4 w-4" /> Descargar reporte (.xlsx)

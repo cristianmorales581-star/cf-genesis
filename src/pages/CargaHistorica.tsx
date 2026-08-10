@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Upload, Loader2, CheckCircle2, AlertCircle, Database, Download } from "lucide-react";
 
@@ -150,17 +152,24 @@ export default function CargaHistorica() {
   const [programas, setProgramas] = useState<Array<{ id: string; codigo_pcfb: string; cedente_id: string; fecha_inicio?: string; fecha_vencimiento?: string }>>([]);
   const [existingSimbolos, setExistingSimbolos] = useState<Set<string>>(new Set());
   const [overwriteExisting, setOverwriteExisting] = useState(true);
+  const [financistas, setFinancistas] = useState<Array<{ id: string; razon_social: string }>>([]);
+  const [financistaId, setFinancistaId] = useState("");
 
   useEffect(() => {
     (async () => {
-      const [c, p, e] = await Promise.all([
+      const [c, p, e, fi] = await Promise.all([
         supabase.from("cedentes").select("id, rif, razon_social"),
         supabase.from("programas").select("id, codigo_pcfb, cedente_id, fecha_inicio, fecha_vencimiento"),
         supabase.from("emisiones").select("simbolo_cfb"),
+        supabase.from("financistas").select("id, razon_social").order("razon_social"),
       ]);
       setCedentes(c.data ?? []);
       setProgramas((p.data as any) ?? []);
       setExistingSimbolos(new Set((e.data ?? []).map((r) => r.simbolo_cfb)));
+      const fins = fi.data ?? [];
+      setFinancistas(fins);
+      const def = fins.find((f) => /grupo\s+cashea\s+ve/i.test(f.razon_social)) ?? fins[0];
+      if (def) setFinancistaId(def.id);
     })();
   }, []);
 
@@ -409,6 +418,7 @@ export default function CargaHistorica() {
 
   async function insertAll() {
     if (!okRows.length) return;
+    if (!financistaId) { toast.error("Selecciona el financista antes de cargar"); return; }
     setInserting(true);
     let inserted = 0;
     const failures: string[] = [];
@@ -419,7 +429,7 @@ export default function CargaHistorica() {
         simbolo_cfb: r.simbolo,
         cedente_id: r.cedente_id!,
         programa_id: r.programa_id,
-        financista_id: null,
+        financista_id: financistaId,
         operador_id: user?.id ?? null,
         fecha_emision: r.fechaEmision,
         fecha_vencimiento: r.fechaVencimiento!,
@@ -505,6 +515,18 @@ export default function CargaHistorica() {
               <Loader2 className="h-4 w-4 animate-spin" /> Procesando...
             </div>
           )}
+          <div className="max-w-md">
+            <Label className="text-xs">Financista de estas operaciones (obligatorio)</Label>
+            <Select value={financistaId} onValueChange={setFinancistaId}>
+              <SelectTrigger><SelectValue placeholder="Selecciona un financista" /></SelectTrigger>
+              <SelectContent>
+                {financistas.map((f) => <SelectItem key={f.id} value={f.id}>{f.razon_social}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Se asignará a todas las filas cargadas. Ningún título puede quedar sin financista.
+            </p>
+          </div>
           <label className="flex items-center gap-2 text-xs">
             <input
               type="checkbox"
@@ -531,7 +553,7 @@ export default function CargaHistorica() {
               <Badge variant="destructive">{errRows.length} con error</Badge>
               <Button
                 onClick={insertAll}
-                disabled={!okRows.length || inserting}
+                disabled={!okRows.length || inserting || !financistaId}
                 size="sm"
               >
                 {inserting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Insertando…</> : <><CheckCircle2 className="h-4 w-4 mr-2" />Insertar {okRows.length} filas</>}
