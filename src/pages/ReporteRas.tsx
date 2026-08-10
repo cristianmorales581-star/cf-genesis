@@ -71,6 +71,15 @@ export default function ReporteRas() {
     [emisiones, month]
   );
 
+  const sinFinancista = useMemo(
+    () => emisiones.filter(e =>
+      e.fecha_emision.slice(0, 7) === month &&
+      Number(e.monto_efectivo_usd) >= RAS_UMBRAL_USD &&
+      !e.financistas?.razon_social
+    ).length,
+    [emisiones, month]
+  );
+
   function download() {
     if (!rows.length) { toast.error("No hay operaciones para el mes seleccionado"); return; }
     const buf = buildRasXlsx(rows);
