@@ -9,10 +9,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { fmtBs, fmtDate, fmtPct, fmtUSD } from "@/lib/format";
-import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
+import EmisionEditDialog, { type EditableEmision } from "@/components/EmisionEditDialog";
 
 const DERECHO_REGISTRO_RATE_DEFAULT = 0.001; // 0.1%
 const DERECHO_REGISTRO_RATE_14D = 0.00078;   // 0.078%
@@ -33,6 +34,8 @@ interface Row {
   fecha_emision: string; fecha_vencimiento: string; estado: string;
   rendimiento_anualizado: number; monto_efectivo_usd: number;
   tasa_cambio_bs_usd: number; dias_colocados: number;
+  programa_id?: string | null; cedente_id?: string | null; financista_id?: string | null;
+  cantidad_ordenes_compra?: number | null;
   programas?: { codigo_pcfb: string; cedentes?: { razon_social: string; rif: string } };
   financistas?: { razon_social: string; rif: string } | null;
 }
