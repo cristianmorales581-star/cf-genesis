@@ -53,6 +53,7 @@ const App = () => (
               <Route path="/confirmaciones" element={<ProtectedRoute requireAdmin><Confirmaciones /></ProtectedRoute>} />
               <Route path="/portafolio" element={<Portafolio />} />
               <Route path="/honorarios" element={<Honorarios />} />
+              <Route path="/backoffice/reporte-ras" element={<ProtectedRoute section="reporte_ras"><ReporteRas /></ProtectedRoute>} />
               <Route path="/backoffice/carga-historica" element={<ProtectedRoute requireAdmin section="carga_historica"><CargaHistorica /></ProtectedRoute>} />
               <Route path="/auditoria" element={<Auditoria />} />
               <Route
