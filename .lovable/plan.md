@@ -1,28 +1,24 @@
-# Corregir financista faltante en el Reporte RAS
+# Editar certificados desde la tabla de emisiones + corregir financista faltante
 
-Tienes razón: no todos vienen de la carga histórica antigua. Verifiqué la base de datos y el origen real es la pantalla **Carga Histórica**, que guarda el financista siempre vacío.
-
-## Lo que muestran los datos
+## Lo que muestran los datos (verificado)
 
 - Julio 2026: 280 certificados, 234 con financista y **46 sin financista**.
-- Esos 46 fueron escritos el 4 de agosto (símbolos C5336A–C5425A), es decir por una corrida de Carga Histórica, no por la emisión masiva del día.
-- Junio: 36 sin financista, escritos el 12 de junio (misma pantalla).
-- Todo lo anterior a junio (carga inicial masiva) tampoco tiene financista.
-- Causa exacta: la carga histórica inserta `financista_id` en blanco y, con la opción "sobrescribir si el símbolo existe", **borra el financista de títulos que ya lo tenían** correctamente emitidos.
+- Esos 46 tienen `fecha_emision` de julio (15 y 29) pero fueron **escritos en la base el 4 de agosto** (símbolos C5336A y C5371A–C5425A). No fueron sobrescritos: son registros nuevos creados ese día.
+- Junio: 36 sin financista, escritos el 12 de junio. Todo lo previo a junio (carga inicial) tampoco tiene financista.
+- El único camino de creación que guarda el financista vacío es **Carga Histórica** (`financista_id: null` fijo). La emisión individual y la masiva sí lo guardan.
+- La tabla de **Emisiones hoy no tiene diálogo de edición** — solo eliminar; por eso no hay forma de corregirlo a mano.
 
 ## Cambios propuestos
 
-1. **Carga Histórica**: agregar un selector de financista para el lote (por defecto Grupo Cashea Ve, C.A.) y, si el archivo trae una columna de inversionista/RIF, usarla por fila.
-2. **Sobrescritura sin pérdida**: al sobrescribir un símbolo existente, no borrar el financista ya registrado si el lote no aporta uno.
-3. **Corregir lo ya cargado**: asignar el financista correcto a los certificados que hoy están vacíos (Grupo Cashea Ve, C.A. salvo que indiques otro criterio), para que el RAS deje de emitir filas de compra sin nombre ni identificación.
-4. **Reporte RAS**: mostrar un aviso con el conteo de certificados del mes sin financista y marcar esas filas en la vista previa, para que nunca se descargue un archivo con compradores en blanco.
+1. **Lápiz de edición en la tabla de Emisiones** (igual al de Programas, solo admin): abre un diálogo para corregir financista, cedente/programa, fechas, plazo, nominal, precio/descuento, tasa y cantidad de órdenes, recalculando monto efectivo y valor en Bs al guardar. Queda registrado en auditoría.
+2. **Asignación masiva de financista**: con filas seleccionadas, poder asignar un financista a todas de una vez (útil para los ~1.170 registros vacíos).
+3. **Filtro "sin financista"** en el panel de filtros, para ubicarlos rápido.
+4. **Carga Histórica**: selector de financista para el lote (por defecto Grupo Cashea Ve, C.A.) y, si el archivo trae columna de inversionista/RIF, usarla por fila; al sobrescribir un símbolo existente no borrar el financista ya registrado.
+5. **Reporte RAS**: aviso con el conteo de certificados del mes sin financista y resaltado de esas filas en la vista previa, para no descargar compradores en blanco.
 
 ## Detalles técnicos
 
-- `src/pages/CargaHistorica.tsx`: estado `financistaId`, carga de financistas, mapeo por RIF de la columna del archivo, y payload sin `financista_id: null` fijo; en modo upsert omitir la clave cuando no haya valor.
-- Backfill mediante actualización de datos sobre `emisiones` donde `financista_id is null` y `deleted_at is null`.
-- `src/pages/ReporteRas.tsx`: contador de filas incompletas + resaltado; `src/lib/rasXlsx.ts` sin cambios de formato.
-
-## Pregunta pendiente
-
-Para el backfill de los ~1.170 certificados sin financista, ¿confirmas que todos deben quedar como **Grupo Cashea Ve, C.A.**, o hay meses que corresponden a **Cashea Valores, C.A.** u otro inversionista?
+- `src/pages/Emisiones.tsx`: estado `editing`, `Dialog` con formulario, `supabase.from("emisiones").update(...)` por id, acción masiva `.in("id", selected)`, y `logAudit` como en el resto.
+- `src/pages/CargaHistorica.tsx`: cargar financistas, estado `financistaId`, mapeo por RIF si existe la columna, payload sin `financista_id: null` fijo.
+- `src/pages/ReporteRas.tsx`: contador y resaltado; `src/lib/rasXlsx.ts` sin cambios de formato.
+- Sin cambios de esquema en base de datos.
