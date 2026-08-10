@@ -211,6 +211,31 @@ export default function Emisiones() {
   const [showFilters, setShowFilters] = useState(false);
   const [f, setF] = useState(INITIAL_FILTERS);
   const [sort, setSort] = useState<SortConfig>({ key: "fecha_emision", direction: "desc" });
+  const [editing, setEditing] = useState<EditableEmision | null>(null);
+  const [finOptions, setFinOptions] = useState<{ id: string; razon_social: string }[]>([]);
+  const [bulkFin, setBulkFin] = useState("");
+  const [assigning, setAssigning] = useState(false);
+
+  useEffect(() => {
+    supabase.from("financistas").select("id, razon_social").order("razon_social")
+      .then(({ data }) => setFinOptions((data ?? []) as { id: string; razon_social: string }[]));
+  }, []);
+
+  async function assignFinancista() {
+    if (!bulkFin || !selected.length) return;
+    setAssigning(true);
+    const { error } = await supabase.from("emisiones").update({ financista_id: bulkFin }).in("id", selected);
+    setAssigning(false);
+    if (error) { toast.error(error.message); return; }
+    await logAudit({
+      action: "bulk_update", resource_type: "emision",
+      details: { count: selected.length, financista_id: bulkFin },
+    });
+    toast.success(`Financista asignado a ${selected.length} certificado(s)`);
+    setSelected([]);
+    setBulkFin("");
+    load();
+  }
 
   function setFilter<K extends keyof typeof INITIAL_FILTERS>(k: K, v: (typeof INITIAL_FILTERS)[K]) {
     setF(prev => ({ ...prev, [k]: v }));
