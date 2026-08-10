@@ -22,6 +22,7 @@ import Auditoria from "./pages/Auditoria";
 import Portafolio from "./pages/Portafolio";
 import UsuariosAdmin from "./pages/UsuariosAdmin";
 import Honorarios from "./pages/Honorarios";
+import ReporteRas from "./pages/ReporteRas";
 import CargaHistorica from "./pages/CargaHistorica";
 import Papelera from "./pages/Papelera";
 import OperacionesDia from "./pages/OperacionesDia";
