@@ -19,7 +19,7 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
   );
 }
 import { fmtUSD, fmtPct, todayISO } from "@/lib/format";
-import { parseCSVText, inferCedenteName, type ParsedRow } from "@/lib/csvParser";
+import { parseCSVText, inferCedenteName, decodeCsvBuffer, type ParsedRow } from "@/lib/csvParser";
 import JSZip from "jszip";
 
 import { buildVectorXlsx } from "@/lib/vectorXlsx";
@@ -148,10 +148,12 @@ export default function EmisionMasiva() {
     if (!f) return;
     const reader = new FileReader();
     reader.onload = () => {
-      loadCsvText(String(reader.result ?? ""), f.name);
+      const buf = reader.result as ArrayBuffer;
+      loadCsvText(decodeCsvBuffer(buf), f.name);
     };
-    reader.readAsText(f, "latin1");
+    reader.readAsArrayBuffer(f);
   }
+
 
   function loadCsvText(text: string, sourceName: string) {
     setFilename(sourceName);

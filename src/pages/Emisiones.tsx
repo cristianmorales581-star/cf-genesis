@@ -85,7 +85,9 @@ function downloadCSV(filename: string, rows: Row[], fmt: CsvFormat) {
     "Rendimiento Anualizado", "Fecha Emisión", "Fecha Vencimiento", "Estado",
     "Tasa BCV Emisión", "Tasa Derecho Registro %", "Derecho de Registro USD", "Derecho de Registro Bs",
   ];
-  const lines = [`sep=${sep}`, header.map(csvEscape).join(sep)];
+  // Nota: NO se emite la directiva "sep=" porque hace que Excel ignore el BOM UTF-8
+  // y decodifique el archivo como ANSI (ej: "CorporaciÃ³n" en vez de "Corporación").
+  const lines = [header.map(csvEscape).join(sep)];
   for (const r of rows) {
     const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
     const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));

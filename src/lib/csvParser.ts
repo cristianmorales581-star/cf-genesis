@@ -27,13 +27,41 @@ export interface ParseResult {
   warnings: string[];
 }
 
+/**
+ * Decodifica el contenido de un CSV detectando la codificación.
+ * Intenta UTF-8 estricto; si el archivo no es UTF-8 válido, usa windows-1252 (latin1).
+ */
+export function decodeCsvBuffer(buf: ArrayBuffer): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(buf);
+  } catch {
+    return new TextDecoder("windows-1252").decode(buf);
+  }
+}
+
+/**
+ * Repara texto UTF-8 que fue decodificado como latin1/windows-1252
+ * (ej: "CorporaciÃ³n" → "Corporación").
+ */
+export function fixMojibake(s: string): string {
+  if (!/[ÃÂ][\u0080-\u00BF]/.test(s)) return s;
+  try {
+    const bytes = Uint8Array.from(Array.from(s, ch => ch.charCodeAt(0) & 0xff));
+    const decoded = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return decoded;
+  } catch {
+    return s;
+  }
+}
+
 /** Elimina caracteres mojibake / latin1 mal decodificado y normaliza espacios. */
 function clean(s: string): string {
-  return (s ?? "")
+  return fixMojibake(s ?? "")
     .replace(/\uFFFD/g, "")
     .replace(/\u00A0/g, " ")
     .trim();
 }
+
 
 /** Parser CSV minimalista que respeta comillas y separador configurable. */
 function parseCSVLine(line: string, sep: string): string[] {
