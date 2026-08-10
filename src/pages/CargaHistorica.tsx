@@ -515,6 +515,18 @@ export default function CargaHistorica() {
               <Loader2 className="h-4 w-4 animate-spin" /> Procesando...
             </div>
           )}
+          <div className="max-w-md">
+            <Label className="text-xs">Financista de estas operaciones (obligatorio)</Label>
+            <Select value={financistaId} onValueChange={setFinancistaId}>
+              <SelectTrigger><SelectValue placeholder="Selecciona un financista" /></SelectTrigger>
+              <SelectContent>
+                {financistas.map((f) => <SelectItem key={f.id} value={f.id}>{f.razon_social}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Se asignará a todas las filas cargadas. Ningún título puede quedar sin financista.
+            </p>
+          </div>
           <label className="flex items-center gap-2 text-xs">
             <input
               type="checkbox"
