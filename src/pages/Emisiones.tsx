@@ -481,6 +481,7 @@ export default function Emisiones() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">Todos</SelectItem>
+                <SelectItem value="__none__">Sin financista</SelectItem>
                 {financistas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
