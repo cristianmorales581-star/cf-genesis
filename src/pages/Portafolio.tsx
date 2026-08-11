@@ -4,7 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, StatCard, EmptyState, Numeric, Pill } from "@/components/ui-bits";
 import { fmtUSD, fmtDate, fmtPct, todayISO, diffDays } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Briefcase } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Briefcase, Download } from "lucide-react";
+
+function csvEscape(v: unknown): string {
+  if (v === null || v === undefined) return '""';
+  return `"${String(v).replace(/"/g, '""')}"`;
+}
+function csvNum(n: number | null | undefined, decimals = 4): string {
+  const v = Number(n);
+  if (!isFinite(v)) return "";
+  return v.toFixed(decimals);
+}
+
 
 interface EmisionRow {
   id: string;
@@ -84,6 +96,41 @@ export default function Portafolio() {
     mkt: acc.mkt + r.valorMkt,
   }), { vn: 0, adq: 0, mkt: 0 }), [enriched]);
 
+  function exportCSV() {
+    const header = [
+      "Simbolo CFB", "Cedente", "Financista", "Valor Nominal USD", "Rendimiento Anualizado",
+      "Fecha Emisión", "Fecha Vencimiento", "Días Restantes", "Precio Emisión", "Precio Actual",
+      "Valor Adquisición USD", "Valor Mercado USD", "Delta USD",
+    ];
+    const lines = [header.map(csvEscape).join(",")];
+    for (const r of enriched) {
+      lines.push([
+        r.simbolo_cfb,
+        r.programas?.cedentes?.razon_social ?? "",
+        r.financistas?.razon_social ?? "SIN FINANCISTA",
+        csvNum(r.valor_nominal_usd),
+        csvNum(r.rendimiento_anualizado),
+        r.fecha_emision,
+        r.fecha_vencimiento,
+        String(r.diasRest),
+        csvNum(r.precio),
+        csvNum(r.pActual),
+        csvNum(r.valorAdq),
+        csvNum(r.valorMkt),
+        csvNum(r.pnl),
+      ].map(csvEscape).join(","));
+    }
+    const blob = new Blob(["\uFEFF" + lines.join("\r\n") + "\r\n"], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `portafolio_${todayISO()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <PageHeader title="Portafolio" subtitle="Títulos vigentes en cartera con valoración dinámica a precio de mercado">
@@ -100,7 +147,11 @@ export default function Portafolio() {
               ))}
             </SelectContent>
           </Select>
+          <Button variant="outline" onClick={exportCSV} disabled={!enriched.length}>
+            <Download className="h-4 w-4 mr-2" /> Exportar CSV
+          </Button>
         </div>
+
       </PageHeader>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
