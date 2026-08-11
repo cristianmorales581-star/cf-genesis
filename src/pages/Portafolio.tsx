@@ -4,7 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, StatCard, EmptyState, Numeric, Pill } from "@/components/ui-bits";
 import { fmtUSD, fmtDate, fmtPct, todayISO, diffDays } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Briefcase } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Briefcase, Download } from "lucide-react";
+
+function csvEscape(v: unknown): string {
+  if (v === null || v === undefined) return '""';
+  return `"${String(v).replace(/"/g, '""')}"`;
+}
+function csvNum(n: number | null | undefined, decimals = 4): string {
+  const v = Number(n);
+  if (!isFinite(v)) return "";
+  return v.toFixed(decimals);
+}
+
 
 interface EmisionRow {
   id: string;
