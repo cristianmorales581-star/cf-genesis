@@ -93,7 +93,7 @@ export default function Programas() {
   }
   useEffect(() => { load(); }, []);
 
-  function openNew() { setEditing(null); setForm(empty); setOpen(true); }
+  function openNew() { setEditing(null); setRenovando(null); setForm(empty); setOpen(true); }
   function openEdit(p: Programa) {
     setEditing(p);
     setForm({
