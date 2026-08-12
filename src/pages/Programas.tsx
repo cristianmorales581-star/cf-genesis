@@ -431,7 +431,19 @@ export default function Programas() {
                         <input type="checkbox" checked={selected.includes(p.id)} onChange={e => toggleOne(p.id, e.target.checked)} aria-label={`Seleccionar ${p.codigo_pcfb}`} />
                       </td>
                     )}
-                    <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{p.codigo_pcfb}</td>
+                    <td className="px-5 py-3">
+                      <button
+                        type="button"
+                        onClick={() => openHistorico(p)}
+                        title="Ver histórico del cedente"
+                        className="font-mono text-xs font-semibold text-primary hover:underline"
+                      >
+                        {p.codigo_pcfb}
+                      </button>
+                      {renovadoPor(p) && (
+                        <div className="text-[10px] text-muted-foreground mt-0.5">renovado por {renovadoPor(p)!.codigo_pcfb}</div>
+                      )}
+                    </td>
                     <td className="px-5 py-3">{p.cedentes?.razon_social ?? "—"}</td>
                     <td className="px-5 py-3 text-muted-foreground text-xs uppercase tracking-wider">{p.linea ?? "—"}</td>
                     <td className="px-5 py-3">
