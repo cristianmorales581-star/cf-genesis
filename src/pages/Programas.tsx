@@ -515,7 +515,45 @@ export default function Programas() {
           programa={descPrograma}
         />
       )}
+
+      <Dialog open={!!histCedente} onOpenChange={(o) => { if (!o) setHistCedente(null); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-primary">Histórico de programas · {histCedente?.nombre}</DialogTitle>
+            <p className="text-xs text-muted-foreground">Todos los programas del cedente, del más reciente al más antiguo.</p>
+          </DialogHeader>
+          <div className="rounded border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/60 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left px-3 py-2">Código</th>
+                  <th className="text-left px-3 py-2">Vigencia</th>
+                  <th className="text-right px-3 py-2">Desc. base</th>
+                  <th className="text-center px-3 py-2">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows
+                  .filter(r => r.cedente_id === histCedente?.id)
+                  .sort((a, b) => b.fecha_inicio.localeCompare(a.fecha_inicio))
+                  .map(r => (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono text-xs text-primary">{r.codigo_pcfb}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{fmtDate(r.fecha_inicio)} — {fmtDate(r.fecha_vencimiento)}</td>
+                      <td className="px-3 py-2 text-right"><Numeric>{fmtPct(Number(r.descuento_base), 2)}</Numeric></td>
+                      <td className="px-3 py-2 text-center">
+                        <Pill tone={r.estado === "activa" ? "success" : r.estado === "vencida" ? "warning" : "default"}>{r.estado.toUpperCase()}</Pill>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setHistCedente(null)}>Cerrar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
+
   );
 }
 
