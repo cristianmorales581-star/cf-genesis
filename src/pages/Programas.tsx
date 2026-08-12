@@ -285,7 +285,16 @@ export default function Programas() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
-                <DialogHeader><DialogTitle className="font-display text-xl text-primary">{editing ? "Editar" : "Nuevo"} Programa</DialogTitle></DialogHeader>
+                <DialogHeader>
+                  <DialogTitle className="font-display text-xl text-primary">
+                    {renovando ? `Renovar programa · ${renovando.codigo_pcfb}` : editing ? "Editar Programa" : "Nuevo Programa"}
+                  </DialogTitle>
+                  {renovando && (
+                    <p className="text-xs text-muted-foreground">
+                      El programa vencido {renovando.codigo_pcfb} pasará al histórico del cedente al crear este nuevo programa vigente.
+                    </p>
+                  )}
+                </DialogHeader>
                 <div className="grid grid-cols-2 gap-4 py-2">
                   <div><Label>Código del Programa *</Label><Input value={form.codigo_pcfb} onChange={e => setForm({ ...form, codigo_pcfb: e.target.value.toUpperCase() })} placeholder="CFB-CASHEA-2025-C" maxLength={60} /></div>
                   <div><Label>Línea</Label>
