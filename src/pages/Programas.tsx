@@ -60,6 +60,10 @@ export default function Programas() {
   const [selected, setSelected] = useState<string[]>([]);
   const [descOpen, setDescOpen] = useState(false);
   const [descPrograma, setDescPrograma] = useState<Programa | null>(null);
+  const [verRenovados, setVerRenovados] = useState(false);
+  const [renovando, setRenovando] = useState<Programa | null>(null);
+  const [histCedente, setHistCedente] = useState<{ id: string; nombre: string } | null>(null);
+
 
   async function load() {
     // Refresca estados automáticamente (marca vencidos)
