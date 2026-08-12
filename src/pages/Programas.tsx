@@ -337,11 +337,6 @@ export default function Programas() {
         )}
       </PageHeader>
 
-      <div className="flex flex-col md:flex-row gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar por código, cedente o línea…" className="pl-9" />
-        </div>
       {(vencidosSinRenovar.length > 0 || porVencer.length > 0) && (
         <div className="grid md:grid-cols-2 gap-3 mb-5">
           <div className="surface-card p-4 border-l-2 border-destructive/60">
