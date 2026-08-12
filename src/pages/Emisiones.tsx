@@ -223,16 +223,27 @@ export default function Emisiones() {
 
   async function assignFinancista() {
     if (!bulkFin || !selected.length) return;
+    const selectedRows = rows.filter(r => selected.includes(r.id));
+    const targetRows = selectedRows.filter(r => !r.financista_id);
+    if (!targetRows.length) {
+      toast.info("Ninguno de los seleccionados está sin financista");
+      return;
+    }
+    const targetIds = targetRows.map(r => r.id);
     setAssigning(true);
-    const { error } = await supabase.from("emisiones").update({ financista_id: bulkFin }).in("id", selected);
+    const { error } = await supabase.from("emisiones").update({ financista_id: bulkFin }).in("id", targetIds);
     setAssigning(false);
     if (error) { toast.error(error.message); return; }
     await logAudit({
       action: "bulk_update", resource_type: "emision",
-      details: { count: selected.length, financista_id: bulkFin },
+      details: { selected: selected.length, assigned: targetRows.length, financista_id: bulkFin },
     });
-    toast.success(`Financista asignado a ${selected.length} certificado(s)`);
-    setSelected([]);
+    if (selectedRows.length > targetRows.length) {
+      toast.success(`Financista asignado a ${targetRows.length} certificado(s) sin financista; ${selectedRows.length - targetRows.length} ya tenían financista y se omitieron`);
+    } else {
+      toast.success(`Financista asignado a ${targetRows.length} certificado(s) sin financista`);
+    }
+    setSelected(prev => prev.filter(id => !targetIds.includes(id)));
     setBulkFin("");
     load();
   }
@@ -436,7 +447,7 @@ export default function Emisiones() {
       {isAdmin && selected.length > 0 && (
         <div className="surface-card p-3 mb-4 flex flex-wrap items-end gap-3">
           <div>
-            <Label className="text-xs">Asignar financista a {selected.length} seleccionado(s)</Label>
+            <Label className="text-xs">Asignar financista solo a seleccionados sin financista ({selected.length})</Label>
             <Select value={bulkFin} onValueChange={setBulkFin}>
               <SelectTrigger className="w-[320px]"><SelectValue placeholder="Selecciona un financista" /></SelectTrigger>
               <SelectContent>
