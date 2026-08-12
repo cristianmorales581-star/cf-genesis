@@ -146,11 +146,11 @@ export default function Programas() {
         await supabase.from("programa_descuentos").insert({
           programa_id: data.id, descuento: descBase, etiqueta: "Base", es_default: true, activo: true,
         });
-        await logAudit({ action: "create", resource_type: "programa", resource_id: data.id, details: payload });
-        toast.success("Programa creado");
+        await logAudit({ action: renovando ? "renew" : "create", resource_type: "programa", resource_id: data.id, details: { ...payload, renovacion_de: renovando?.codigo_pcfb ?? null } });
+        toast.success(renovando ? `Programa renovado — ${renovando.codigo_pcfb} pasó al histórico` : "Programa creado");
       }
     }
-    setBusy(false); setOpen(false); load();
+    setBusy(false); setOpen(false); setRenovando(null); load();
   }
 
   async function toggle(p: Programa) {
