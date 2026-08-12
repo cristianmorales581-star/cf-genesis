@@ -447,7 +447,7 @@ export default function Emisiones() {
       {isAdmin && selected.length > 0 && (
         <div className="surface-card p-3 mb-4 flex flex-wrap items-end gap-3">
           <div>
-            <Label className="text-xs">Asignar financista a {selected.length} seleccionado(s)</Label>
+            <Label className="text-xs">Asignar financista solo a seleccionados sin financista ({selected.length})</Label>
             <Select value={bulkFin} onValueChange={setBulkFin}>
               <SelectTrigger className="w-[320px]"><SelectValue placeholder="Selecciona un financista" /></SelectTrigger>
               <SelectContent>
