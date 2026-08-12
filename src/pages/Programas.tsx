@@ -491,6 +491,11 @@ export default function Programas() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       <div className="flex gap-1 justify-end">
+                        {isOperador && isVencido && !renovadoPor(p) && (
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" onClick={() => openRenovar(p)}>
+                            <RefreshCw className="h-3 w-3 mr-1" /> Renovar
+                          </Button>
+                        )}
                         {isOperador && <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>}
                         {isAdmin && <Button size="sm" variant="ghost" onClick={() => deleteOne(p)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>}
                       </div>
