@@ -342,6 +342,46 @@ export default function Programas() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar por código, cedente o línea…" className="pl-9" />
         </div>
+      {(vencidosSinRenovar.length > 0 || porVencer.length > 0) && (
+        <div className="grid md:grid-cols-2 gap-3 mb-5">
+          <div className="surface-card p-4 border-l-2 border-destructive/60">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">Vencidos sin renovar</div>
+            <div className="font-display text-2xl font-semibold mt-1">{vencidosSinRenovar.length}</div>
+            <div className="mt-2 space-y-1">
+              {vencidosSinRenovar.slice(0, 4).map(p => (
+                <div key={p.id} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="truncate"><span className="font-mono text-primary">{p.codigo_pcfb}</span> · {p.cedentes?.razon_social}</span>
+                  {isOperador && (
+                    <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => openRenovar(p)}>
+                      <RefreshCw className="h-3 w-3 mr-1" /> Renovar
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {vencidosSinRenovar.length > 4 && <div className="text-[11px] text-muted-foreground">+{vencidosSinRenovar.length - 4} más</div>}
+            </div>
+          </div>
+          <div className="surface-card p-4 border-l-2 border-warning/60">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">Por vencer (30 días)</div>
+            <div className="font-display text-2xl font-semibold mt-1">{porVencer.length}</div>
+            <div className="mt-2 space-y-1">
+              {porVencer.slice(0, 4).map(p => (
+                <div key={p.id} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="truncate"><span className="font-mono text-primary">{p.codigo_pcfb}</span> · {p.cedentes?.razon_social}</span>
+                  <span className="text-muted-foreground whitespace-nowrap">{fmtDate(p.fecha_vencimiento)}</span>
+                </div>
+              ))}
+              {porVencer.length > 4 && <div className="text-[11px] text-muted-foreground">+{porVencer.length - 4} más</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar por código, cedente o línea…" className="pl-9" />
+        </div>
         {isAdmin && selected.length > 0 && (
           <Button variant="destructive" onClick={deleteSelected}>
             <Trash2 className="h-4 w-4 mr-1.5" /> Borrar {selected.length} seleccionado(s)
@@ -352,14 +392,18 @@ export default function Programas() {
             <Trash2 className="h-4 w-4 mr-1.5" /> Borrar TODOS
           </Button>
         )}
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 items-center flex-wrap">
           {(["todos", "activa", "vencida", "inactiva"] as const).map(e => (
             <Button key={e} size="sm" variant={estadoFilter === e ? "default" : "outline"} onClick={() => setEstadoFilter(e)} className="capitalize text-xs">
               {e}
             </Button>
           ))}
+          <Button size="sm" variant={verRenovados ? "default" : "outline"} className="text-xs" onClick={() => setVerRenovados(v => !v)}>
+            <History className="h-3.5 w-3.5 mr-1" /> {verRenovados ? "Ocultar renovados" : "Ver renovados"}
+          </Button>
         </div>
       </div>
+
 
       <div className="rounded-lg border border-border bg-card shadow-sm-elegant overflow-hidden">
         {filtered.length === 0 ? <EmptyState title="Sin programas" hint="Crea cedentes y luego un programa para empezar a emitir." /> : (
