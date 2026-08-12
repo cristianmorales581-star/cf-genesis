@@ -394,7 +394,7 @@ export default function Programas() {
             </Button>
           ))}
           <Button size="sm" variant={verRenovados ? "default" : "outline"} className="text-xs" onClick={() => setVerRenovados(v => !v)}>
-            <History className="h-3.5 w-3.5 mr-1" /> {verRenovados ? "Ocultar renovados" : "Ver renovados"}
+            <HistoryIcon className="h-3.5 w-3.5 mr-1" /> {verRenovados ? "Ocultar renovados" : "Ver renovados"}
           </Button>
         </div>
       </div>
