@@ -188,7 +188,28 @@ export default function Programas() {
     setSelected([]); load();
   }
 
+  const today = new Date().toISOString().slice(0, 10);
+  const in30 = addDaysISO(today, 30);
+
+  // Un programa vencido se considera RENOVADO si el mismo cedente tiene otro
+  // programa vigente (activa) con fecha de inicio posterior o igual.
+  const vigentesPorCedente = new Map<string, Programa[]>();
+  rows.filter(r => r.estado === "activa").forEach(r => {
+    vigentesPorCedente.set(r.cedente_id, [...(vigentesPorCedente.get(r.cedente_id) ?? []), r]);
+  });
+  function renovadoPor(p: Programa): Programa | null {
+    if (p.estado !== "vencida") return null;
+    const cands = (vigentesPorCedente.get(p.cedente_id) ?? [])
+      .filter(v => v.id !== p.id && v.fecha_inicio >= p.fecha_inicio)
+      .sort((a, b) => b.fecha_inicio.localeCompare(a.fecha_inicio));
+    return cands[0] ?? null;
+  }
+
+  const vencidosSinRenovar = rows.filter(r => r.estado === "vencida" && !renovadoPor(r));
+  const porVencer = rows.filter(r => r.estado === "activa" && r.fecha_vencimiento <= in30);
+
   const filtered = rows.filter(r => {
+    if (!verRenovados && renovadoPor(r)) return false;
     if (estadoFilter !== "todos" && r.estado !== estadoFilter) return false;
     if (q) {
       const t = q.toLowerCase();
@@ -211,6 +232,39 @@ export default function Programas() {
     setDescPrograma(p);
     setDescOpen(true);
   }
+
+  function openHistorico(p: Programa) {
+    setHistCedente({ id: p.cedente_id, nombre: p.cedentes?.razon_social ?? "—" });
+  }
+
+  // Sugiere el siguiente código: bump del sufijo -A/-B/... o -2025 -> -2026
+  function sugerirCodigo(codigo: string) {
+    const letra = codigo.match(/-([A-Z])$/);
+    if (letra) {
+      const next = String.fromCharCode(letra[1].charCodeAt(0) + 1);
+      return codigo.replace(/-[A-Z]$/, `-${next}`);
+    }
+    const anio = codigo.match(/(\d{4})$/);
+    if (anio) return codigo.replace(/\d{4}$/, String(Number(anio[1]) + 1));
+    return `${codigo}-R`;
+  }
+
+  function openRenovar(p: Programa) {
+    setEditing(null);
+    setRenovando(p);
+    setForm({
+      codigo_pcfb: sugerirCodigo(p.codigo_pcfb),
+      cedente_id: p.cedente_id,
+      linea: p.linea ?? "PRINCIPAL",
+      plazo_ejecucion_dias: p.plazo_ejecucion_dias,
+      descuento_base_pct: Number(p.descuento_base) * 100,
+      plazo_cuotas_dias: p.plazo_cuotas_dias,
+      fecha_inicio: today,
+      contrato_cesion: p.contrato_cesion ?? "",
+    });
+    setOpen(true);
+  }
+
 
   return (
     <>
