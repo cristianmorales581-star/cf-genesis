@@ -10,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Upload, Trash2, Search, Percent } from "lucide-react";
+import { Plus, Pencil, Upload, Trash2, Search, Percent, RefreshCw, History as HistoryIcon } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import { fmtDate, fmtPct, addDaysISO } from "@/lib/format";
