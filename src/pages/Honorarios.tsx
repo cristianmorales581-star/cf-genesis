@@ -113,25 +113,42 @@ export default function Honorarios() {
   const months: MonthAgg[] = useMemo(() => {
     const map = new Map<string, { count: number; totalVn: number }>();
     for (const r of filtered) {
-      const m = r.fecha_emision.slice(0,7);
+      const m = r.fecha_emision.slice(0, 7);
       const prev = map.get(m) ?? { count: 0, totalVn: 0 };
       prev.count += 1;
       prev.totalVn += Number(r.valor_nominal_usd);
       map.set(m, prev);
     }
-    return [...map.entries()]
-      .map(([month, v]) => {
+
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const dataMonths = filtered.map(r => r.fecha_emision.slice(0, 7));
+    const latestDataMonth = dataMonths.length > 0 ? dataMonths.sort().reverse()[0] : currentMonth;
+    const endMonth = latestDataMonth > currentMonth ? latestDataMonth : currentMonth;
+
+    let start: string, end: string;
+    if (year === "__all__") {
+      start = "2025-03";
+      end = endMonth;
+    } else {
+      start = year === "2025" ? "2025-03" : `${year}-01`;
+      end = `${year}-12`;
+    }
+
+    return monthRange(start, end)
+      .map(month => {
+        const v = map.get(month) ?? { count: 0, totalVn: 0 };
         const [y, mo] = month.split("-");
         return {
           month,
-          label: `${MES_ES[Number(mo)-1]} ${y}`,
+          label: `${MES_ES[Number(mo) - 1]} ${y}`,
           count: v.count,
           totalVn: v.totalVn,
           fee: calcHonorarios(v.totalVn),
         };
       })
-      .sort((a,b) => b.month.localeCompare(a.month));
-  }, [filtered]);
+      .sort((a, b) => b.month.localeCompare(a.month));
+  }, [filtered, year]);
 
   const visibleMonths = useMemo(() => new Set(months.map(m => m.month)), [months]);
 
