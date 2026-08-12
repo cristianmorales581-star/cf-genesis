@@ -10,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Upload, Trash2, Search, Percent } from "lucide-react";
+import { Plus, Pencil, Upload, Trash2, Search, Percent, RefreshCw, History as HistoryIcon } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import { fmtDate, fmtPct, addDaysISO } from "@/lib/format";
@@ -60,6 +60,10 @@ export default function Programas() {
   const [selected, setSelected] = useState<string[]>([]);
   const [descOpen, setDescOpen] = useState(false);
   const [descPrograma, setDescPrograma] = useState<Programa | null>(null);
+  const [verRenovados, setVerRenovados] = useState(false);
+  const [renovando, setRenovando] = useState<Programa | null>(null);
+  const [histCedente, setHistCedente] = useState<{ id: string; nombre: string } | null>(null);
+
 
   async function load() {
     // Refresca estados automáticamente (marca vencidos)
@@ -89,7 +93,7 @@ export default function Programas() {
   }
   useEffect(() => { load(); }, []);
 
-  function openNew() { setEditing(null); setForm(empty); setOpen(true); }
+  function openNew() { setEditing(null); setRenovando(null); setForm(empty); setOpen(true); }
   function openEdit(p: Programa) {
     setEditing(p);
     setForm({
@@ -142,11 +146,11 @@ export default function Programas() {
         await supabase.from("programa_descuentos").insert({
           programa_id: data.id, descuento: descBase, etiqueta: "Base", es_default: true, activo: true,
         });
-        await logAudit({ action: "create", resource_type: "programa", resource_id: data.id, details: payload });
-        toast.success("Programa creado");
+        await logAudit({ action: "create", resource_type: "programa", resource_id: data.id, details: { ...payload, renovacion_de: renovando?.codigo_pcfb ?? null } });
+        toast.success(renovando ? `Programa renovado — ${renovando.codigo_pcfb} pasó al histórico` : "Programa creado");
       }
     }
-    setBusy(false); setOpen(false); load();
+    setBusy(false); setOpen(false); setRenovando(null); load();
   }
 
   async function toggle(p: Programa) {
@@ -188,7 +192,28 @@ export default function Programas() {
     setSelected([]); load();
   }
 
+  const today = new Date().toISOString().slice(0, 10);
+  const in30 = addDaysISO(today, 30);
+
+  // Un programa vencido se considera RENOVADO si el mismo cedente tiene otro
+  // programa vigente (activa) con fecha de inicio posterior o igual.
+  const vigentesPorCedente = new Map<string, Programa[]>();
+  rows.filter(r => r.estado === "activa").forEach(r => {
+    vigentesPorCedente.set(r.cedente_id, [...(vigentesPorCedente.get(r.cedente_id) ?? []), r]);
+  });
+  function renovadoPor(p: Programa): Programa | null {
+    if (p.estado !== "vencida") return null;
+    const cands = (vigentesPorCedente.get(p.cedente_id) ?? [])
+      .filter(v => v.id !== p.id && v.fecha_inicio >= p.fecha_inicio)
+      .sort((a, b) => b.fecha_inicio.localeCompare(a.fecha_inicio));
+    return cands[0] ?? null;
+  }
+
+  const vencidosSinRenovar = rows.filter(r => r.estado === "vencida" && !renovadoPor(r));
+  const porVencer = rows.filter(r => r.estado === "activa" && r.fecha_vencimiento <= in30);
+
   const filtered = rows.filter(r => {
+    if (!verRenovados && renovadoPor(r)) return false;
     if (estadoFilter !== "todos" && r.estado !== estadoFilter) return false;
     if (q) {
       const t = q.toLowerCase();
@@ -212,6 +237,39 @@ export default function Programas() {
     setDescOpen(true);
   }
 
+  function openHistorico(p: Programa) {
+    setHistCedente({ id: p.cedente_id, nombre: p.cedentes?.razon_social ?? "—" });
+  }
+
+  // Sugiere el siguiente código: bump del sufijo -A/-B/... o -2025 -> -2026
+  function sugerirCodigo(codigo: string) {
+    const letra = codigo.match(/-([A-Z])$/);
+    if (letra) {
+      const next = String.fromCharCode(letra[1].charCodeAt(0) + 1);
+      return codigo.replace(/-[A-Z]$/, `-${next}`);
+    }
+    const anio = codigo.match(/(\d{4})$/);
+    if (anio) return codigo.replace(/\d{4}$/, String(Number(anio[1]) + 1));
+    return `${codigo}-R`;
+  }
+
+  function openRenovar(p: Programa) {
+    setEditing(null);
+    setRenovando(p);
+    setForm({
+      codigo_pcfb: sugerirCodigo(p.codigo_pcfb),
+      cedente_id: p.cedente_id,
+      linea: p.linea ?? "PRINCIPAL",
+      plazo_ejecucion_dias: p.plazo_ejecucion_dias,
+      descuento_base_pct: Number(p.descuento_base) * 100,
+      plazo_cuotas_dias: p.plazo_cuotas_dias,
+      fecha_inicio: today,
+      contrato_cesion: p.contrato_cesion ?? "",
+    });
+    setOpen(true);
+  }
+
+
   return (
     <>
       <PageHeader title="Programas" subtitle="Programas marco de Certificados de Financiamiento Bursátil">
@@ -227,7 +285,16 @@ export default function Programas() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
-                <DialogHeader><DialogTitle className="font-display text-xl text-primary">{editing ? "Editar" : "Nuevo"} Programa</DialogTitle></DialogHeader>
+                <DialogHeader>
+                  <DialogTitle className="font-display text-xl text-primary">
+                    {renovando ? `Renovar programa · ${renovando.codigo_pcfb}` : editing ? "Editar Programa" : "Nuevo Programa"}
+                  </DialogTitle>
+                  {renovando && (
+                    <p className="text-xs text-muted-foreground">
+                      El programa vencido {renovando.codigo_pcfb} pasará al histórico del cedente al crear este nuevo programa vigente.
+                    </p>
+                  )}
+                </DialogHeader>
                 <div className="grid grid-cols-2 gap-4 py-2">
                   <div><Label>Código del Programa *</Label><Input value={form.codigo_pcfb} onChange={e => setForm({ ...form, codigo_pcfb: e.target.value.toUpperCase() })} placeholder="CFB-CASHEA-2025-C" maxLength={60} /></div>
                   <div><Label>Línea</Label>
@@ -270,6 +337,41 @@ export default function Programas() {
         )}
       </PageHeader>
 
+      {(vencidosSinRenovar.length > 0 || porVencer.length > 0) && (
+        <div className="grid md:grid-cols-2 gap-3 mb-5">
+          <div className="surface-card p-4 border-l-2 border-destructive/60">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">Vencidos sin renovar</div>
+            <div className="font-display text-2xl font-semibold mt-1">{vencidosSinRenovar.length}</div>
+            <div className="mt-2 space-y-1">
+              {vencidosSinRenovar.slice(0, 4).map(p => (
+                <div key={p.id} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="truncate"><span className="font-mono text-primary">{p.codigo_pcfb}</span> · {p.cedentes?.razon_social}</span>
+                  {isOperador && (
+                    <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => openRenovar(p)}>
+                      <RefreshCw className="h-3 w-3 mr-1" /> Renovar
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {vencidosSinRenovar.length > 4 && <div className="text-[11px] text-muted-foreground">+{vencidosSinRenovar.length - 4} más</div>}
+            </div>
+          </div>
+          <div className="surface-card p-4 border-l-2 border-warning/60">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">Por vencer (30 días)</div>
+            <div className="font-display text-2xl font-semibold mt-1">{porVencer.length}</div>
+            <div className="mt-2 space-y-1">
+              {porVencer.slice(0, 4).map(p => (
+                <div key={p.id} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="truncate"><span className="font-mono text-primary">{p.codigo_pcfb}</span> · {p.cedentes?.razon_social}</span>
+                  <span className="text-muted-foreground whitespace-nowrap">{fmtDate(p.fecha_vencimiento)}</span>
+                </div>
+              ))}
+              {porVencer.length > 4 && <div className="text-[11px] text-muted-foreground">+{porVencer.length - 4} más</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -285,14 +387,18 @@ export default function Programas() {
             <Trash2 className="h-4 w-4 mr-1.5" /> Borrar TODOS
           </Button>
         )}
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 items-center flex-wrap">
           {(["todos", "activa", "vencida", "inactiva"] as const).map(e => (
             <Button key={e} size="sm" variant={estadoFilter === e ? "default" : "outline"} onClick={() => setEstadoFilter(e)} className="capitalize text-xs">
               {e}
             </Button>
           ))}
+          <Button size="sm" variant={verRenovados ? "default" : "outline"} className="text-xs" onClick={() => setVerRenovados(v => !v)}>
+            <HistoryIcon className="h-3.5 w-3.5 mr-1" /> {verRenovados ? "Ocultar renovados" : "Ver renovados"}
+          </Button>
         </div>
       </div>
+
 
       <div className="rounded-lg border border-border bg-card shadow-sm-elegant overflow-hidden">
         {filtered.length === 0 ? <EmptyState title="Sin programas" hint="Crea cedentes y luego un programa para empezar a emitir." /> : (
@@ -325,7 +431,19 @@ export default function Programas() {
                         <input type="checkbox" checked={selected.includes(p.id)} onChange={e => toggleOne(p.id, e.target.checked)} aria-label={`Seleccionar ${p.codigo_pcfb}`} />
                       </td>
                     )}
-                    <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{p.codigo_pcfb}</td>
+                    <td className="px-5 py-3">
+                      <button
+                        type="button"
+                        onClick={() => openHistorico(p)}
+                        title="Ver histórico del cedente"
+                        className="font-mono text-xs font-semibold text-primary hover:underline"
+                      >
+                        {p.codigo_pcfb}
+                      </button>
+                      {renovadoPor(p) && (
+                        <div className="text-[10px] text-muted-foreground mt-0.5">renovado por {renovadoPor(p)!.codigo_pcfb}</div>
+                      )}
+                    </td>
                     <td className="px-5 py-3">{p.cedentes?.razon_social ?? "—"}</td>
                     <td className="px-5 py-3 text-muted-foreground text-xs uppercase tracking-wider">{p.linea ?? "—"}</td>
                     <td className="px-5 py-3">
@@ -373,6 +491,11 @@ export default function Programas() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       <div className="flex gap-1 justify-end">
+                        {isOperador && isVencido && !renovadoPor(p) && (
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" onClick={() => openRenovar(p)}>
+                            <RefreshCw className="h-3 w-3 mr-1" /> Renovar
+                          </Button>
+                        )}
                         {isOperador && <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>}
                         {isAdmin && <Button size="sm" variant="ghost" onClick={() => deleteOne(p)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>}
                       </div>
@@ -392,7 +515,45 @@ export default function Programas() {
           programa={descPrograma}
         />
       )}
+
+      <Dialog open={!!histCedente} onOpenChange={(o) => { if (!o) setHistCedente(null); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-primary">Histórico de programas · {histCedente?.nombre}</DialogTitle>
+            <p className="text-xs text-muted-foreground">Todos los programas del cedente, del más reciente al más antiguo.</p>
+          </DialogHeader>
+          <div className="rounded border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/60 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left px-3 py-2">Código</th>
+                  <th className="text-left px-3 py-2">Vigencia</th>
+                  <th className="text-right px-3 py-2">Desc. base</th>
+                  <th className="text-center px-3 py-2">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows
+                  .filter(r => r.cedente_id === histCedente?.id)
+                  .sort((a, b) => b.fecha_inicio.localeCompare(a.fecha_inicio))
+                  .map(r => (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono text-xs text-primary">{r.codigo_pcfb}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{fmtDate(r.fecha_inicio)} — {fmtDate(r.fecha_vencimiento)}</td>
+                      <td className="px-3 py-2 text-right"><Numeric>{fmtPct(Number(r.descuento_base), 2)}</Numeric></td>
+                      <td className="px-3 py-2 text-center">
+                        <Pill tone={r.estado === "activa" ? "success" : r.estado === "vencida" ? "warning" : "default"}>{r.estado.toUpperCase()}</Pill>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setHistCedente(null)}>Cerrar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
+
   );
 }
 
