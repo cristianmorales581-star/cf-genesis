@@ -1,0 +1,1 @@
+INSERT INTO public.role_section_permissions (role, section) VALUES ('admin','reporte_agilecheck'), ('backoffice','reporte_agilecheck') ON CONFLICT DO NOTHING;
