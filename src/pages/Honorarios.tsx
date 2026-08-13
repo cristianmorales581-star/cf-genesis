@@ -83,12 +83,29 @@ export default function Honorarios() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("emisiones")
-        .select("id, valor_nominal_usd, fecha_emision, programas(cedentes(razon_social))")
-        .is("deleted_at", null)
-        .order("fecha_emision", { ascending: false });
-      setRows((data ?? []) as Row[]);
+      const pageSize = 1000;
+      const allRows: Row[] = [];
+
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase
+          .from("emisiones")
+          .select("id, valor_nominal_usd, fecha_emision, programas(cedentes(razon_social))")
+          .is("deleted_at", null)
+          .order("fecha_emision", { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) {
+          toast.error(`No se pudieron cargar los honorarios: ${error.message}`);
+          setRows([]);
+          return;
+        }
+
+        const page = (data ?? []) as Row[];
+        allRows.push(...page);
+        if (page.length < pageSize) break;
+      }
+
+      setRows(allRows);
     })();
   }, []);
 
