@@ -124,18 +124,19 @@ export default function Financistas() {
   }
 
   function exportCsv() {
-    const headers = ["Razón Social / Nombre","Tipo","RIF / C.I.","Representante Legal","Cargo","Cédula Rep.","Correo","Celular","Activo"];
+    const headers = ["Código Cliente","Razón Social / Nombre","Tipo","RIF / C.I.","Representante Legal","Cargo","Cédula Rep.","Correo","Celular","Activo"];
     const esc = (v: any) => {
       const s = v == null ? "" : String(v);
       return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const lines = [headers.join(",")];
     rows.forEach(f => lines.push([
-      f.razon_social, f.tipo, f.rif ?? "",
+      f.codigo_cliente ?? "", f.razon_social, f.tipo, f.rif ?? "",
       f.representante_legal ?? "", f.cargo ?? "", f.cedula ?? "",
       f.correo ?? "", f.celular ?? "",
       f.activo ? "Sí" : "No",
     ].map(esc).join(",")));
+
     const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
