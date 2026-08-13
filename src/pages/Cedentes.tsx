@@ -191,7 +191,9 @@ export default function Cedentes() {
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
+                <th className="text-left px-5 py-3 font-semibold">Código</th>
                 <th className="text-left px-5 py-3 font-semibold">Razón Social</th>
+
                 <th className="text-left px-5 py-3 font-semibold">RIF</th>
                 <th className="text-left px-5 py-3 font-semibold">Representante</th>
                 <th className="text-left px-5 py-3 font-semibold">Cargo</th>
