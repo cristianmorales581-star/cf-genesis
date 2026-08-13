@@ -103,7 +103,9 @@ export default function Financistas() {
       cedula: parsed.data.cedula || null,
       correo: parsed.data.correo || null,
       celular: parsed.data.celular || null,
+      codigo_cliente: parsed.data.codigo_cliente ? parsed.data.codigo_cliente.toUpperCase() : null,
     };
+
     if (editing) {
       const { error } = await supabase.from("financistas").update(payload).eq("id", editing.id);
       if (error) toast.error(error.message); else { await logAudit({ action: "update", resource_type: "financista", resource_id: editing.id, details: payload }); toast.success("Financista actualizado"); }
