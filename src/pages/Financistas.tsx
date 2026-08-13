@@ -209,7 +209,9 @@ export default function Financistas() {
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
+                <th className="text-left px-5 py-3 font-semibold">Código</th>
                 <th className="text-left px-5 py-3 font-semibold">Nombre / Razón Social</th>
+
                 <th className="text-left px-5 py-3 font-semibold">Tipo</th>
                 <th className="text-left px-5 py-3 font-semibold">RIF / C.I.</th>
                 <th className="text-left px-5 py-3 font-semibold">Representante</th>
