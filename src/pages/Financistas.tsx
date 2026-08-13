@@ -252,7 +252,9 @@ export default function Financistas() {
                   className={`border-t border-border hover:bg-secondary/30 ${canEdit ? "cursor-grab" : ""} ${isDragOver ? "bg-primary/10 ring-2 ring-primary/40" : ""}`}
                   title={canEdit ? "Arrastra esta fila sobre otra para copiar representante, cargo y cédula" : undefined}
                 >
+                  <td className="px-5 py-3 font-mono text-xs">{f.codigo_cliente ?? "—"}</td>
                   <td className="px-5 py-3 font-medium text-primary">{f.razon_social}</td>
+
                   <td className="px-5 py-3 capitalize text-muted-foreground">{f.tipo}</td>
                   <td className="px-5 py-3 font-mono text-xs">{f.rif ?? "—"}</td>
                   <td className="px-5 py-3 text-muted-foreground">{f.representante_legal ?? "—"}</td>
