@@ -422,6 +422,8 @@ export default function CargaHistorica() {
     setInserting(true);
     let inserted = 0;
     const failures: string[] = [];
+    const insertedRowNums = new Set<number>();
+    const failedRows = new Map<number, string>();
     const CHUNK = 200;
     for (let i = 0; i < okRows.length; i += CHUNK) {
       const slice = okRows.slice(i, i + CHUNK);
@@ -449,14 +451,17 @@ export default function CargaHistorica() {
         : supabase.from("emisiones").insert(payload, { count: "exact" });
       const { error, count } = await q;
       if (error) {
-        failures.push(`Lote ${i}-${i + slice.length}: ${error.message}`);
+        const message = error.message || "Error desconocido al guardar";
+        failures.push(`Filas ${slice[0]?.rowNum ?? i + 1}-${slice[slice.length - 1]?.rowNum ?? i + slice.length}: ${message}`);
+        slice.forEach((row) => failedRows.set(row.rowNum, message));
       } else {
         inserted += count ?? slice.length;
+        slice.forEach((row) => insertedRowNums.add(row.rowNum));
       }
     }
     setInserting(false);
     if (failures.length) {
-      toast.error(`Insertadas ${inserted}. Fallos: ${failures.length}`);
+      toast.error(`Se guardaron ${inserted} de ${okRows.length}. ${failures[0]}`, { duration: 10000 });
       console.error(failures);
     } else {
       toast.success(`Insertadas ${inserted} emisiones históricas`);
@@ -464,11 +469,15 @@ export default function CargaHistorica() {
     // refresh existing symbols
     const e = await supabase.from("emisiones").select("simbolo_cfb");
     setExistingSimbolos(new Set((e.data ?? []).map((r) => r.simbolo_cfb)));
-    // mark inserted rows as done
+    // Marcar únicamente las filas realmente guardadas; mantener editables las fallidas.
     setRows((prev) =>
-      prev.map((r) =>
-        r.status === "ok" ? { ...r, status: "warning" as const, motivo: "Insertado" } : r
-      )
+      prev.map((r) => {
+        if (insertedRowNums.has(r.rowNum)) {
+          return { ...r, status: "warning" as const, motivo: "Insertado" };
+        }
+        const failure = failedRows.get(r.rowNum);
+        return failure ? { ...r, status: "error" as const, motivo: `No se guardó: ${failure}` } : r;
+      })
     );
   }
 
