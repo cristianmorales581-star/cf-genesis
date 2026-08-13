@@ -76,7 +76,9 @@ export default function Cedentes() {
       representante_legal: c.representante_legal ?? "",
       cargo: c.cargo ?? "", cedula: c.cedula ?? "",
       nombre_comercial: c.nombre_comercial ?? "",
+      codigo_cliente: c.codigo_cliente ?? "",
     });
+
     setOpen(true);
   }
 
