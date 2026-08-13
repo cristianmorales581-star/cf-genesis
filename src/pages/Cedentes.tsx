@@ -168,10 +168,12 @@ export default function Cedentes() {
                   <div><Label>Nombre Comercial</Label><Input value={form.nombre_comercial} onChange={e => setForm({ ...form, nombre_comercial: e.target.value })} maxLength={150} /></div>
                 </div>
                 <div><Label>Representante Legal</Label><Input value={form.representante_legal} onChange={e => setForm({ ...form, representante_legal: e.target.value })} maxLength={150} /></div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div><Label>Cargo</Label><Input value={form.cargo} onChange={e => setForm({ ...form, cargo: e.target.value })} maxLength={100} /></div>
                   <div><Label>Cédula</Label><Input value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value })} placeholder="V-12345678" maxLength={20} /></div>
+                  <div><Label>Código Cliente</Label><Input value={form.codigo_cliente} onChange={e => setForm({ ...form, codigo_cliente: e.target.value.toUpperCase() })} placeholder="ABC001" maxLength={20} /></div>
                 </div>
+
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
