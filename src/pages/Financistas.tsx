@@ -84,7 +84,9 @@ export default function Financistas() {
       razon_social: f.razon_social, rif: f.rif ?? "", tipo: f.tipo,
       representante_legal: f.representante_legal ?? "", cargo: f.cargo ?? "",
       cedula: f.cedula ?? "", correo: f.correo ?? "", celular: f.celular ?? "",
+      codigo_cliente: f.codigo_cliente ?? "",
     });
+
     setOpen(true);
   }
 
