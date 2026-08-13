@@ -230,7 +230,9 @@ export default function Cedentes() {
                   className={`border-t border-border hover:bg-secondary/30 ${isOperador ? "cursor-grab" : ""} ${isDragOver ? "bg-primary/10 ring-2 ring-primary/40" : ""}`}
                   title={isOperador ? "Arrastra esta fila sobre otra para copiar representante, cargo y cédula" : undefined}
                 >
+                  <td className="px-5 py-3 font-mono text-xs">{c.codigo_cliente ?? "—"}</td>
                   <td className="px-5 py-3">
+
                     <div className="font-medium text-primary">{c.razon_social}</div>
                     {c.nombre_comercial && <div className="text-xs text-muted-foreground">{c.nombre_comercial}</div>}
                   </td>
