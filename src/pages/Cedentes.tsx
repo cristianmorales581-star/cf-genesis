@@ -93,7 +93,9 @@ export default function Cedentes() {
       cargo: parsed.data.cargo || null,
       cedula: parsed.data.cedula || null,
       nombre_comercial: parsed.data.nombre_comercial || null,
+      codigo_cliente: parsed.data.codigo_cliente ? parsed.data.codigo_cliente.toUpperCase() : null,
     };
+
     if (editing) {
       const { error } = await supabase.from("cedentes").update(payload).eq("id", editing.id);
       if (error) toast.error(error.message);
