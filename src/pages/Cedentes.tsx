@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface Cedente {
   id: string; razon_social: string; rif: string; representante_legal: string | null;
   cargo: string | null; cedula: string | null; nombre_comercial: string | null;
+  codigo_cliente: string | null;
   activo: boolean; created_at: string;
 }
 
@@ -28,9 +29,11 @@ const schema = z.object({
   cargo: z.string().trim().max(100).optional().or(z.literal("")),
   cedula: z.string().trim().max(20).optional().or(z.literal("")),
   nombre_comercial: z.string().trim().max(150).optional().or(z.literal("")),
+  codigo_cliente: z.string().trim().max(20).optional().or(z.literal("")),
 });
 
-const empty = { razon_social: "", rif: "", representante_legal: "", cargo: "", cedula: "", nombre_comercial: "" };
+const empty = { razon_social: "", rif: "", representante_legal: "", cargo: "", cedula: "", nombre_comercial: "", codigo_cliente: "" };
+
 
 export default function Cedentes() {
   const { isOperador, isAdmin } = useAuth();
@@ -73,7 +76,9 @@ export default function Cedentes() {
       representante_legal: c.representante_legal ?? "",
       cargo: c.cargo ?? "", cedula: c.cedula ?? "",
       nombre_comercial: c.nombre_comercial ?? "",
+      codigo_cliente: c.codigo_cliente ?? "",
     });
+
     setOpen(true);
   }
 
@@ -88,7 +93,9 @@ export default function Cedentes() {
       cargo: parsed.data.cargo || null,
       cedula: parsed.data.cedula || null,
       nombre_comercial: parsed.data.nombre_comercial || null,
+      codigo_cliente: parsed.data.codigo_cliente ? parsed.data.codigo_cliente.toUpperCase() : null,
     };
+
     if (editing) {
       const { error } = await supabase.from("cedentes").update(payload).eq("id", editing.id);
       if (error) toast.error(error.message);
@@ -109,17 +116,18 @@ export default function Cedentes() {
   }
 
   function exportCsv() {
-    const headers = ["Razón Social","Nombre Comercial","RIF","Representante Legal","Cargo","Cédula","Activo","Creado"];
+    const headers = ["Código Cliente","Razón Social","Nombre Comercial","RIF","Representante Legal","Cargo","Cédula","Activo","Creado"];
     const esc = (v: any) => {
       const s = v == null ? "" : String(v);
       return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const lines = [headers.join(",")];
     rows.forEach(c => lines.push([
-      c.razon_social, c.nombre_comercial ?? "", c.rif,
+      c.codigo_cliente ?? "", c.razon_social, c.nombre_comercial ?? "", c.rif,
       c.representante_legal ?? "", c.cargo ?? "", c.cedula ?? "",
       c.activo ? "Sí" : "No", new Date(c.created_at).toISOString().slice(0,10),
     ].map(esc).join(",")));
+
     const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -160,10 +168,12 @@ export default function Cedentes() {
                   <div><Label>Nombre Comercial</Label><Input value={form.nombre_comercial} onChange={e => setForm({ ...form, nombre_comercial: e.target.value })} maxLength={150} /></div>
                 </div>
                 <div><Label>Representante Legal</Label><Input value={form.representante_legal} onChange={e => setForm({ ...form, representante_legal: e.target.value })} maxLength={150} /></div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div><Label>Cargo</Label><Input value={form.cargo} onChange={e => setForm({ ...form, cargo: e.target.value })} maxLength={100} /></div>
                   <div><Label>Cédula</Label><Input value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value })} placeholder="V-12345678" maxLength={20} /></div>
+                  <div><Label>Código Cliente</Label><Input value={form.codigo_cliente} onChange={e => setForm({ ...form, codigo_cliente: e.target.value.toUpperCase() })} placeholder="ABC001" maxLength={20} /></div>
                 </div>
+
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
@@ -181,7 +191,9 @@ export default function Cedentes() {
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
+                <th className="text-left px-5 py-3 font-semibold">Código</th>
                 <th className="text-left px-5 py-3 font-semibold">Razón Social</th>
+
                 <th className="text-left px-5 py-3 font-semibold">RIF</th>
                 <th className="text-left px-5 py-3 font-semibold">Representante</th>
                 <th className="text-left px-5 py-3 font-semibold">Cargo</th>
@@ -218,7 +230,9 @@ export default function Cedentes() {
                   className={`border-t border-border hover:bg-secondary/30 ${isOperador ? "cursor-grab" : ""} ${isDragOver ? "bg-primary/10 ring-2 ring-primary/40" : ""}`}
                   title={isOperador ? "Arrastra esta fila sobre otra para copiar representante, cargo y cédula" : undefined}
                 >
+                  <td className="px-5 py-3 font-mono text-xs">{c.codigo_cliente ?? "—"}</td>
                   <td className="px-5 py-3">
+
                     <div className="font-medium text-primary">{c.razon_social}</div>
                     {c.nombre_comercial && <div className="text-xs text-muted-foreground">{c.nombre_comercial}</div>}
                   </td>

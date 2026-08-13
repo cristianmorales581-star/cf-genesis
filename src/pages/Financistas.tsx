@@ -20,7 +20,7 @@ interface Financista {
   id: string; razon_social: string; rif: string | null;
   tipo: "natural" | "juridica"; representante_legal: string | null;
   cargo: string | null; cedula: string | null; correo: string | null;
-  celular: string | null; activo: boolean;
+  celular: string | null; codigo_cliente: string | null; activo: boolean;
 }
 
 const schema = z.object({
@@ -32,13 +32,16 @@ const schema = z.object({
   cedula: z.string().trim().max(20).optional().or(z.literal("")),
   correo: z.string().trim().email("Correo inválido").max(255).optional().or(z.literal("")),
   celular: z.string().trim().max(30).optional().or(z.literal("")),
+  codigo_cliente: z.string().trim().max(20).optional().or(z.literal("")),
 });
 
 type FormState = {
   razon_social: string; rif: string; tipo: "natural" | "juridica";
   representante_legal: string; cargo: string; cedula: string; correo: string; celular: string;
+  codigo_cliente: string;
 };
-const empty: FormState = { razon_social: "", rif: "", tipo: "juridica", representante_legal: "", cargo: "", cedula: "", correo: "", celular: "" };
+const empty: FormState = { razon_social: "", rif: "", tipo: "juridica", representante_legal: "", cargo: "", cedula: "", correo: "", celular: "", codigo_cliente: "" };
+
 
 export default function Financistas() {
   const { isOperador, isAdmin } = useAuth();
@@ -81,7 +84,9 @@ export default function Financistas() {
       razon_social: f.razon_social, rif: f.rif ?? "", tipo: f.tipo,
       representante_legal: f.representante_legal ?? "", cargo: f.cargo ?? "",
       cedula: f.cedula ?? "", correo: f.correo ?? "", celular: f.celular ?? "",
+      codigo_cliente: f.codigo_cliente ?? "",
     });
+
     setOpen(true);
   }
 
@@ -98,7 +103,9 @@ export default function Financistas() {
       cedula: parsed.data.cedula || null,
       correo: parsed.data.correo || null,
       celular: parsed.data.celular || null,
+      codigo_cliente: parsed.data.codigo_cliente ? parsed.data.codigo_cliente.toUpperCase() : null,
     };
+
     if (editing) {
       const { error } = await supabase.from("financistas").update(payload).eq("id", editing.id);
       if (error) toast.error(error.message); else { await logAudit({ action: "update", resource_type: "financista", resource_id: editing.id, details: payload }); toast.success("Financista actualizado"); }
@@ -117,18 +124,19 @@ export default function Financistas() {
   }
 
   function exportCsv() {
-    const headers = ["Razón Social / Nombre","Tipo","RIF / C.I.","Representante Legal","Cargo","Cédula Rep.","Correo","Celular","Activo"];
+    const headers = ["Código Cliente","Razón Social / Nombre","Tipo","RIF / C.I.","Representante Legal","Cargo","Cédula Rep.","Correo","Celular","Activo"];
     const esc = (v: any) => {
       const s = v == null ? "" : String(v);
       return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const lines = [headers.join(",")];
     rows.forEach(f => lines.push([
-      f.razon_social, f.tipo, f.rif ?? "",
+      f.codigo_cliente ?? "", f.razon_social, f.tipo, f.rif ?? "",
       f.representante_legal ?? "", f.cargo ?? "", f.cedula ?? "",
       f.correo ?? "", f.celular ?? "",
       f.activo ? "Sí" : "No",
     ].map(esc).join(",")));
+
     const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -178,10 +186,12 @@ export default function Financistas() {
                     <div><Label>Cargo</Label><Input value={form.cargo} onChange={e => setForm({ ...form, cargo: e.target.value })} maxLength={100} /></div>
                     <div><Label>Cédula del Representante</Label><Input value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value })} placeholder="V-12345678" maxLength={20} /></div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div><Label>Correo</Label><Input type="email" value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })} maxLength={255} /></div>
                     <div><Label>Celular</Label><Input value={form.celular} onChange={e => setForm({ ...form, celular: e.target.value })} maxLength={30} /></div>
+                    <div><Label>Código Cliente</Label><Input value={form.codigo_cliente} onChange={e => setForm({ ...form, codigo_cliente: e.target.value.toUpperCase() })} placeholder="ABC001" maxLength={20} /></div>
                   </div>
+
                 </div>
                 <DialogFooter>
                   <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
@@ -199,7 +209,9 @@ export default function Financistas() {
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
+                <th className="text-left px-5 py-3 font-semibold">Código</th>
                 <th className="text-left px-5 py-3 font-semibold">Nombre / Razón Social</th>
+
                 <th className="text-left px-5 py-3 font-semibold">Tipo</th>
                 <th className="text-left px-5 py-3 font-semibold">RIF / C.I.</th>
                 <th className="text-left px-5 py-3 font-semibold">Representante</th>
@@ -240,7 +252,9 @@ export default function Financistas() {
                   className={`border-t border-border hover:bg-secondary/30 ${canEdit ? "cursor-grab" : ""} ${isDragOver ? "bg-primary/10 ring-2 ring-primary/40" : ""}`}
                   title={canEdit ? "Arrastra esta fila sobre otra para copiar representante, cargo y cédula" : undefined}
                 >
+                  <td className="px-5 py-3 font-mono text-xs">{f.codigo_cliente ?? "—"}</td>
                   <td className="px-5 py-3 font-medium text-primary">{f.razon_social}</td>
+
                   <td className="px-5 py-3 capitalize text-muted-foreground">{f.tipo}</td>
                   <td className="px-5 py-3 font-mono text-xs">{f.rif ?? "—"}</td>
                   <td className="px-5 py-3 text-muted-foreground">{f.representante_legal ?? "—"}</td>

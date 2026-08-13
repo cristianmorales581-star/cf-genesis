@@ -52,6 +52,7 @@ export type Database = {
           activo: boolean
           cargo: string | null
           cedula: string | null
+          codigo_cliente: string | null
           created_at: string
           id: string
           nombre_comercial: string | null
@@ -63,6 +64,7 @@ export type Database = {
           activo?: boolean
           cargo?: string | null
           cedula?: string | null
+          codigo_cliente?: string | null
           created_at?: string
           id?: string
           nombre_comercial?: string | null
@@ -74,6 +76,7 @@ export type Database = {
           activo?: boolean
           cargo?: string | null
           cedula?: string | null
+          codigo_cliente?: string | null
           created_at?: string
           id?: string
           nombre_comercial?: string | null
@@ -233,6 +236,7 @@ export type Database = {
           cargo: string | null
           cedula: string | null
           celular: string | null
+          codigo_cliente: string | null
           correo: string | null
           created_at: string
           id: string
@@ -246,6 +250,7 @@ export type Database = {
           cargo?: string | null
           cedula?: string | null
           celular?: string | null
+          codigo_cliente?: string | null
           correo?: string | null
           created_at?: string
           id?: string
@@ -259,6 +264,7 @@ export type Database = {
           cargo?: string | null
           cedula?: string | null
           celular?: string | null
+          codigo_cliente?: string | null
           correo?: string | null
           created_at?: string
           id?: string
