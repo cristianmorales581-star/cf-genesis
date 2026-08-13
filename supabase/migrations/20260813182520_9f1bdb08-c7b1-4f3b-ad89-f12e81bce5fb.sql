@@ -1,0 +1,12 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.emisiones TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.cedentes TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.financistas TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.programas TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.programa_descuentos TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.confirmaciones TO authenticated;
+GRANT SELECT, INSERT ON public.audit_log TO authenticated;
+GRANT SELECT, UPDATE ON public.profiles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_roles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.role_section_permissions TO authenticated;
+GRANT ALL ON public.emisiones, public.cedentes, public.financistas, public.programas, public.programa_descuentos, public.confirmaciones, public.audit_log, public.profiles, public.user_roles, public.role_section_permissions TO service_role;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated, service_role;
