@@ -20,7 +20,7 @@ interface Financista {
   id: string; razon_social: string; rif: string | null;
   tipo: "natural" | "juridica"; representante_legal: string | null;
   cargo: string | null; cedula: string | null; correo: string | null;
-  celular: string | null; activo: boolean;
+  celular: string | null; codigo_cliente: string | null; activo: boolean;
 }
 
 const schema = z.object({
@@ -32,13 +32,16 @@ const schema = z.object({
   cedula: z.string().trim().max(20).optional().or(z.literal("")),
   correo: z.string().trim().email("Correo inválido").max(255).optional().or(z.literal("")),
   celular: z.string().trim().max(30).optional().or(z.literal("")),
+  codigo_cliente: z.string().trim().max(20).optional().or(z.literal("")),
 });
 
 type FormState = {
   razon_social: string; rif: string; tipo: "natural" | "juridica";
   representante_legal: string; cargo: string; cedula: string; correo: string; celular: string;
+  codigo_cliente: string;
 };
-const empty: FormState = { razon_social: "", rif: "", tipo: "juridica", representante_legal: "", cargo: "", cedula: "", correo: "", celular: "" };
+const empty: FormState = { razon_social: "", rif: "", tipo: "juridica", representante_legal: "", cargo: "", cedula: "", correo: "", celular: "", codigo_cliente: "" };
+
 
 export default function Financistas() {
   const { isOperador, isAdmin } = useAuth();
