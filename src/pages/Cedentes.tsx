@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface Cedente {
   id: string; razon_social: string; rif: string; representante_legal: string | null;
   cargo: string | null; cedula: string | null; nombre_comercial: string | null;
+  codigo_cliente: string | null;
   activo: boolean; created_at: string;
 }
 
@@ -28,9 +29,11 @@ const schema = z.object({
   cargo: z.string().trim().max(100).optional().or(z.literal("")),
   cedula: z.string().trim().max(20).optional().or(z.literal("")),
   nombre_comercial: z.string().trim().max(150).optional().or(z.literal("")),
+  codigo_cliente: z.string().trim().max(20).optional().or(z.literal("")),
 });
 
-const empty = { razon_social: "", rif: "", representante_legal: "", cargo: "", cedula: "", nombre_comercial: "" };
+const empty = { razon_social: "", rif: "", representante_legal: "", cargo: "", cedula: "", nombre_comercial: "", codigo_cliente: "" };
+
 
 export default function Cedentes() {
   const { isOperador, isAdmin } = useAuth();
