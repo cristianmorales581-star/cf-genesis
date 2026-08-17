@@ -84,7 +84,7 @@ function downloadCSV(filename: string, rows: Row[], fmt: CsvFormat) {
   const sep = fmt === "es" ? ";" : ",";
   const header = [
     "Simbolo CFB", "Programa", "Cedente", "RIF Cedente", "Financista", "RIF Financista",
-    "Valor Nominal USD", "Monto Efectivo USD", "Precio",
+    "Valor Nominal USD", "Monto SIBE", "Monto Efectivo USD", "Precio",
     "Rendimiento Anualizado", "Fecha Emisión", "Fecha Vencimiento", "Estado",
     "Tasa BCV Emisión", "Tasa Derecho Registro %", "Derecho de Registro USD", "Derecho de Registro Bs",
   ];
@@ -95,6 +95,7 @@ function downloadCSV(filename: string, rows: Row[], fmt: CsvFormat) {
     const drUsd = calcDerechoRegistroUsd(Number(r.monto_efectivo_usd), r.dias_colocados);
     const drBs = calcDerechoRegistroBs(Number(r.monto_efectivo_usd), r.dias_colocados, Number(r.tasa_cambio_bs_usd));
     const drRate = getDerechoRegistroRate(r.dias_colocados) * 100;
+    const montoSibe = Math.round(Number(r.valor_nominal_usd));
     lines.push([
       r.simbolo_cfb,
       r.programas?.codigo_pcfb ?? "",
@@ -103,6 +104,7 @@ function downloadCSV(filename: string, rows: Row[], fmt: CsvFormat) {
       r.financistas?.razon_social ?? "SIN FINANCISTA",
       r.financistas?.rif ?? "",
       csvNum(r.valor_nominal_usd, fmt),
+      csvNum(montoSibe, fmt, 0),
       csvNum(r.monto_efectivo_usd, fmt),
       csvNum(r.precio, fmt),
       csvNum(r.rendimiento_anualizado, fmt),
