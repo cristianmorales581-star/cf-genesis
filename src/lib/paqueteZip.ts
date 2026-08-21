@@ -64,24 +64,37 @@ export function buildVectorRow(e: PaqueteEmision) {
 
 async function fetchDocHtml(emisionId: string, tipo: TipoDocPaquete): Promise<string> {
   const { data: { session } } = await supabase.auth.getSession();
-  const res = await fetch(`https://${PROJECT_ID}.functions.supabase.co/generate-document`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session?.access_token}`,
-    },
-    body: JSON.stringify({ emision_id: emisionId, tipo }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string })?.error ?? "Error generando documento");
+  const ctrl = new AbortController();
+  const timer = window.setTimeout(() => ctrl.abort(), 45000);
+  try {
+    const res = await fetch(`https://${PROJECT_ID}.functions.supabase.co/generate-document`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({ emision_id: emisionId, tipo }),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { error?: string })?.error ?? `Error generando documento (${res.status})`);
+    }
+    return await res.text();
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error(`Tiempo agotado generando ${tipo}`);
+    }
+    throw err;
+  } finally {
+    window.clearTimeout(timer);
   }
-  return await res.text();
 }
 
 /**
  * Genera un ZIP con los documentos de una o varias emisiones
  * + el vector consolidado (.xlsx), igual que la generación masiva.
+ * El progreso se reporta por documento para que la UI avance de forma visible.
  */
 export async function buildPaqueteZipBlob(
   emisiones: PaqueteEmision[],
@@ -91,25 +104,31 @@ export async function buildPaqueteZipBlob(
   const errores: string[] = [];
   const vectorRows: ReturnType<typeof buildVectorRow>[] = [];
 
+  const totalDocs = emisiones.length * PAQUETE_TIPOS.length;
   let done = 0;
+  onProgress?.(0, totalDocs, emisiones[0]?.simbolo_cfb ?? "");
+
   for (const e of emisiones) {
-    onProgress?.(done, emisiones.length, e.simbolo_cfb);
     const slug = slugify(e.programas?.cedentes?.razon_social);
     const carpeta = emisiones.length > 1
       ? zip.folder(`${e.simbolo_cfb}_${slug}`)!
       : zip.folder("documentos")!;
-    try {
-      for (const tipo of PAQUETE_TIPOS) {
+    let fallo = false;
+    for (const tipo of PAQUETE_TIPOS) {
+      try {
         const html = await fetchDocHtml(e.id, tipo);
         const pdf = await htmlToPdfBlob(html, `${tipo}_${e.simbolo_cfb}_${slug}`);
         carpeta.file(`${tipo}_${e.simbolo_cfb}_${slug}.pdf`, pdf);
+      } catch (err) {
+        fallo = true;
+        errores.push(`${e.simbolo_cfb} / ${tipo}: ${err instanceof Error ? err.message : "error desconocido"}`);
       }
-      vectorRows.push(buildVectorRow(e));
-    } catch (err) {
-      errores.push(`${e.simbolo_cfb}: ${err instanceof Error ? err.message : "error desconocido"}`);
+      done += 1;
+      onProgress?.(done, totalDocs, e.simbolo_cfb);
+      // Ceder el hilo para que la UI pueda repintar el progreso.
+      await new Promise((r) => window.setTimeout(r, 0));
     }
-    done += 1;
-    onProgress?.(done, emisiones.length, e.simbolo_cfb);
+    if (!fallo) vectorRows.push(buildVectorRow(e));
   }
 
   if (vectorRows.length) {
@@ -120,6 +139,7 @@ export async function buildPaqueteZipBlob(
   const blob = await zip.generateAsync({ type: "blob" });
   return { blob, errores };
 }
+
 
 export function downloadBlob(blob: Blob, filename: string) {
   const a = document.createElement("a");
