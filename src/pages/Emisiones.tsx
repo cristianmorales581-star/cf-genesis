@@ -9,11 +9,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { fmtBs, fmtDate, fmtPct, fmtUSD } from "@/lib/format";
-import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Users } from "lucide-react";
+import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Users, Package, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import EmisionEditDialog, { type EditableEmision } from "@/components/EmisionEditDialog";
+import { buildPaqueteZipBlob, downloadBlob } from "@/lib/paqueteZip";
 
 const DERECHO_REGISTRO_RATE_DEFAULT = 0.001; // 0.1%
 const DERECHO_REGISTRO_RATE_14D = 0.00078;   // 0.078%
@@ -217,6 +218,8 @@ export default function Emisiones() {
   const [finOptions, setFinOptions] = useState<{ id: string; razon_social: string }[]>([]);
   const [bulkFin, setBulkFin] = useState("");
   const [assigning, setAssigning] = useState(false);
+  const [zipBusy, setZipBusy] = useState(false);
+  const [zipProgress, setZipProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     supabase.from("financistas").select("id, razon_social").order("razon_social")
@@ -379,6 +382,37 @@ export default function Emisiones() {
     toast.success(`Exportadas ${subset.length} emisiones`);
   }
 
+  async function exportZipSeleccion() {
+    const subset = filtered.filter(r => selected.includes(r.id));
+    if (!subset.length) { toast.error("No hay certificados seleccionados"); return; }
+    setZipBusy(true);
+    setZipProgress({ done: 0, total: subset.length });
+    const tid = toast.loading(`Generando documentos (0/${subset.length})…`);
+    try {
+      const { blob, errores } = await buildPaqueteZipBlob(subset, (done, total) => {
+        setZipProgress({ done, total });
+        toast.loading(`Generando documentos (${done}/${total})…`, { id: tid });
+      });
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadBlob(blob, subset.length === 1 ? `PAQUETE_${subset[0].simbolo_cfb}.zip` : `PAQUETE_EMISIONES_${stamp}.zip`);
+      await logAudit({
+        action: "download", resource_type: "emision",
+        details: { count: subset.length, simbolos_cfb: subset.map(r => r.simbolo_cfb), zip: true },
+      });
+      if (errores.length) {
+        toast.warning(`ZIP generado con ${errores.length} error(es): ${errores.slice(0, 3).join(" | ")}`, { id: tid });
+      } else {
+        toast.success(`ZIP generado con ${subset.length} certificado(s)`, { id: tid });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error generando el ZIP", { id: tid });
+    } finally {
+      setZipBusy(false);
+      setZipProgress(null);
+    }
+  }
+
+
   const activeFilterCount = [
     f.estado !== "todos", f.cedente !== "__all__", f.financista !== "__all__",
     !!f.fechaEmDesde, !!f.fechaEmHasta, !!f.fechaVcDesde, !!f.fechaVcHasta,
@@ -426,6 +460,16 @@ export default function Emisiones() {
         {selected.length > 0 && (
           <Button variant="outline" onClick={() => exportCSV("selected")}>
             <Download className="h-4 w-4 mr-1.5" /> CSV selección ({selected.length})
+          </Button>
+        )}
+        {selected.length > 0 && (
+          <Button variant="outline" onClick={exportZipSeleccion} disabled={zipBusy}>
+            {zipBusy
+              ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+              : <Package className="h-4 w-4 mr-1.5" />}
+            {zipBusy && zipProgress
+              ? `Generando ${zipProgress.done}/${zipProgress.total}…`
+              : `ZIP documentos (${selected.length})`}
           </Button>
         )}
         {isAdmin && selected.length > 0 && (
