@@ -9,11 +9,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { fmtBs, fmtDate, fmtPct, fmtUSD } from "@/lib/format";
-import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Users } from "lucide-react";
+import { FilePlus2, Search, Trash2, Download, FilterX, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Users, Package, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import EmisionEditDialog, { type EditableEmision } from "@/components/EmisionEditDialog";
+import { buildPaqueteZipBlob, downloadBlob } from "@/lib/paqueteZip";
 
 const DERECHO_REGISTRO_RATE_DEFAULT = 0.001; // 0.1%
 const DERECHO_REGISTRO_RATE_14D = 0.00078;   // 0.078%
