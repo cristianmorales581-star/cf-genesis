@@ -462,6 +462,16 @@ export default function Emisiones() {
             <Download className="h-4 w-4 mr-1.5" /> CSV selección ({selected.length})
           </Button>
         )}
+        {selected.length > 0 && (
+          <Button variant="outline" onClick={exportZipSeleccion} disabled={zipBusy}>
+            {zipBusy
+              ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+              : <Package className="h-4 w-4 mr-1.5" />}
+            {zipBusy && zipProgress
+              ? `Generando ${zipProgress.done}/${zipProgress.total}…`
+              : `ZIP documentos (${selected.length})`}
+          </Button>
+        )}
         {isAdmin && selected.length > 0 && (
           <Button variant="destructive" onClick={deleteSelected} disabled={deleting}>
             <Trash2 className="h-4 w-4 mr-1.5" /> Borrar {selected.length}
