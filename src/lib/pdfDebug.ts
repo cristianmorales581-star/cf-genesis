@@ -52,7 +52,12 @@ async function renderHtmlCanvas(html: string, filename: string, options: PdfRend
   document.body.appendChild(wrapper);
 
   try {
-    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    // Wait for layout, but never hang: if the tab is backgrounded rAF stops firing,
+    // so race it against a timeout.
+    await Promise.race([
+      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+      new Promise<void>((resolve) => window.setTimeout(resolve, 300)),
+    ]);
 
     const windowWidth = wrapper.offsetWidth || 794;
     const windowHeight = wrapper.scrollHeight || 1123;
