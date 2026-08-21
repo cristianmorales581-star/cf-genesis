@@ -380,6 +380,37 @@ export default function Emisiones() {
     toast.success(`Exportadas ${subset.length} emisiones`);
   }
 
+  async function exportZipSeleccion() {
+    const subset = filtered.filter(r => selected.includes(r.id));
+    if (!subset.length) { toast.error("No hay certificados seleccionados"); return; }
+    setZipBusy(true);
+    setZipProgress({ done: 0, total: subset.length });
+    const tid = toast.loading(`Generando documentos (0/${subset.length})…`);
+    try {
+      const { blob, errores } = await buildPaqueteZipBlob(subset, (done, total) => {
+        setZipProgress({ done, total });
+        toast.loading(`Generando documentos (${done}/${total})…`, { id: tid });
+      });
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadBlob(blob, subset.length === 1 ? `PAQUETE_${subset[0].simbolo_cfb}.zip` : `PAQUETE_EMISIONES_${stamp}.zip`);
+      await logAudit({
+        action: "download", resource_type: "emision",
+        details: { count: subset.length, simbolos_cfb: subset.map(r => r.simbolo_cfb), zip: true },
+      });
+      if (errores.length) {
+        toast.warning(`ZIP generado con ${errores.length} error(es): ${errores.slice(0, 3).join(" | ")}`, { id: tid });
+      } else {
+        toast.success(`ZIP generado con ${subset.length} certificado(s)`, { id: tid });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error generando el ZIP", { id: tid });
+    } finally {
+      setZipBusy(false);
+      setZipProgress(null);
+    }
+  }
+
+
   const activeFilterCount = [
     f.estado !== "todos", f.cedente !== "__all__", f.financista !== "__all__",
     !!f.fechaEmDesde, !!f.fechaEmHasta, !!f.fechaVcDesde, !!f.fechaVcHasta,
