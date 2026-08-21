@@ -218,6 +218,8 @@ export default function Emisiones() {
   const [finOptions, setFinOptions] = useState<{ id: string; razon_social: string }[]>([]);
   const [bulkFin, setBulkFin] = useState("");
   const [assigning, setAssigning] = useState(false);
+  const [zipBusy, setZipBusy] = useState(false);
+  const [zipProgress, setZipProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     supabase.from("financistas").select("id, razon_social").order("razon_social")
