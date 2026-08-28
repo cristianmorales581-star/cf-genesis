@@ -39,12 +39,15 @@ interface Props {
 
 interface Opt { id: string; label: string }
 
+const SIN_PROGRAMA = "__none__";
+
 export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved }: Props) {
   const [financistas, setFinancistas] = useState<Opt[]>([]);
+  const [cedentes, setCedentes] = useState<Opt[]>([]);
   const [programas, setProgramas] = useState<(Opt & { cedente_id: string })[]>([]);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
-    simbolo_cfb: "", programa_id: "", financista_id: "",
+    simbolo_cfb: "", programa_id: SIN_PROGRAMA, financista_id: "", cedente_id: "",
     valor_nominal_usd: 0, precio: 1, dias_colocados: 0,
     fecha_emision: "", fecha_vencimiento: "", tasa_cambio_bs_usd: 0,
     cantidad_ordenes_compra: 1, estado: "activa",
