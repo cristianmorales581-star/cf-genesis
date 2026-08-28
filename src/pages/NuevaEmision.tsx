@@ -30,7 +30,8 @@ interface Financista {
 }
 
 const schema = z.object({
-  programa_id: z.string().uuid("Selecciona un programa"),
+  programa_id: z.string().optional(),
+  cedente_id: z.string().uuid("Selecciona un cedente"),
   financista_id: z.string().uuid("Selecciona un financista"),
   fecha_emision: z.string().min(1),
   dias_colocados: z.number().int().positive().max(720),
@@ -39,6 +40,8 @@ const schema = z.object({
   tasa_cambio_bs_usd: z.number().positive("Tasa BCV requerida"),
   cantidad_ordenes_compra: z.number().int().positive().max(9999),
 });
+
+const SIN_PROGRAMA = "__none__";
 
 export default function NuevaEmision() {
   const navigate = useNavigate();
