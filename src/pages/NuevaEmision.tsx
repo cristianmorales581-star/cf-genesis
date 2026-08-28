@@ -163,17 +163,21 @@ export default function NuevaEmision() {
       return;
     }
     setBusy(true);
+    const programaId = programa?.id ?? null;
     // Use manually entered symbol if provided, otherwise generate atomically
     let simbolo = simboloPreview?.trim().toUpperCase() || "";
     if (!simbolo) {
-      const { data: gen } = await supabase.rpc("next_simbolo_for_programa", { _programa_id: form.programa_id });
+      const { data: gen } = programaId
+        ? await supabase.rpc("next_simbolo_for_programa", { _programa_id: programaId })
+        : await supabase.rpc("next_simbolo_cfb");
       simbolo = gen ?? "";
     }
     if (!simbolo) { toast.error("No se pudo generar el símbolo"); setBusy(false); return; }
 
     const { data: { user } } = await supabase.auth.getUser();
     const payload = {
-      programa_id: form.programa_id,
+      programa_id: programaId,
+      cedente_id: form.cedente_id,
       financista_id: form.financista_id,
       operador_id: user?.id ?? null,
       simbolo_cfb: simbolo,
