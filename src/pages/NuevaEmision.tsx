@@ -21,16 +21,20 @@ interface Programa {
   plazo_ejecucion_dias: number; plazo_cuotas_dias: number;
   fecha_inicio: string; fecha_vencimiento: string; activo: boolean;
   estado?: string;
+  cedente_id: string;
   cedentes?: { razon_social: string; rif: string };
   programa_descuentos?: Descuento[];
 }
+
+interface Cedente { id: string; razon_social: string; rif: string }
 
 interface Financista {
   id: string; razon_social: string; tipo: "natural" | "juridica"; activo: boolean;
 }
 
 const schema = z.object({
-  programa_id: z.string().uuid("Selecciona un programa"),
+  programa_id: z.string().optional(),
+  cedente_id: z.string().uuid("Selecciona un cedente"),
   financista_id: z.string().uuid("Selecciona un financista"),
   fecha_emision: z.string().min(1),
   dias_colocados: z.number().int().positive().max(720),
@@ -40,9 +44,12 @@ const schema = z.object({
   cantidad_ordenes_compra: z.number().int().positive().max(9999),
 });
 
+const SIN_PROGRAMA = "__none__";
+
 export default function NuevaEmision() {
   const navigate = useNavigate();
   const [programas, setProgramas] = useState<Programa[]>([]);
+  const [cedentes, setCedentes] = useState<Cedente[]>([]);
   const [financistas, setFinancistas] = useState<Financista[]>([]);
   const [bcvLoading, setBcvLoading] = useState(false);
   const [bcvFuente, setBcvFuente] = useState<string>("");
@@ -50,7 +57,8 @@ export default function NuevaEmision() {
   const [simboloPreview, setSimboloPreview] = useState<string>("");
 
   const [form, setForm] = useState({
-    programa_id: "",
+    programa_id: SIN_PROGRAMA,
+    cedente_id: "",
     financista_id: "" as string | "",
     fecha_emision: todayISO(),
     dias_colocados: 30,
@@ -63,19 +71,26 @@ export default function NuevaEmision() {
   useEffect(() => {
     (async () => {
       try { await supabase.rpc("refresh_programas_estado"); } catch { /* no bloquea la carga */ }
-      const [{ data: progs }, { data: fins }] = await Promise.all([
+      const [{ data: progs }, { data: fins }, { data: ceds }] = await Promise.all([
         supabase.from("programas")
           .select("*, cedentes(razon_social, rif), programa_descuentos(id, descuento, etiqueta, es_default, activo)")
           .eq("activo", true).eq("estado", "activa").order("codigo_pcfb"),
         supabase.from("financistas").select("id, razon_social, tipo, activo").eq("activo", true).order("razon_social"),
+        supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
       ]);
       setProgramas((progs ?? []) as Programa[]);
       setFinancistas((fins ?? []) as Financista[]);
+      setCedentes((ceds ?? []) as Cedente[]);
     })();
     fetchBCV();
   }, []);
 
-  const programa = useMemo(() => programas.find(p => p.id === form.programa_id), [programas, form.programa_id]);
+  const programa = useMemo(
+    () => (form.programa_id && form.programa_id !== SIN_PROGRAMA
+      ? programas.find(p => p.id === form.programa_id)
+      : undefined),
+    [programas, form.programa_id],
+  );
   const descuentosDisponibles = useMemo(
     () => (programa?.programa_descuentos ?? []).filter(d => d.activo).sort((a, b) => a.descuento - b.descuento),
     [programa]
@@ -94,15 +109,17 @@ export default function NuevaEmision() {
         ...f,
         descuento_pct: descPct,
         dias_colocados: programa.plazo_cuotas_dias,
+        cedente_id: programa.cedente_id ?? f.cedente_id,
       }));
       fetchBCV(programa.fecha_inicio);
       supabase.rpc("next_simbolo_for_programa", { _programa_id: programa.id })
         .then(({ data }) => setSimboloPreview(data ?? ""));
     } else if (!programa) {
       lastProgramaId.current = "";
-      setSimboloPreview("");
+      supabase.rpc("next_simbolo_cfb").then(({ data }) => setSimboloPreview(data ?? ""));
     }
   }, [programa]);
+
 
   // Live calculations
   const fechaVencimiento = form.fecha_emision && form.dias_colocados > 0
@@ -146,17 +163,21 @@ export default function NuevaEmision() {
       return;
     }
     setBusy(true);
+    const programaId = programa?.id ?? null;
     // Use manually entered symbol if provided, otherwise generate atomically
     let simbolo = simboloPreview?.trim().toUpperCase() || "";
     if (!simbolo) {
-      const { data: gen } = await supabase.rpc("next_simbolo_for_programa", { _programa_id: form.programa_id });
+      const { data: gen } = programaId
+        ? await supabase.rpc("next_simbolo_for_programa", { _programa_id: programaId })
+        : await supabase.rpc("next_simbolo_cfb");
       simbolo = gen ?? "";
     }
     if (!simbolo) { toast.error("No se pudo generar el símbolo"); setBusy(false); return; }
 
     const { data: { user } } = await supabase.auth.getUser();
     const payload = {
-      programa_id: form.programa_id,
+      programa_id: programaId,
+      cedente_id: form.cedente_id,
       financista_id: form.financista_id,
       operador_id: user?.id ?? null,
       simbolo_cfb: simbolo,
@@ -197,10 +218,11 @@ export default function NuevaEmision() {
             <h3 className="font-display text-sm uppercase tracking-[0.16em] text-muted-foreground mb-3">Programa</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <Label>Programa marco *</Label>
+                <Label>Programa marco (opcional)</Label>
                 <Select value={form.programa_id} onValueChange={v => setForm({ ...form, programa_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar programa activo" /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={SIN_PROGRAMA}>Sin programa (N/A)</SelectItem>
                     {programas.map(p => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.codigo_pcfb} — {p.cedentes?.razon_social ?? "—"}
@@ -208,13 +230,30 @@ export default function NuevaEmision() {
                     ))}
                   </SelectContent>
                 </Select>
-                {programa && (
+                {programa ? (
                   <p className="text-[11px] text-muted-foreground mt-1.5">
                     Vigencia: {programa.fecha_inicio} → {programa.fecha_vencimiento} ·
                     Descuento base: {fmtPct(Number(programa.descuento_base), 2)}
                   </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    Este certificado se emitirá sin programa: los campos de programa saldrán como N/A.
+                  </p>
                 )}
               </div>
+
+              <div className="col-span-2">
+                <Label>Cedente (obligatorio)</Label>
+                <Select value={form.cedente_id} onValueChange={v => setForm({ ...form, cedente_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecciona un cedente" /></SelectTrigger>
+                  <SelectContent>
+                    {cedentes.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.razon_social} — {c.rif}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
 
               <div>
                 <Label>Financista (obligatorio)</Label>

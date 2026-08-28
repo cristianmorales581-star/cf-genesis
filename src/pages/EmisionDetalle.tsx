@@ -71,7 +71,7 @@ export default function EmisionDetalle() {
   async function load() {
     if (!id) return;
     const [{ data: em }, { data: cs }] = await Promise.all([
-      supabase.from("emisiones").select("*, programas(*, cedentes(*)), financistas(*)").eq("id", id).maybeSingle(),
+      supabase.from("emisiones").select("*, programas(*, cedentes(*)), cedentes(*), financistas(*)").eq("id", id).maybeSingle(),
       supabase.from("confirmaciones").select("*").eq("emision_id", id).order("created_at", { ascending: false }),
     ]);
     setE(em);
@@ -122,7 +122,7 @@ export default function EmisionDetalle() {
     </>
   );
 
-  const cedente = e.programas?.cedentes;
+  const cedente = e.programas?.cedentes ?? e.cedentes;
 
   async function fetchDocHtml(
     tipo: TipoDoc,
@@ -271,7 +271,7 @@ export default function EmisionDetalle() {
 
   return (
     <>
-      <PageHeader title={e.simbolo_cfb} subtitle={`${cedente?.razon_social ?? ""} · ${e.programas?.codigo_pcfb ?? ""}`}>
+      <PageHeader title={e.simbolo_cfb} subtitle={`${cedente?.razon_social ?? ""} · ${e.programas?.codigo_pcfb ?? "N/A"}`}>
         <Button variant="outline" size="sm" onClick={() => navigate("/emisiones")}>
           <ArrowLeft className="h-4 w-4 mr-1.5" /> Volver
         </Button>

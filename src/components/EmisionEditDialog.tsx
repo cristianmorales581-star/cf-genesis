@@ -39,12 +39,15 @@ interface Props {
 
 interface Opt { id: string; label: string }
 
+const SIN_PROGRAMA = "__none__";
+
 export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved }: Props) {
   const [financistas, setFinancistas] = useState<Opt[]>([]);
+  const [cedentes, setCedentes] = useState<Opt[]>([]);
   const [programas, setProgramas] = useState<(Opt & { cedente_id: string })[]>([]);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
-    simbolo_cfb: "", programa_id: "", financista_id: "",
+    simbolo_cfb: "", programa_id: SIN_PROGRAMA, financista_id: "", cedente_id: "",
     valor_nominal_usd: 0, precio: 1, dias_colocados: 0,
     fecha_emision: "", fecha_vencimiento: "", tasa_cambio_bs_usd: 0,
     cantidad_ordenes_compra: 1, estado: "activa",
@@ -52,11 +55,13 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
 
   useEffect(() => {
     (async () => {
-      const [{ data: fins }, { data: progs }] = await Promise.all([
+      const [{ data: fins }, { data: progs }, { data: ceds }] = await Promise.all([
         supabase.from("financistas").select("id, razon_social, rif").order("razon_social"),
         supabase.from("programas").select("id, codigo_pcfb, cedente_id, cedentes(razon_social)").order("codigo_pcfb"),
+        supabase.from("cedentes").select("id, razon_social, rif").order("razon_social"),
       ]);
       setFinancistas((fins ?? []).map((f: any) => ({ id: f.id, label: `${f.razon_social}${f.rif ? ` — ${f.rif}` : ""}` })));
+      setCedentes((ceds ?? []).map((c: any) => ({ id: c.id, label: `${c.razon_social}${c.rif ? ` — ${c.rif}` : ""}` })));
       setProgramas((progs ?? []).map((p: any) => ({
         id: p.id, cedente_id: p.cedente_id,
         label: `${p.codigo_pcfb} — ${p.cedentes?.razon_social ?? ""}`,
@@ -68,8 +73,9 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
     if (!emision) return;
     setForm({
       simbolo_cfb: emision.simbolo_cfb ?? "",
-      programa_id: emision.programa_id ?? "",
+      programa_id: emision.programa_id ?? SIN_PROGRAMA,
       financista_id: emision.financista_id ?? "",
+      cedente_id: emision.cedente_id ?? "",
       valor_nominal_usd: Number(emision.valor_nominal_usd) || 0,
       precio: Number(emision.precio) || 1,
       dias_colocados: Number(emision.dias_colocados) || 0,
@@ -80,6 +86,7 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
       estado: emision.estado ?? "activa",
     });
   }, [emision]);
+
 
   const precio = round5(Number(form.precio) || 0);
   const descuento = round5(1 - precio);
@@ -96,6 +103,11 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
     setForm(prev => ({ ...prev, [k]: v }));
   }
 
+  function onProgramaChange(v: string) {
+    const ced = programas.find(p => p.id === v)?.cedente_id;
+    setForm(prev => ({ ...prev, programa_id: v, cedente_id: ced ?? prev.cedente_id }));
+  }
+
   function onDiasChange(v: number) {
     setForm(prev => ({
       ...prev,
@@ -108,20 +120,20 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
     if (!emision) return;
     if (!form.simbolo_cfb.trim()) { toast.error("El símbolo es obligatorio"); return; }
     if (!form.financista_id) { toast.error("El financista es obligatorio: ningún título puede quedar sin financista"); return; }
-    if (!form.programa_id) { toast.error("El programa es obligatorio"); return; }
+    if (!form.cedente_id) { toast.error("El cedente es obligatorio"); return; }
     if (!(Number(form.valor_nominal_usd) > 0)) { toast.error("Valor nominal inválido"); return; }
     if (!(precio > 0 && precio <= 1)) { toast.error("El precio debe estar entre 0 y 1"); return; }
     if (!(Number(form.tasa_cambio_bs_usd) > 0)) { toast.error("Tasa de cambio inválida"); return; }
     if (!form.fecha_emision || !form.fecha_vencimiento) { toast.error("Fechas obligatorias"); return; }
     if (form.fecha_vencimiento <= form.fecha_emision) { toast.error("El vencimiento debe ser posterior a la emisión"); return; }
 
-    const cedente_id = programas.find(p => p.id === form.programa_id)?.cedente_id ?? emision.cedente_id ?? null;
+    const programa_id = form.programa_id && form.programa_id !== SIN_PROGRAMA ? form.programa_id : null;
 
     setBusy(true);
     const payload = {
       simbolo_cfb: form.simbolo_cfb.trim().toUpperCase(),
-      programa_id: form.programa_id,
-      cedente_id,
+      programa_id,
+      cedente_id: form.cedente_id,
       financista_id: form.financista_id,
       valor_nominal_usd: Number(form.valor_nominal_usd),
       precio,
@@ -175,11 +187,21 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
             </Select>
           </div>
           <div className="sm:col-span-2">
-            <Label className="text-xs">Programa / Cedente</Label>
-            <Select value={form.programa_id} onValueChange={v => set("programa_id", v)}>
+            <Label className="text-xs">Programa (opcional)</Label>
+            <Select value={form.programa_id} onValueChange={onProgramaChange}>
               <SelectTrigger><SelectValue placeholder="Selecciona un programa" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value={SIN_PROGRAMA}>Sin programa (N/A)</SelectItem>
                 {programas.map(p => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="text-xs">Cedente (obligatorio)</Label>
+            <Select value={form.cedente_id} onValueChange={v => set("cedente_id", v)}>
+              <SelectTrigger><SelectValue placeholder="Selecciona un cedente" /></SelectTrigger>
+              <SelectContent>
+                {cedentes.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
