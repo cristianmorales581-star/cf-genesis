@@ -21,9 +21,12 @@ interface Programa {
   plazo_ejecucion_dias: number; plazo_cuotas_dias: number;
   fecha_inicio: string; fecha_vencimiento: string; activo: boolean;
   estado?: string;
+  cedente_id: string;
   cedentes?: { razon_social: string; rif: string };
   programa_descuentos?: Descuento[];
 }
+
+interface Cedente { id: string; razon_social: string; rif: string }
 
 interface Financista {
   id: string; razon_social: string; tipo: "natural" | "juridica"; activo: boolean;
