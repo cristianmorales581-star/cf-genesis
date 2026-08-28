@@ -235,8 +235,25 @@ export default function NuevaEmision() {
                     Vigencia: {programa.fecha_inicio} → {programa.fecha_vencimiento} ·
                     Descuento base: {fmtPct(Number(programa.descuento_base), 2)}
                   </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    Este certificado se emitirá sin programa: los campos de programa saldrán como N/A.
+                  </p>
                 )}
               </div>
+
+              <div className="col-span-2">
+                <Label>Cedente (obligatorio)</Label>
+                <Select value={form.cedente_id} onValueChange={v => setForm({ ...form, cedente_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecciona un cedente" /></SelectTrigger>
+                  <SelectContent>
+                    {cedentes.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.razon_social} — {c.rif}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
 
               <div>
                 <Label>Financista (obligatorio)</Label>
