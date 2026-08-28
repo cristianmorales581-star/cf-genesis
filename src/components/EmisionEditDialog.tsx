@@ -103,6 +103,11 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
     setForm(prev => ({ ...prev, [k]: v }));
   }
 
+  function onProgramaChange(v: string) {
+    const ced = programas.find(p => p.id === v)?.cedente_id;
+    setForm(prev => ({ ...prev, programa_id: v, cedente_id: ced ?? prev.cedente_id }));
+  }
+
   function onDiasChange(v: number) {
     setForm(prev => ({
       ...prev,
@@ -115,20 +120,20 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
     if (!emision) return;
     if (!form.simbolo_cfb.trim()) { toast.error("El símbolo es obligatorio"); return; }
     if (!form.financista_id) { toast.error("El financista es obligatorio: ningún título puede quedar sin financista"); return; }
-    if (!form.programa_id) { toast.error("El programa es obligatorio"); return; }
+    if (!form.cedente_id) { toast.error("El cedente es obligatorio"); return; }
     if (!(Number(form.valor_nominal_usd) > 0)) { toast.error("Valor nominal inválido"); return; }
     if (!(precio > 0 && precio <= 1)) { toast.error("El precio debe estar entre 0 y 1"); return; }
     if (!(Number(form.tasa_cambio_bs_usd) > 0)) { toast.error("Tasa de cambio inválida"); return; }
     if (!form.fecha_emision || !form.fecha_vencimiento) { toast.error("Fechas obligatorias"); return; }
     if (form.fecha_vencimiento <= form.fecha_emision) { toast.error("El vencimiento debe ser posterior a la emisión"); return; }
 
-    const cedente_id = programas.find(p => p.id === form.programa_id)?.cedente_id ?? emision.cedente_id ?? null;
+    const programa_id = form.programa_id && form.programa_id !== SIN_PROGRAMA ? form.programa_id : null;
 
     setBusy(true);
     const payload = {
       simbolo_cfb: form.simbolo_cfb.trim().toUpperCase(),
-      programa_id: form.programa_id,
-      cedente_id,
+      programa_id,
+      cedente_id: form.cedente_id,
       financista_id: form.financista_id,
       valor_nominal_usd: Number(form.valor_nominal_usd),
       precio,
