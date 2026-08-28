@@ -49,6 +49,7 @@ const SIN_PROGRAMA = "__none__";
 export default function NuevaEmision() {
   const navigate = useNavigate();
   const [programas, setProgramas] = useState<Programa[]>([]);
+  const [cedentes, setCedentes] = useState<Cedente[]>([]);
   const [financistas, setFinancistas] = useState<Financista[]>([]);
   const [bcvLoading, setBcvLoading] = useState(false);
   const [bcvFuente, setBcvFuente] = useState<string>("");
@@ -56,7 +57,8 @@ export default function NuevaEmision() {
   const [simboloPreview, setSimboloPreview] = useState<string>("");
 
   const [form, setForm] = useState({
-    programa_id: "",
+    programa_id: SIN_PROGRAMA,
+    cedente_id: "",
     financista_id: "" as string | "",
     fecha_emision: todayISO(),
     dias_colocados: 30,
@@ -69,19 +71,26 @@ export default function NuevaEmision() {
   useEffect(() => {
     (async () => {
       try { await supabase.rpc("refresh_programas_estado"); } catch { /* no bloquea la carga */ }
-      const [{ data: progs }, { data: fins }] = await Promise.all([
+      const [{ data: progs }, { data: fins }, { data: ceds }] = await Promise.all([
         supabase.from("programas")
           .select("*, cedentes(razon_social, rif), programa_descuentos(id, descuento, etiqueta, es_default, activo)")
           .eq("activo", true).eq("estado", "activa").order("codigo_pcfb"),
         supabase.from("financistas").select("id, razon_social, tipo, activo").eq("activo", true).order("razon_social"),
+        supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
       ]);
       setProgramas((progs ?? []) as Programa[]);
       setFinancistas((fins ?? []) as Financista[]);
+      setCedentes((ceds ?? []) as Cedente[]);
     })();
     fetchBCV();
   }, []);
 
-  const programa = useMemo(() => programas.find(p => p.id === form.programa_id), [programas, form.programa_id]);
+  const programa = useMemo(
+    () => (form.programa_id && form.programa_id !== SIN_PROGRAMA
+      ? programas.find(p => p.id === form.programa_id)
+      : undefined),
+    [programas, form.programa_id],
+  );
   const descuentosDisponibles = useMemo(
     () => (programa?.programa_descuentos ?? []).filter(d => d.activo).sort((a, b) => a.descuento - b.descuento),
     [programa]
@@ -100,15 +109,17 @@ export default function NuevaEmision() {
         ...f,
         descuento_pct: descPct,
         dias_colocados: programa.plazo_cuotas_dias,
+        cedente_id: programa.cedente_id ?? f.cedente_id,
       }));
       fetchBCV(programa.fecha_inicio);
       supabase.rpc("next_simbolo_for_programa", { _programa_id: programa.id })
         .then(({ data }) => setSimboloPreview(data ?? ""));
     } else if (!programa) {
       lastProgramaId.current = "";
-      setSimboloPreview("");
+      supabase.rpc("next_simbolo_cfb").then(({ data }) => setSimboloPreview(data ?? ""));
     }
   }, [programa]);
+
 
   // Live calculations
   const fechaVencimiento = form.fecha_emision && form.dias_colocados > 0
