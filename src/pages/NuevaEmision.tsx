@@ -218,10 +218,11 @@ export default function NuevaEmision() {
             <h3 className="font-display text-sm uppercase tracking-[0.16em] text-muted-foreground mb-3">Programa</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <Label>Programa marco *</Label>
+                <Label>Programa marco (opcional)</Label>
                 <Select value={form.programa_id} onValueChange={v => setForm({ ...form, programa_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar programa activo" /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={SIN_PROGRAMA}>Sin programa (N/A)</SelectItem>
                     {programas.map(p => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.codigo_pcfb} — {p.cedentes?.razon_social ?? "—"}
@@ -229,7 +230,7 @@ export default function NuevaEmision() {
                     ))}
                   </SelectContent>
                 </Select>
-                {programa && (
+                {programa ? (
                   <p className="text-[11px] text-muted-foreground mt-1.5">
                     Vigencia: {programa.fecha_inicio} → {programa.fecha_vencimiento} ·
                     Descuento base: {fmtPct(Number(programa.descuento_base), 2)}
