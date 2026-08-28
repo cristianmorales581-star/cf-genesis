@@ -187,11 +187,21 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
             </Select>
           </div>
           <div className="sm:col-span-2">
-            <Label className="text-xs">Programa / Cedente</Label>
-            <Select value={form.programa_id} onValueChange={v => set("programa_id", v)}>
+            <Label className="text-xs">Programa (opcional)</Label>
+            <Select value={form.programa_id} onValueChange={onProgramaChange}>
               <SelectTrigger><SelectValue placeholder="Selecciona un programa" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value={SIN_PROGRAMA}>Sin programa (N/A)</SelectItem>
                 {programas.map(p => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="text-xs">Cedente (obligatorio)</Label>
+            <Select value={form.cedente_id} onValueChange={v => set("cedente_id", v)}>
+              <SelectTrigger><SelectValue placeholder="Selecciona un cedente" /></SelectTrigger>
+              <SelectContent>
+                {cedentes.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
