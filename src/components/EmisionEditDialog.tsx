@@ -55,11 +55,13 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
 
   useEffect(() => {
     (async () => {
-      const [{ data: fins }, { data: progs }] = await Promise.all([
+      const [{ data: fins }, { data: progs }, { data: ceds }] = await Promise.all([
         supabase.from("financistas").select("id, razon_social, rif").order("razon_social"),
         supabase.from("programas").select("id, codigo_pcfb, cedente_id, cedentes(razon_social)").order("codigo_pcfb"),
+        supabase.from("cedentes").select("id, razon_social, rif").order("razon_social"),
       ]);
       setFinancistas((fins ?? []).map((f: any) => ({ id: f.id, label: `${f.razon_social}${f.rif ? ` — ${f.rif}` : ""}` })));
+      setCedentes((ceds ?? []).map((c: any) => ({ id: c.id, label: `${c.razon_social}${c.rif ? ` — ${c.rif}` : ""}` })));
       setProgramas((progs ?? []).map((p: any) => ({
         id: p.id, cedente_id: p.cedente_id,
         label: `${p.codigo_pcfb} — ${p.cedentes?.razon_social ?? ""}`,
@@ -71,8 +73,9 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
     if (!emision) return;
     setForm({
       simbolo_cfb: emision.simbolo_cfb ?? "",
-      programa_id: emision.programa_id ?? "",
+      programa_id: emision.programa_id ?? SIN_PROGRAMA,
       financista_id: emision.financista_id ?? "",
+      cedente_id: emision.cedente_id ?? "",
       valor_nominal_usd: Number(emision.valor_nominal_usd) || 0,
       precio: Number(emision.precio) || 1,
       dias_colocados: Number(emision.dias_colocados) || 0,
@@ -83,6 +86,7 @@ export default function EmisionEditDialog({ emision, open, onOpenChange, onSaved
       estado: emision.estado ?? "activa",
     });
   }, [emision]);
+
 
   const precio = round5(Number(form.precio) || 0);
   const descuento = round5(1 - precio);
