@@ -37,9 +37,13 @@ interface Row {
   tasa_cambio_bs_usd: number; dias_colocados: number;
   programa_id?: string | null; cedente_id?: string | null; financista_id?: string | null;
   cantidad_ordenes_compra?: number | null;
-  programas?: { codigo_pcfb: string; cedentes?: { razon_social: string; rif: string } };
+  programas?: { codigo_pcfb: string; cedentes?: { razon_social: string; rif: string } } | null;
+  cedentes?: { razon_social: string; rif: string } | null;
   financistas?: { razon_social: string; rif: string } | null;
 }
+
+const cedenteDe = (r: Row) => r.programas?.cedentes ?? r.cedentes ?? null;
+const programaDe = (r: Row) => r.programas?.codigo_pcfb ?? "N/A";
 
 function daysRemaining(iso: string): number {
   const today = new Date();
@@ -99,9 +103,9 @@ function downloadCSV(filename: string, rows: Row[], fmt: CsvFormat) {
     const montoSibe = Math.round(Number(r.valor_nominal_usd));
     lines.push([
       r.simbolo_cfb,
-      r.programas?.codigo_pcfb ?? "",
-      r.programas?.cedentes?.razon_social ?? "",
-      r.programas?.cedentes?.rif ?? "",
+      programaDe(r),
+      cedenteDe(r)?.razon_social ?? "",
+      cedenteDe(r)?.rif ?? "",
       r.financistas?.razon_social ?? "SIN FINANCISTA",
       r.financistas?.rif ?? "",
       csvNum(r.valor_nominal_usd, fmt),
@@ -155,7 +159,7 @@ function sortRows(rows: Row[], config: SortConfig): Row[] {
         cmp = a.simbolo_cfb.localeCompare(b.simbolo_cfb);
         break;
       case "cedente":
-        cmp = (a.programas?.cedentes?.razon_social ?? "").localeCompare(b.programas?.cedentes?.razon_social ?? "");
+        cmp = (cedenteDe(a)?.razon_social ?? "").localeCompare(cedenteDe(b)?.razon_social ?? "");
         break;
       case "valor_nominal_usd":
         cmp = Number(a.valor_nominal_usd) - Number(b.valor_nominal_usd);
@@ -269,7 +273,7 @@ export default function Emisiones() {
   async function load() {
     const { data } = await supabase
       .from("emisiones")
-      .select("*, programas(codigo_pcfb, cedentes(razon_social, rif)), financistas(razon_social, rif)")
+      .select("*, programas(codigo_pcfb, cedentes(razon_social, rif)), cedentes(razon_social, rif), financistas(razon_social, rif)")
       .is("deleted_at", null)
       .order("fecha_emision", { ascending: false });
     setRows((data ?? []) as Row[]);
@@ -306,7 +310,7 @@ export default function Emisiones() {
 
   const cedentes = useMemo(() => {
     const s = new Set<string>();
-    rows.forEach(r => { const n = r.programas?.cedentes?.razon_social; if (n) s.add(n); });
+    rows.forEach(r => { const n = cedenteDe(r)?.razon_social; if (n) s.add(n); });
     return [...s].sort();
   }, [rows]);
 
@@ -321,7 +325,7 @@ export default function Emisiones() {
   const filtered = useMemo(() => {
     const fRows = rows.filter(r => {
       if (f.estado !== "todos" && r.estado !== f.estado) return false;
-      if (f.cedente !== "__all__" && r.programas?.cedentes?.razon_social !== f.cedente) return false;
+      if (f.cedente !== "__all__" && cedenteDe(r)?.razon_social !== f.cedente) return false;
       if (f.financista === "__none__") {
         if (r.financista_id) return false;
       } else if (f.financista !== "__all__") {
@@ -341,7 +345,7 @@ export default function Emisiones() {
         const t = f.q.toLowerCase();
         return r.simbolo_cfb.toLowerCase().includes(t)
           || r.programas?.codigo_pcfb?.toLowerCase().includes(t)
-          || r.programas?.cedentes?.razon_social?.toLowerCase().includes(t)
+          || cedenteDe(r)?.razon_social?.toLowerCase().includes(t)
           || r.financistas?.razon_social?.toLowerCase().includes(t);
       }
       return true;
@@ -621,10 +625,10 @@ export default function Emisiones() {
                       <Link to={`/emisiones/${r.id}`} className="font-mono text-xs font-semibold text-accent hover:underline">
                         {r.simbolo_cfb}
                       </Link>
-                      <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{r.programas?.codigo_pcfb}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{r.programas?.codigo_pcfb ?? "N/A"}</div>
                     </td>
                     <td className="px-5 py-3">
-                      <div className="text-xs font-medium text-foreground">{r.programas?.cedentes?.razon_social}</div>
+                      <div className="text-xs font-medium text-foreground">{cedenteDe(r)?.razon_social ?? "—"}</div>
                       {r.financistas?.razon_social ? (
                         <div className="text-[11px] text-muted-foreground">Financista: {r.financistas.razon_social}</div>
                       ) : (
