@@ -32,15 +32,22 @@ export default function ReporteAgileCheck() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from("emisiones")
-        .select(
-          "id, fecha_emision, monto_efectivo_usd, valor_efectivo_bs, cedentes(razon_social, codigo_cliente), programas(cedentes(razon_social, codigo_cliente)), financistas(razon_social, codigo_cliente)"
-        )
-        .is("deleted_at", null)
-        .order("fecha_emision", { ascending: false });
-      if (error) toast.error("No se pudieron cargar las emisiones");
-      const list = (data ?? []) as unknown as Emision[];
+      const list: Emision[] = [];
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("emisiones")
+          .select(
+            "id, fecha_emision, monto_efectivo_usd, valor_efectivo_bs, cedentes(razon_social, codigo_cliente), programas(cedentes(razon_social, codigo_cliente)), financistas(razon_social, codigo_cliente)"
+          )
+          .is("deleted_at", null)
+          .order("fecha_emision", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) { toast.error("No se pudieron cargar las emisiones"); break; }
+        const page = (data ?? []) as unknown as Emision[];
+        list.push(...page);
+        if (page.length < PAGE) break;
+      }
       setEmisiones(list);
       if (list.length) setMonth(list[0].fecha_emision.slice(0, 7));
       setLoading(false);
