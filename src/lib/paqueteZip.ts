@@ -24,6 +24,7 @@ export interface PaqueteEmision {
   tasa_cambio_bs_usd: number;
   cantidad_ordenes_compra?: number | null;
   programas?: { codigo_pcfb?: string; cedentes?: { razon_social?: string; rif?: string } } | null;
+  cedentes?: { razon_social?: string; rif?: string } | null;
   financistas?: { razon_social?: string; rif?: string } | null;
 }
 
@@ -40,8 +41,8 @@ export function buildVectorRow(e: PaqueteEmision) {
   const tasa = Number(e.tasa_cambio_bs_usd);
   return {
     simbolo_cfb: e.simbolo_cfb,
-    cedente: e.programas?.cedentes?.razon_social ?? "",
-    rif_cedente: e.programas?.cedentes?.rif ?? "",
+    cedente: (e.programas?.cedentes ?? e.cedentes)?.razon_social ?? "",
+    rif_cedente: (e.programas?.cedentes ?? e.cedentes)?.rif ?? "",
     deudor_cedido: "GRUPO CASHEA VE, C.A.",
     rif_deudor: "J-501934070",
     cantidad_certificados: 1,
@@ -109,7 +110,7 @@ export async function buildPaqueteZipBlob(
   onProgress?.(0, totalDocs, emisiones[0]?.simbolo_cfb ?? "");
 
   for (const e of emisiones) {
-    const slug = slugify(e.programas?.cedentes?.razon_social);
+    const slug = slugify((e.programas?.cedentes ?? e.cedentes)?.razon_social);
     const carpeta = emisiones.length > 1
       ? zip.folder(`${e.simbolo_cfb}_${slug}`)!
       : zip.folder("documentos")!;

@@ -33,7 +33,7 @@ export default function Dashboard() {
         supabase.from("emisiones").select("*").is("deleted_at", null).eq("estado", "activa").gte("fecha_vencimiento", today).order("fecha_emision", { ascending: false }).limit(8),
         supabase.from("emisiones").select("*").is("deleted_at", null).gte("fecha_vencimiento", today).lte("fecha_vencimiento", in30).order("fecha_vencimiento", { ascending: true }).limit(10),
         supabase.from("audit_log").select("id,action,resource_type,user_email,created_at").order("created_at", { ascending: false }).limit(8),
-        supabase.from("emisiones").select("valor_nominal_usd, programas!inner(cedentes!inner(razon_social))").is("deleted_at", null).eq("estado", "activa").gte("fecha_vencimiento", today),
+        supabase.from("emisiones").select("valor_nominal_usd, cedentes(razon_social), programas(cedentes(razon_social))").is("deleted_at", null).eq("estado", "activa").gte("fecha_vencimiento", today),
         supabase.from("programas").select("id, codigo_pcfb, fecha_vencimiento, estado, cedentes(razon_social)")
           .or(`estado.eq.vencida,and(estado.eq.activa,fecha_vencimiento.lte.${in7})`)
           .order("fecha_vencimiento", { ascending: true }).limit(20),
@@ -46,8 +46,8 @@ export default function Dashboard() {
       setTotalUsd(total);
       const grouped = new Map<string, number>();
       (byCed ?? []).forEach((r) => {
-        const ced = r as { valor_nominal_usd: number; programas: { cedentes: { razon_social: string } } };
-        const name = ced.programas?.cedentes?.razon_social ?? "—";
+        const ced = r as { valor_nominal_usd: number; cedentes?: { razon_social: string } | null; programas?: { cedentes?: { razon_social: string } | null } | null };
+        const name = ced.programas?.cedentes?.razon_social ?? ced.cedentes?.razon_social ?? "—";
         grouped.set(name, (grouped.get(name) ?? 0) + Number(ced.valor_nominal_usd));
       });
       setByCedente([...grouped.entries()].map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total).slice(0, 5));

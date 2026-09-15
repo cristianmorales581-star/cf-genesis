@@ -26,6 +26,7 @@ interface Row {
   rendimiento_anualizado: number; monto_efectivo_usd: number;
   tasa_cambio_bs_usd: number; dias_colocados: number;
   programas?: { codigo_pcfb: string; cedentes?: { razon_social: string; rif: string } };
+  cedentes?: { razon_social: string; rif: string } | null;
   financistas?: { razon_social: string; rif: string } | null;
 }
 
@@ -48,8 +49,8 @@ function downloadCSV(filename: string, rows: Row[]) {
   for (const r of rows) {
     lines.push([
       r.simbolo_cfb,
-      r.programas?.cedentes?.razon_social ?? "",
-      r.programas?.cedentes?.rif ?? "",
+      (r.programas?.cedentes ?? r.cedentes)?.razon_social ?? "",
+      (r.programas?.cedentes ?? r.cedentes)?.rif ?? "",
       r.fecha_emision,
       Number(r.precio),
       Math.round(Number(r.valor_nominal_usd)),
@@ -78,7 +79,7 @@ function sortRows(rows: Row[], { key, direction }: SortConfig): Row[] {
     let cmp = 0;
     switch (key) {
       case "simbolo_cfb": cmp = a.simbolo_cfb.localeCompare(b.simbolo_cfb); break;
-      case "cedente": cmp = (a.programas?.cedentes?.razon_social ?? "").localeCompare(b.programas?.cedentes?.razon_social ?? ""); break;
+      case "cedente": cmp = ((a.programas?.cedentes ?? a.cedentes)?.razon_social ?? "").localeCompare((b.programas?.cedentes ?? b.cedentes)?.razon_social ?? ""); break;
       case "valor_nominal_usd": cmp = Number(a.valor_nominal_usd) - Number(b.valor_nominal_usd); break;
       case "monto_efectivo_usd": cmp = Number(a.monto_efectivo_usd) - Number(b.monto_efectivo_usd); break;
       case "precio": cmp = Number(a.precio) - Number(b.precio); break;
@@ -119,7 +120,7 @@ export default function OperacionesDia() {
     setLoading(true);
     const { data } = await supabase
       .from("emisiones")
-      .select("*, programas(codigo_pcfb, cedentes(razon_social, rif)), financistas(razon_social, rif)")
+      .select("*, programas(codigo_pcfb, cedentes(razon_social, rif)), cedentes(razon_social, rif), financistas(razon_social, rif)")
       .is("deleted_at", null)
       .eq("fecha_emision", dia)
       .order("simbolo_cfb", { ascending: true });
@@ -135,18 +136,18 @@ export default function OperacionesDia() {
 
   const cedentes = useMemo(() => {
     const s = new Set<string>();
-    rows.forEach(r => { const n = r.programas?.cedentes?.razon_social; if (n) s.add(n); });
+    rows.forEach(r => { const n = (r.programas?.cedentes ?? r.cedentes)?.razon_social; if (n) s.add(n); });
     return [...s].sort();
   }, [rows]);
 
   const filtered = useMemo(() => {
     const list = rows.filter(r => {
-      if (cedente !== "__all__" && r.programas?.cedentes?.razon_social !== cedente) return false;
+      if (cedente !== "__all__" && (r.programas?.cedentes ?? r.cedentes)?.razon_social !== cedente) return false;
       if (q) {
         const t = q.toLowerCase();
         return r.simbolo_cfb.toLowerCase().includes(t)
           || r.programas?.codigo_pcfb?.toLowerCase().includes(t)
-          || r.programas?.cedentes?.razon_social?.toLowerCase().includes(t)
+          || (r.programas?.cedentes ?? r.cedentes)?.razon_social?.toLowerCase().includes(t)
           || r.financistas?.razon_social?.toLowerCase().includes(t);
       }
       return true;
@@ -271,7 +272,7 @@ export default function OperacionesDia() {
                         <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{r.programas?.codigo_pcfb}</div>
                       </td>
                       <td className="px-5 py-3">
-                        <div className="text-xs font-medium text-foreground">{r.programas?.cedentes?.razon_social}</div>
+                        <div className="text-xs font-medium text-foreground">{(r.programas?.cedentes ?? r.cedentes)?.razon_social}</div>
                         <div className="text-[11px] text-muted-foreground">Financista: {r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A."}</div>
                       </td>
                       <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.valor_nominal_usd)}</Numeric></td>
