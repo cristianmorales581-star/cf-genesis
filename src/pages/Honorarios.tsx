@@ -89,7 +89,7 @@ export default function Honorarios() {
       for (let from = 0; ; from += pageSize) {
         const { data, error } = await supabase
           .from("emisiones")
-          .select("id, valor_nominal_usd, fecha_emision, programas(cedentes(razon_social))")
+          .select("id, valor_nominal_usd, fecha_emision, cedentes(razon_social), programas(cedentes(razon_social))")
           .is("deleted_at", null)
           .order("fecha_emision", { ascending: false })
           .range(from, from + pageSize - 1);
@@ -111,7 +111,7 @@ export default function Honorarios() {
 
   const cedentes = useMemo(() => {
     const s = new Set<string>();
-    rows.forEach(r => { const n = r.programas?.cedentes?.razon_social; if (n) s.add(n); });
+    rows.forEach(r => { const n = (r.programas?.cedentes ?? r.cedentes)?.razon_social; if (n) s.add(n); });
     return [...s].sort();
   }, [rows]);
 
@@ -122,7 +122,7 @@ export default function Honorarios() {
   }, [rows]);
 
   const filtered = useMemo(() => rows.filter(r => {
-    if (cedente !== "__all__" && r.programas?.cedentes?.razon_social !== cedente) return false;
+    if (cedente !== "__all__" && (r.programas?.cedentes ?? r.cedentes)?.razon_social !== cedente) return false;
     if (year !== "__all__" && r.fecha_emision.slice(0,4) !== year) return false;
     return true;
   }), [rows, cedente, year]);

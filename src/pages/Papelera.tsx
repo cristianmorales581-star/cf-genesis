@@ -30,7 +30,7 @@ export default function Papelera() {
   async function load() {
     const { data } = await supabase
       .from("emisiones")
-      .select("id, simbolo_cfb, valor_nominal_usd, fecha_emision, fecha_vencimiento, estado, deleted_at, deleted_by, programas(codigo_pcfb, cedentes(razon_social)), financistas(razon_social)")
+      .select("id, simbolo_cfb, valor_nominal_usd, fecha_emision, fecha_vencimiento, estado, deleted_at, deleted_by, programas(codigo_pcfb, cedentes(razon_social)), cedentes(razon_social), financistas(razon_social)")
       .not("deleted_at", "is", null)
       .order("deleted_at", { ascending: false });
     setRows((data ?? []) as unknown as Row[]);
@@ -89,7 +89,7 @@ export default function Papelera() {
                 <tr key={r.id} className="border-b border-border/50 hover:bg-muted/20">
                   <td className="px-5 py-3 font-mono text-xs">{r.simbolo_cfb}</td>
                   <td className="px-5 py-3">{r.programas?.codigo_pcfb ?? "—"}</td>
-                  <td className="px-5 py-3">{r.programas?.cedentes?.razon_social ?? "—"}</td>
+                  <td className="px-5 py-3">{(r.programas?.cedentes ?? r.cedentes)?.razon_social ?? "—"}</td>
                   <td className="px-5 py-3">{r.financistas?.razon_social ?? "GRUPO CASHEA VE, C.A."}</td>
                   <td className="px-5 py-3 text-right"><Numeric>{fmtUSD(r.valor_nominal_usd)}</Numeric></td>
                   <td className="px-5 py-3">{fmtDate(r.fecha_emision)}</td>

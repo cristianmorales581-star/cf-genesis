@@ -56,7 +56,7 @@ export default function Portafolio() {
       const today = todayISO();
       const { data } = await supabase
         .from("emisiones")
-        .select("id, simbolo_cfb, valor_nominal_usd, precio, fecha_emision, fecha_vencimiento, rendimiento_anualizado, estado, financista_id, financistas(id, razon_social), programas(cedentes(razon_social))")
+        .select("id, simbolo_cfb, valor_nominal_usd, precio, fecha_emision, fecha_vencimiento, rendimiento_anualizado, estado, financista_id, financistas(id, razon_social), cedentes(razon_social), programas(cedentes(razon_social))")
         .eq("estado", "activa")
         .is("deleted_at", null)
         .gte("fecha_vencimiento", today)
@@ -106,7 +106,7 @@ export default function Portafolio() {
     for (const r of enriched) {
       lines.push([
         r.simbolo_cfb,
-        r.programas?.cedentes?.razon_social ?? "",
+        (r.programas?.cedentes ?? r.cedentes)?.razon_social ?? "",
         r.financistas?.razon_social ?? "SIN FINANCISTA",
         csvNum(r.valor_nominal_usd),
         csvNum(r.rendimiento_anualizado),
@@ -199,7 +199,7 @@ export default function Portafolio() {
                         {r.simbolo_cfb}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-xs">{r.programas?.cedentes?.razon_social ?? "—"}</td>
+                    <td className="px-4 py-3 text-xs">{(r.programas?.cedentes ?? r.cedentes)?.razon_social ?? "—"}</td>
                     <td className="px-4 py-3 text-xs">{r.financistas?.razon_social ?? "—"}</td>
                     <td className="px-4 py-3 text-right"><Numeric>{fmtUSD(Number(r.valor_nominal_usd))}</Numeric></td>
                     <td className="px-4 py-3 text-right"><Numeric>{fmtPct(Number(r.rendimiento_anualizado), 2)}</Numeric></td>
