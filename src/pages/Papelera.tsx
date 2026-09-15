@@ -19,6 +19,7 @@ interface Row {
   deleted_at: string;
   deleted_by: string | null;
   programas?: { codigo_pcfb: string; cedentes?: { razon_social: string } } | null;
+  cedentes?: { razon_social: string } | null;
   financistas?: { razon_social: string } | null;
 }
 

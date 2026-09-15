@@ -42,6 +42,7 @@ interface Row {
   valor_nominal_usd: number;
   fecha_emision: string;
   programas?: { cedentes?: { razon_social: string } };
+  cedentes?: { razon_social: string } | null;
 }
 
 interface MonthAgg {

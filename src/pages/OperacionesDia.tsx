@@ -26,6 +26,7 @@ interface Row {
   rendimiento_anualizado: number; monto_efectivo_usd: number;
   tasa_cambio_bs_usd: number; dias_colocados: number;
   programas?: { codigo_pcfb: string; cedentes?: { razon_social: string; rif: string } };
+  cedentes?: { razon_social: string; rif: string } | null;
   financistas?: { razon_social: string; rif: string } | null;
 }
 

@@ -30,6 +30,7 @@ interface EmisionRow {
   financista_id: string | null;
   financistas: { id: string; razon_social: string } | null;
   programas: { cedentes: { razon_social: string } | null } | null;
+  cedentes?: { razon_social: string } | null;
 }
 
 /**
