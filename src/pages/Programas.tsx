@@ -212,6 +212,40 @@ export default function Programas() {
   const vencidosSinRenovar = rows.filter(r => r.estado === "vencida" && !renovadoPor(r));
   const porVencer = rows.filter(r => r.estado === "activa" && r.fecha_vencimiento <= in30);
 
+  const renovaciones = rows
+    .map(p => ({ viejo: p, nuevo: renovadoPor(p) }))
+    .filter((x): x is { viejo: Programa; nuevo: Programa } => !!x.nuevo)
+    .sort((a, b) => b.nuevo.fecha_inicio.localeCompare(a.nuevo.fecha_inicio));
+
+  function downloadRenovadosCSV() {
+    if (renovaciones.length === 0) { toast.error("No hay programas renovados"); return; }
+    const esc = (v: unknown) => {
+      const s = v === null || v === undefined ? "" : String(v);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const headers = [
+      "Cedente", "Programa anterior", "Inicio anterior", "Vencimiento anterior", "Descuento base anterior (%)",
+      "Programa nuevo", "Inicio nuevo", "Vencimiento nuevo", "Descuento base nuevo (%)", "Linea", "Contrato cesion",
+    ];
+    const lines = [headers.join(",")];
+    renovaciones.forEach(({ viejo, nuevo }) => {
+      lines.push([
+        viejo.cedentes?.razon_social ?? "",
+        viejo.codigo_pcfb, viejo.fecha_inicio, viejo.fecha_vencimiento, (viejo.descuento_base * 100).toFixed(4),
+        nuevo.codigo_pcfb, nuevo.fecha_inicio, nuevo.fecha_vencimiento, (nuevo.descuento_base * 100).toFixed(4),
+        nuevo.linea ?? "", nuevo.contrato_cesion ?? "",
+      ].map(esc).join(","));
+    });
+    const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `programas-renovados_${today}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+
   const filtered = rows.filter(r => {
     if (!verRenovados && renovadoPor(r)) return false;
     if (estadoFilter !== "todos" && r.estado !== estadoFilter) return false;
