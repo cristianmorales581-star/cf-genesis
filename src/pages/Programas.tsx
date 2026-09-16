@@ -430,7 +430,11 @@ export default function Programas() {
           <Button size="sm" variant={verRenovados ? "default" : "outline"} className="text-xs" onClick={() => setVerRenovados(v => !v)}>
             <HistoryIcon className="h-3.5 w-3.5 mr-1" /> {verRenovados ? "Ocultar renovados" : "Ver renovados"}
           </Button>
+          <Button size="sm" variant="outline" className="text-xs" onClick={downloadRenovadosCSV}>
+            <Download className="h-3.5 w-3.5 mr-1" /> Reporte renovados ({renovaciones.length})
+          </Button>
         </div>
+
       </div>
 
 
