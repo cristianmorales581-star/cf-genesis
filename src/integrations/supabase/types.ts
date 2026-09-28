@@ -59,6 +59,7 @@ export type Database = {
           razon_social: string
           representante_legal: string | null
           rif: string
+          tipo: Database["public"]["Enums"]["tipo_financista"]
         }
         Insert: {
           activo?: boolean
@@ -71,6 +72,7 @@ export type Database = {
           razon_social: string
           representante_legal?: string | null
           rif: string
+          tipo?: Database["public"]["Enums"]["tipo_financista"]
         }
         Update: {
           activo?: boolean
@@ -83,6 +85,7 @@ export type Database = {
           razon_social?: string
           representante_legal?: string | null
           rif?: string
+          tipo?: Database["public"]["Enums"]["tipo_financista"]
         }
         Relationships: []
       }
