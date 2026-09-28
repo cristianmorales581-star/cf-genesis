@@ -107,7 +107,7 @@ function buildTemplateContext(e: any, contraparte?: string, conf?: any): Templat
     simbolo_cfb: e.simbolo_cfb,
     fecha_emision: e.fecha_emision,
     fecha_vencimiento: e.fecha_vencimiento,
-    fecha_documento: new Date().toISOString().slice(0, 10),
+    fecha_documento: todayCaracasISO(),
     valor_nominal_usd: Number(e.valor_nominal_usd),
     cantidad_ordenes_compra: Number(e.cantidad_ordenes_compra),
     precio: Number(e.precio),
@@ -161,4 +161,10 @@ function buildTemplateContext(e: any, contraparte?: string, conf?: any): Templat
     circular_bvc_fecha: '01 de septiembre de 2023',
     texto_activo_subyacente: 'Ordenes de compra vigentes contenidas en el "Reporte de cuentas por cobrar" anexo al contrato suscrito.',
   };
+}
+
+function todayCaracasISO(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Caracas', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
 }

@@ -34,7 +34,13 @@ const schema = z.object({
   codigo_cliente: z.string().trim().max(20).optional().or(z.literal("")),
 });
 
-const empty = { razon_social: "", tipo: "juridica" as const, rif: "", representante_legal: "", cargo: "", cedula: "", nombre_comercial: "", codigo_cliente: "" };
+type FormState = {
+  razon_social: string; tipo: "natural" | "juridica"; rif: string;
+  representante_legal: string; cargo: string; cedula: string;
+  nombre_comercial: string; codigo_cliente: string;
+};
+
+const empty: FormState = { razon_social: "", tipo: "juridica", rif: "", representante_legal: "", cargo: "", cedula: "", nombre_comercial: "", codigo_cliente: "" };
 
 
 export default function Cedentes() {
@@ -42,7 +48,7 @@ export default function Cedentes() {
   const [rows, setRows] = useState<Cedente[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Cedente | null>(null);
-  const [form, setForm] = useState(empty);
+  const [form, setForm] = useState<FormState>(empty);
   const [busy, setBusy] = useState(false);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
