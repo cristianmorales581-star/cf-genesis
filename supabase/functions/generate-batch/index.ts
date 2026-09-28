@@ -37,6 +37,7 @@ interface BatchRow {
   inversionista_cedula?: string | null;
   inversionista_correo?: string | null;
   inversionista_telefono?: string | null;
+  inversionista_tipo?: 'natural' | 'juridica';
 }
 
 interface Body {
@@ -187,7 +188,7 @@ Deno.serve(async (req) => {
       details: { simbolo, programa: prog?.codigo_pcfb ?? null, vn_usd: vnUsd },
     });
 
-    const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif, r.inversionista_rep_legal, r.inversionista_cedula, r.inversionista_correo, r.inversionista_telefono);
+    const ctx = buildTemplateContext(emision, ced, prog, r.inversionista_label, r.inversionista_rif, r.inversionista_rep_legal, r.inversionista_cedula, r.inversionista_correo, r.inversionista_telefono, r.inversionista_tipo);
     const cedenteSlug = String(ced.razon_social ?? 'CEDENTE')
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z0-9]+/g, '')
@@ -257,12 +258,12 @@ function addDaysISO(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: string, financistaRif?: string, financistaRepLegal?: string | null, financistaCedula?: string | null, financistaCorreo?: string | null, financistaTelefono?: string | null): TemplateContext {
+function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: string, financistaRif?: string, financistaRepLegal?: string | null, financistaCedula?: string | null, financistaCorreo?: string | null, financistaTelefono?: string | null, financistaTipo?: 'natural' | 'juridica'): TemplateContext {
   return {
     simbolo_cfb: e.simbolo_cfb,
     fecha_emision: e.fecha_emision,
     fecha_vencimiento: e.fecha_vencimiento,
-    fecha_documento: new Date().toISOString().slice(0, 10),
+    fecha_documento: todayCaracasISO(),
     valor_nominal_usd: Number(e.valor_nominal_usd),
     cantidad_ordenes_compra: Number(e.cantidad_ordenes_compra),
     precio: Number(e.precio),
@@ -277,6 +278,7 @@ function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: str
     cedente_rep_legal: ced.representante_legal ?? '—',
     cedente_cargo: ced.cargo_representante ?? ced.cargo ?? '—',
     cedente_cedula: ced.cedula_representante ?? ced.cedula ?? '—',
+    cedente_es_persona_natural: ced.tipo === 'natural',
     programa_pcfb: prog?.codigo_pcfb ?? 'N/A',
     programa_plazo_ejecucion: Number(prog?.plazo_ejecucion_dias ?? 180),
     programa_contrato_cesion: prog?.contrato_cesion ?? prog?.codigo_pcfb ?? 'N/A',
@@ -291,7 +293,7 @@ function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: str
     financista_rif: financistaRif ?? 'J-501934070',
     financista_rep_legal: financistaRepLegal ?? null,
     financista_cedula: financistaCedula ?? null,
-    financista_es_persona_natural: false,
+    financista_es_persona_natural: financistaTipo === 'natural',
     financista_correo: financistaCorreo ?? null,
     financista_telefono: financistaTelefono ?? null,
     gbv_razon_social: 'Grupo Bursatil Venezolano Casa de Bolsa, C.A.',
@@ -312,4 +314,10 @@ function buildTemplateContext(e: any, ced: any, prog: any, financistaLabel?: str
     circular_bvc_fecha: '01 de septiembre de 2023',
     texto_activo_subyacente: 'Ordenes de compra vigentes contenidas en el "Reporte de cuentas por cobrar" anexo al contrato suscrito.',
   };
+}
+
+function todayCaracasISO(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Caracas', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
 }

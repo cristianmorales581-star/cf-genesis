@@ -45,6 +45,7 @@ export interface TemplateContext {
   cedente_rep_legal: string | null;
   cedente_cargo: string | null;
   cedente_cedula: string | null;
+  cedente_es_persona_natural: boolean;
 
   // Programa
   programa_pcfb: string;
@@ -844,6 +845,11 @@ export function renderODV(c: TemplateContext): string {
 }
 function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
   const esCompra = tipo === 'COMPRA';
+  const tipoPersona = esCompra
+    ? (c.financista_es_persona_natural ? 'NATURAL' : 'JURIDICA')
+    : (c.cedente_es_persona_natural ? 'NATURAL' : 'JURIDICA');
+  // Solo una ODC generada después de la fecha de emisión corresponde al mercado secundario.
+  const tipoMercado = esCompra && c.fecha_documento > c.fecha_emision ? 'SECUNDARIO' : 'PRIMARIO';
   // En ODC el cliente es el financista (comprador). En ODV el cliente es el cedente (vendedor).
   const clienteNombre = esCompra ? c.financista_razon_social : c.cedente_razon_social;
   const clienteRif = esCompra ? c.financista_rif : c.cedente_rif;
@@ -852,11 +858,11 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
   const repNombre = esCompra ? (c.financista_rep_legal ?? '—') : (c.cedente_rep_legal ?? '—');
   const repCedula = esCompra ? (c.financista_cedula ?? '—') : (c.cedente_cedula ?? '—');
   const repCorreo = esCompra
-    ? (c.financista_correo ?? c.deudor_correo ?? 'jesusrojas@cashea.app')
-    : (c.deudor_correo ?? 'jesusrojas@cashea.app');
+    ? c.financista_correo
+    : null;
   const repTelefono = esCompra
-    ? (c.financista_telefono ?? c.deudor_telefono ?? '+58 424-1885202')
-    : (c.deudor_telefono ?? '+58 424-1885202');
+    ? c.financista_telefono
+    : null;
   // Numeración: ODC = -2, ODV = -1 (convención observada en los PDFs reales)
   const numeroOrden = esCompra ? `${c.simbolo_cfb}-2` : `${c.simbolo_cfb}-1`;
   const html = buildOrdenHTML({
@@ -864,7 +870,7 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
     fechaSolicitud: addDaysISO(c.fecha_emision, -1),
     fechaVencimiento: addDaysISO(c.fecha_emision, 1),
     numeroOrden,
-    tipoPersona: 'JURIDICA',
+    tipoPersona,
     clienteNombre,
     clienteRif,
     clienteEmail: repCorreo,
@@ -874,7 +880,7 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
     representanteCedula: repCedula === '—' ? null : repCedula,
     tipoInstrumento: 'Certificado de Financiamiento Bursátil',
     codigoTitulo: c.simbolo_cfb,
-    tipoMercado: 'PRIMARIO',
+    tipoMercado,
     moneda: 'USD',
     valorNominal: c.valor_nominal_usd,
     precio: c.precio * 100,

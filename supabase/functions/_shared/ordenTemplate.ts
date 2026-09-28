@@ -76,7 +76,7 @@ const x = (cond: boolean): string => (cond ? "X" : "");
 /* ---------- estilos (aislados bajo .gbv-orden para no chocar con Tailwind) ---------- */
 
 export const ORDEN_CSS = `
-.gbv-orden{width:200mm;height:287mm;margin:5mm auto;padding:7.5mm 8mm;background:#fff;color:#000;overflow:hidden;
+.gbv-orden{width:200mm;height:286mm;margin:5mm auto;padding:7.5mm 8mm;background:#fff;color:#000;overflow:hidden;
   font-family:"Aptos Narrow",Carlito,Calibri,Arial,sans-serif;font-size:9pt;box-sizing:border-box}
 .gbv-orden *{box-sizing:border-box;margin:0;padding:0}
 .gbv-orden table{width:100%;border-collapse:collapse;table-layout:fixed}
@@ -88,8 +88,8 @@ export const ORDEN_CSS = `
 .gbv-orden .c{text-align:center}
 .gbv-orden .gap{height:8px}
 .gbv-orden .title{background:#d9d9d9;font-weight:700;font-size:11pt;text-align:center;vertical-align:middle;letter-spacing:.2px}
-.gbv-orden .chk{display:inline-block;width:10px;height:10px;border:0.9px solid #000;font-size:8pt;line-height:9px;
-  text-align:center;font-weight:700;vertical-align:-1px;margin-right:3px}
+.gbv-orden .chk{display:inline-block;width:10px;height:10px;border:1px solid #000;color:#000;font-family:Arial,sans-serif;font-size:9pt;line-height:8.5px;
+  text-align:center;font-weight:900;vertical-align:-1px;margin-right:3px}
 .gbv-orden .opt{font-size:8.6pt;margin-right:10px;white-space:nowrap}
 .gbv-orden .opts{white-space:nowrap}
 .gbv-orden .decl{font-size:7.9pt;line-height:1.28;text-align:justify;padding:4px 6px}

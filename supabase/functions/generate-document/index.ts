@@ -107,7 +107,7 @@ function buildTemplateContext(e: any, contraparte?: string, conf?: any): Templat
     simbolo_cfb: e.simbolo_cfb,
     fecha_emision: e.fecha_emision,
     fecha_vencimiento: e.fecha_vencimiento,
-    fecha_documento: new Date().toISOString().slice(0, 10),
+    fecha_documento: todayCaracasISO(),
     valor_nominal_usd: Number(e.valor_nominal_usd),
     cantidad_ordenes_compra: Number(e.cantidad_ordenes_compra),
     precio: Number(e.precio),
@@ -127,6 +127,7 @@ function buildTemplateContext(e: any, contraparte?: string, conf?: any): Templat
     cedente_rep_legal: ced.representante_legal ?? '—',
     cedente_cargo: ced.cargo_representante ?? ced.cargo ?? '—',
     cedente_cedula: ced.cedula_representante ?? ced.cedula ?? '—',
+    cedente_es_persona_natural: ced.tipo === 'natural',
     programa_pcfb: prog.codigo_pcfb ?? 'N/A',
     programa_plazo_ejecucion: Number(prog.plazo_ejecucion_dias ?? 180),
     programa_contrato_cesion: prog.contrato_cesion ?? prog.codigo_pcfb ?? 'N/A',
@@ -141,7 +142,7 @@ function buildTemplateContext(e: any, contraparte?: string, conf?: any): Templat
     financista_rif: fin.rif ?? 'J-501934070',
     financista_rep_legal: fin.representante_legal ?? null,
     financista_cedula: fin.cedula ?? null,
-    financista_es_persona_natural: false,
+    financista_es_persona_natural: fin.tipo === 'natural',
     gbv_razon_social: 'Grupo Bursatil Venezolano Casa de Bolsa, C.A.',
     gbv_rif: 'J-502409831',
     gbv_miembro_bvc: '3',
@@ -160,4 +161,10 @@ function buildTemplateContext(e: any, contraparte?: string, conf?: any): Templat
     circular_bvc_fecha: '01 de septiembre de 2023',
     texto_activo_subyacente: 'Ordenes de compra vigentes contenidas en el "Reporte de cuentas por cobrar" anexo al contrato suscrito.',
   };
+}
+
+function todayCaracasISO(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Caracas', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
 }
