@@ -220,7 +220,8 @@ function createPdfWrapper(html: string) {
   wrapper.style.top = "0";
   wrapper.style.width = "794px";
   // No minHeight: let content dictate size so trim works on real content height.
-  wrapper.style.padding = "56px 68px 24px";
+  // Las órdenes (.gbv-orden) traen su propio tamaño A4 y márgenes internos.
+  wrapper.style.padding = wrapper.querySelector(".gbv-orden") ? "0" : "56px 68px 24px";
   wrapper.style.boxSizing = "border-box";
   wrapper.style.fontFamily = "Calibri, 'Trebuchet MS', 'Segoe UI', Arial, sans-serif";
   wrapper.style.fontSize = "10.5pt";
