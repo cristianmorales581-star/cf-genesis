@@ -98,7 +98,7 @@ export default function EmisionMasiva() {
         supabase.from("cedentes").select("id, razon_social, rif").eq("activo", true).order("razon_social"),
         supabase.from("programas").select("id, codigo_pcfb, cedente_id, linea, descuento_base, fecha_inicio, programa_descuentos(id, descuento, etiqueta, es_default, activo)")
           .eq("activo", true).eq("estado", "activa").order("codigo_pcfb"),
-        supabase.from("financistas").select("id, razon_social, rif, representante_legal, cedula").eq("activo", true).order("razon_social"),
+        supabase.from("financistas").select("id, razon_social, rif, tipo, representante_legal, cedula, correo, celular").eq("activo", true).order("razon_social"),
       ]);
       setCedentes((c.data ?? []) as Cedente[]);
       setProgramas((p.data ?? []) as Programa[]);
