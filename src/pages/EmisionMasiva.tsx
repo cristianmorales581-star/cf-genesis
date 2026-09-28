@@ -34,7 +34,7 @@ function normRif(r: string | null | undefined): string {
 interface Cedente { id: string; razon_social: string; rif: string; }
 interface Descuento { id: string; descuento: number; etiqueta: string | null; es_default: boolean; activo: boolean; }
 interface Programa { id: string; codigo_pcfb: string; cedente_id: string; linea: string | null; descuento_base: number; fecha_inicio: string; programa_descuentos?: Descuento[]; }
-interface Financista { id: string; razon_social: string; rif: string | null; representante_legal?: string | null; cedula?: string | null; }
+interface Financista { id: string; razon_social: string; rif: string | null; tipo: "natural" | "juridica"; representante_legal?: string | null; cedula?: string | null; }
 
 type RowMapping = ParsedRow & {
   cedente_id?: string;
@@ -357,6 +357,7 @@ export default function EmisionMasiva() {
             inversionista_cedula: fin?.cedula || null,
             inversionista_correo: (fin as any)?.correo || null,
             inversionista_telefono: (fin as any)?.celular || null,
+            inversionista_tipo: fin?.tipo ?? "juridica",
           };
         }),
       };

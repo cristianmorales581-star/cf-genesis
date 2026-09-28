@@ -9,6 +9,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Upload, Download } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
@@ -18,12 +19,13 @@ import { useAuth } from "@/contexts/AuthContext";
 interface Cedente {
   id: string; razon_social: string; rif: string; representante_legal: string | null;
   cargo: string | null; cedula: string | null; nombre_comercial: string | null;
-  codigo_cliente: string | null;
+  codigo_cliente: string | null; tipo: "natural" | "juridica";
   activo: boolean; created_at: string;
 }
 
 const schema = z.object({
   razon_social: z.string().trim().min(2, "Razón social requerida").max(200),
+  tipo: z.enum(["natural", "juridica"]),
   rif: z.string().trim().regex(/^[JGVEPCjgvepc]-?\d{7,9}-?\d?$/, "RIF inválido (ej. J-12345678-9)").max(20),
   representante_legal: z.string().trim().max(150).optional().or(z.literal("")),
   cargo: z.string().trim().max(100).optional().or(z.literal("")),
@@ -32,7 +34,7 @@ const schema = z.object({
   codigo_cliente: z.string().trim().max(20).optional().or(z.literal("")),
 });
 
-const empty = { razon_social: "", rif: "", representante_legal: "", cargo: "", cedula: "", nombre_comercial: "", codigo_cliente: "" };
+const empty = { razon_social: "", tipo: "juridica" as const, rif: "", representante_legal: "", cargo: "", cedula: "", nombre_comercial: "", codigo_cliente: "" };
 
 
 export default function Cedentes() {
@@ -73,6 +75,7 @@ export default function Cedentes() {
     setEditing(c);
     setForm({
       razon_social: c.razon_social, rif: c.rif,
+      tipo: c.tipo,
       representante_legal: c.representante_legal ?? "",
       cargo: c.cargo ?? "", cedula: c.cedula ?? "",
       nombre_comercial: c.nombre_comercial ?? "",
@@ -88,6 +91,7 @@ export default function Cedentes() {
     setBusy(true);
     const payload = {
       razon_social: parsed.data.razon_social,
+      tipo: parsed.data.tipo,
       rif: parsed.data.rif,
       representante_legal: parsed.data.representante_legal || null,
       cargo: parsed.data.cargo || null,
@@ -116,14 +120,14 @@ export default function Cedentes() {
   }
 
   function exportCsv() {
-    const headers = ["Código Cliente","Razón Social","Nombre Comercial","RIF","Representante Legal","Cargo","Cédula","Activo","Creado"];
+    const headers = ["Código Cliente","Tipo de persona","Razón Social","Nombre Comercial","RIF","Representante Legal","Cargo","Cédula","Activo","Creado"];
     const esc = (v: any) => {
       const s = v == null ? "" : String(v);
       return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const lines = [headers.join(",")];
     rows.forEach(c => lines.push([
-      c.codigo_cliente ?? "", c.razon_social, c.nombre_comercial ?? "", c.rif,
+      c.codigo_cliente ?? "", c.tipo === "natural" ? "Persona Natural" : "Persona Jurídica", c.razon_social, c.nombre_comercial ?? "", c.rif,
       c.representante_legal ?? "", c.cargo ?? "", c.cedula ?? "",
       c.activo ? "Sí" : "No", new Date(c.created_at).toISOString().slice(0,10),
     ].map(esc).join(",")));
@@ -162,7 +166,19 @@ export default function Cedentes() {
                 </DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-2">
-                <div><Label>Razón Social *</Label><Input value={form.razon_social} onChange={e => setForm({ ...form, razon_social: e.target.value })} maxLength={200} /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Tipo de persona *</Label>
+                    <Select value={form.tipo} onValueChange={(tipo: "natural" | "juridica") => setForm({ ...form, tipo })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="juridica">Persona Jurídica</SelectItem>
+                        <SelectItem value="natural">Persona Natural</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Razón Social / Nombre *</Label><Input value={form.razon_social} onChange={e => setForm({ ...form, razon_social: e.target.value })} maxLength={200} /></div>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>RIF *</Label><Input value={form.rif} onChange={e => setForm({ ...form, rif: e.target.value.toUpperCase() })} placeholder="J-12345678-9" maxLength={20} /></div>
                   <div><Label>Nombre Comercial</Label><Input value={form.nombre_comercial} onChange={e => setForm({ ...form, nombre_comercial: e.target.value })} maxLength={150} /></div>
@@ -192,6 +208,7 @@ export default function Cedentes() {
             <thead className="bg-secondary/60 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left px-5 py-3 font-semibold">Código</th>
+                <th className="text-left px-5 py-3 font-semibold">Tipo</th>
                 <th className="text-left px-5 py-3 font-semibold">Razón Social</th>
 
                 <th className="text-left px-5 py-3 font-semibold">RIF</th>
@@ -231,6 +248,7 @@ export default function Cedentes() {
                   title={isOperador ? "Arrastra esta fila sobre otra para copiar representante, cargo y cédula" : undefined}
                 >
                   <td className="px-5 py-3 font-mono text-xs">{c.codigo_cliente ?? "—"}</td>
+                  <td className="px-5 py-3 text-xs text-muted-foreground">{c.tipo === "natural" ? "Natural" : "Jurídica"}</td>
                   <td className="px-5 py-3">
 
                     <div className="font-medium text-primary">{c.razon_social}</div>
