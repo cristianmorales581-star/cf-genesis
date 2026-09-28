@@ -76,7 +76,7 @@ const x = (cond: boolean): string => (cond ? "X" : "");
 /* ---------- estilos (aislados bajo .gbv-orden para no chocar con Tailwind) ---------- */
 
 export const ORDEN_CSS = `
-.gbv-orden{width:200mm;height:287mm;margin:5mm auto;padding:7.5mm 8mm;background:#fff;color:#000;overflow:hidden;
+.gbv-orden{width:200mm;height:286mm;margin:5mm auto;padding:7.5mm 8mm;background:#fff;color:#000;overflow:hidden;
   font-family:"Aptos Narrow",Carlito,Calibri,Arial,sans-serif;font-size:9pt;box-sizing:border-box}
 .gbv-orden *{box-sizing:border-box;margin:0;padding:0}
 .gbv-orden table{width:100%;border-collapse:collapse;table-layout:fixed}

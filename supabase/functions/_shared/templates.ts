@@ -858,11 +858,11 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
   const repNombre = esCompra ? (c.financista_rep_legal ?? '—') : (c.cedente_rep_legal ?? '—');
   const repCedula = esCompra ? (c.financista_cedula ?? '—') : (c.cedente_cedula ?? '—');
   const repCorreo = esCompra
-    ? (c.financista_correo ?? c.deudor_correo ?? 'jesusrojas@cashea.app')
-    : (c.deudor_correo ?? 'jesusrojas@cashea.app');
+    ? c.financista_correo
+    : null;
   const repTelefono = esCompra
-    ? (c.financista_telefono ?? c.deudor_telefono ?? '+58 424-1885202')
-    : (c.deudor_telefono ?? '+58 424-1885202');
+    ? c.financista_telefono
+    : null;
   // Numeración: ODC = -2, ODV = -1 (convención observada en los PDFs reales)
   const numeroOrden = esCompra ? `${c.simbolo_cfb}-2` : `${c.simbolo_cfb}-1`;
   const html = buildOrdenHTML({
