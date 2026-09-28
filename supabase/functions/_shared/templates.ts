@@ -1,3 +1,4 @@
+import { buildOrdenHTML } from './ordenTemplate.ts';
 // supabase/functions/_shared/templates.ts
 //
 // Plantillas HTML pixel-fieles a los PDFs reales que GBV firma con clientes
@@ -858,218 +859,38 @@ function renderOrden(c: TemplateContext, tipo: 'COMPRA' | 'VENTA'): string {
     : (c.deudor_telefono ?? '+58 424-1885202');
   // Numeración: ODC = -2, ODV = -1 (convención observada en los PDFs reales)
   const numeroOrden = esCompra ? `${c.simbolo_cfb}-2` : `${c.simbolo_cfb}-1`;
-  const fechaSolicitud = fmtFechaDDMMYYYY(addDaysISO(c.fecha_emision, -1));
-  const fechaVtoOrden = fmtFechaDDMMYYYY(addDaysISO(c.fecha_emision, 1));
-  return `<!doctype html>
-<html lang="es-VE"><head><meta charset="utf-8"/>
-<title>${esCompra ? 'ODC' : 'ODV'} ${c.simbolo_cfb} — ${clienteNombre}</title>
-${baseStyles()}
-<style>
-  @page { size: A4; margin: 5mm 12mm 6mm 12mm; }
-  html, body { height: auto; }
-  body { font-size: 9pt; line-height: 1.28; }
-  .orden-doc table.form { margin: 3px 0; font-size: 9pt; page-break-inside: avoid; page-break-after: auto; }
-  .orden-doc table.form tr { page-break-inside: avoid; }
-  .orden-doc table.form td, .orden-doc table.form th {
-    padding: 4px 5px 5px;
-    vertical-align: top;
-    line-height: 1.25;
-  }
-  .orden-doc table.form th { padding: 3px 5px; font-size: 8.5pt; }
-  .orden-doc .label-mini { display: block; margin-bottom: 1px; }
-  .orden-doc .checkbox-cell { padding: 2px 4px; }
-  .orden-doc table.form tr.firma-form-row td { height: 65px; }
-  .orden-doc .form-titulo { padding: 4px; font-size: 9.5pt; }
-  .orden-doc .form-titulo-claro { padding: 3px 6px; font-size: 9pt; }
-  .orden-doc .declaracion-cell { font-size: 7.5pt !important; line-height: 1.28 !important; }
-</style>
-
-</head><body>
-${actionsBar()}
-<div class="page orden-doc">
-
-  <table class="form">
-    <tr>
-      <td colspan="3" class="form-titulo">
-        SOLICITUD DE ÓRDENES DE COMPRA Y/O VENTA DE RENTA FIJA
-      </td>
-      <td><span class="label-mini">Fecha de Solicitud:</span><br/>${fechaSolicitud}</td>
-    </tr>
-    <tr>
-      <td colspan="3" rowspan="2" style="border: 0;">&nbsp;</td>
-      <td><span class="label-mini">Fecha de Vencimiento:</span><br/>${fechaVtoOrden}</td>
-    </tr>
-    <tr>
-      <td><span class="label-mini">N° de Orden:</span><br/><strong>${numeroOrden}</strong></td>
-    </tr>
-    <tr>
-      <td colspan="3" style="text-align: right;">Persona Natural</td>
-      <td>Persona Jurídica <span style="float: right; font-weight: bold; font-size: 12pt;">x</span></td>
-    </tr>
-  </table>
-  <table class="form">
-    <tr><td colspan="4" class="form-titulo-claro">DATOS DE CLIENTE</td></tr>
-    <tr>
-      <td colspan="4">
-        <span class="label-mini">Nombre(s) y Apellido(s) / Razón Social</span><br/>
-        ${clienteNombre}
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <span class="label-mini">Cédula de Identidad / R.I.F</span><br/>
-        ${clienteRif}
-      </td>
-      <td>
-        <span class="label-mini">Correo electrónico</span><br/>
-        ${repCorreo}
-      </td>
-      <td>
-        <span class="label-mini">Teléfono Fijo</span><br/>
-        ${repTelefono}
-      </td>
-      <td>
-        <span class="label-mini">Teléfono Movil</span><br/>
-        ${repTelefono}
-      </td>
-    </tr>
-    <tr><td colspan="4" class="form-titulo-claro">EN CASO DE PERSONA JURÍDICA ESPECIFIQUE LOS DATOS DEL REPRESENTANTE LEGAL Y/O FIRMA</td></tr>
-    <tr>
-      <td colspan="3">
-        <span class="label-mini">Nombre(s) y Apellido(s)</span><br/>
-        ${repNombre}
-      </td>
-      <td>
-        <span class="label-mini">Cédula de Identidad</span><br/>
-        ${repCedula}
-      </td>
-    </tr>
-  </table>
-  <table class="form">
-    <tr><td colspan="4" class="form-titulo-claro">DATOS DEL TÍTULO VALOR</td></tr>
-    <tr>
-      <td colspan="2">
-        <span class="label-mini">Tipo de Instrumento</span><br/>
-        Certificado de Financiamiento Bursátil
-      </td>
-      <td colspan="2">
-        <span class="label-mini">Nombre del Título Valor / Codigo ISIN</span><br/>
-        <strong>${c.simbolo_cfb}</strong>
-      </td>
-    </tr>
-  </table>
-  <table class="form">
-    <tr><td colspan="6" class="form-titulo-claro">DATOS DE OPERACIÓN</td></tr>
-    <tr>
-      <th colspan="2">Tipo de Operación</th>
-      <th colspan="2">Tipo de Mercado</th>
-      <th colspan="2">Moneda</th>
-    </tr>
-    <tr>
-      <td colspan="2"><strong>${tipo}</strong></td>
-      <td>MERCADO PRIMARIO</td>
-      <td>MERCADO SECUNDARIO</td>
-      <td>BOLÍVARES (Bs)</td>
-      <td>DÓLARES ($)</td>
-    </tr>
-    <tr>
-      <td colspan="2">&nbsp;</td>
-      <td class="checkbox-cell">x</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td class="checkbox-cell">x</td>
-    </tr>
-    <tr>
-      <td colspan="2">&nbsp;</td>
-      <td colspan="2">
-        <span class="label-mini">Valor Nominal</span><br/>
-        ${fmtUSD(c.valor_nominal_usd)}
-      </td>
-      <td>
-        <span class="label-mini">Precio (%)</span><br/>
-        ${fmtPct(c.precio, 2)}
-      </td>
-      <td>
-        <span class="label-mini">${esCompra ? 'Contravalor' : 'Contravalor'}</span><br/>
-        ${fmtUSD(c.monto_efectivo_usd)}
-      </td>
-    </tr>
-  </table>
-  <table class="form">
-    <tr><td colspan="2" class="form-titulo-claro">CUENTA ASOCIADA *</td></tr>
-    <tr>
-      <td><span class="label-mini">Nombre del Banco</span><br/>n/a</td>
-      <td><span class="label-mini">N° de cuenta</span><br/>n/a</td>
-    </tr>
-  </table>
-  <table class="form">
-    <tr><td colspan="2" class="form-titulo-claro">CUENTA EN DÓLARES / BANCA NACIONAL</td></tr>
-    <tr>
-      <td><span class="label-mini">Nombre del Banco</span><br/>n/a</td>
-      <td><span class="label-mini">N° de Cuenta</span><br/>n/a</td>
-    </tr>
-  </table>
-  <p style="font-size: 8.5pt; margin: 8px 0 6px;">
-    (*) Por favor, señalar los datos de la cuenta bancaria en la que se realizará la liquidación del CFB.
-  </p>
-  <div data-no-break>
-  <table class="form">
-    <tr><td colspan="3" class="form-titulo-claro">SOLICITUD DE ÓRDENES DE COMPRA Y/O VENTA DE TÍTULOS VALORES - RENTA FIJA</td></tr>
-    <tr><td colspan="3" class="form-titulo-claro">DECLARACIÓN DEL CLIENTE</td></tr>
-    <tr><td colspan="3" class="declaracion-cell" style="font-size: 7.5pt; text-align: justify; line-height: 1.3;">
-      <strong>El Cliente declara que:</strong><br/>
-      1.- Certifico que la información y datos suministrados en la presente son verdaderos y autorizo a la Bolsa de Valores de Caracas y Superintendencia Nacional de Valores (SUNAVAL) y demás autoridades competentes a verificar o validar su autenticidad.<br/>
-      2.- Autorizo la forma expresa a <strong>GRUPO BURSÁTIL VENEZOLANO, CASA DE BOLSA C.A.</strong>, para que suministre a las autoridades competentes la información que estas requieran sobre las operaciones de compra y venta de divisas y/o títulos valores a que se refiere esta solicitud.<br/>
-      3.- Los recursos financieros utilizados para la presente solicitud de compra y venta de divisas y/o de títulos valores, no tienen relación alguna con dinero, bienes, haberes, valores o títulos producto de actividad ilícitas, a las que se refiere la Ley Orgánica Contra la Delincuencia Organizada y Financiamiento al Terrorismo, la Ley Orgánica de Drogas y la Resolución 110 de las "Normas relativas a la Administración y Fiscalización de los Riesgos relacionados con los delitos de Legitimación de Capitales y Financiamiento al Terrorismo aplicables a las Instituciones reguladas por la Superintendencia Nacional de Valores".<br/>
-      Ahora bien, en el supuesto de existir actividades que pudiesen considerarse como sospechosas, asumo la plena responsabilidad del caso, en el entendido que <strong>GRUPO BURSÁTIL VENEZOLANO, CASA DE BOLSA C.A.</strong> y/o la Superintendencia Nacional de Valores realizarán las diligencias pertinentes de conformidad con las disposiciones legales y vigentes.<br/>
-      4.- No está incurso en investigaciones, ni ha transgredido la Normativa Vigente.<br/>
-      5.- Es el único responsable de su decisión de la presente solicitud de Compra/Venta de Títulos Valores.<br/>
-      6.- Acepta pagar cualquier monto adecuado por el cobro de comisiones, tarifas, recargos u otra contraprestación derivada a los servicios de compra, custodia, cobranzas y ulterior pago de los rendimientos y/o capitales de los títulos valores objeto de esta solicitud, según lo establecido en el contrato correspondiente.<br/>
-      7.- Así mismo declaro que:
-    </td></tr>
-    <tr>
-      <th>El Origen de los Fondos son:</th>
-      <th colspan="2">Y el Destino de los Fondos son:</th>
-    </tr>
-    <tr>
-      <td style="text-align: center;"><strong>Actividad Comercial</strong></td>
-      <td colspan="2" style="text-align: center;"><strong>Inversión</strong></td>
-    </tr>
-  </table>
-  </div>
-  <table class="form">
-    <tr><td colspan="4" class="form-titulo-claro">Titular / Representante Legal</td><td class="form-titulo-claro">Huella Dactilar</td></tr>
-    <tr class="firma-form-row">
-      <td colspan="2">
-        <span class="label-mini">Nombre(s) y Apellido(s)</span><br/>
-        ${repNombre}
-      </td>
-      <td colspan="1">
-        <span class="label-mini">Cédula de identidad</span><br/>
-        ${repCedula}
-      </td>
-      <td colspan="1" class="firma-form-cell">
-        <span class="label-mini">Firma</span>
-      </td>
-      <td>&nbsp;</td>
-    </tr>
-  </table>
-  <table class="form">
-    <tr><td colspan="2" class="form-titulo-claro">ÚNICAMENTE PARA SER LLENADO POR EL OPERADOR GRUPO BURSÁTIL VENEZOLANO, CASA DE BOLSA C.A.</td></tr>
-    <tr>
-      <td>
-        ${c.operador_nombre}<br/>
-        <span class="label-mini">Nombre(s) y Apellido(s) Operador</span><br/><br/>
-        ${c.operador_telefono}<br/>
-        <span class="label-mini">N° de Teléfono</span>
-      </td>
-      <td style="height: 80px;">
-        <span class="label-mini">Sello de la Oficina</span>
-      </td>
-    </tr>
-  </table>
-</div>
-</body></html>`;
+  const html = buildOrdenHTML({
+    tipoOperacion: tipo,
+    fechaSolicitud: addDaysISO(c.fecha_emision, -1),
+    fechaVencimiento: addDaysISO(c.fecha_emision, 1),
+    numeroOrden,
+    tipoPersona: 'JURIDICA',
+    clienteNombre,
+    clienteRif,
+    clienteEmail: repCorreo,
+    clienteTelFijo: repTelefono,
+    clienteTelMovil: repTelefono,
+    representanteNombre: repNombre === '—' ? null : repNombre,
+    representanteCedula: repCedula === '—' ? null : repCedula,
+    tipoInstrumento: 'Certificado de Financiamiento Bursátil',
+    codigoTitulo: c.simbolo_cfb,
+    tipoMercado: 'PRIMARIO',
+    moneda: 'USD',
+    valorNominal: c.valor_nominal_usd,
+    precio: c.precio * 100,
+    contravalor: c.monto_efectivo_usd,
+    cuentaAsociadaBanco: null,
+    cuentaAsociadaNumero: null,
+    cuentaDolaresBanco: null,
+    cuentaDolaresNumero: null,
+    origenFondos: 'Actividad Comercial',
+    destinoFondos: 'Inversión',
+    operadorNombre: c.operador_nombre,
+    operadorTelefono: c.operador_telefono,
+  });
+  return html
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${esCompra ? 'ODC' : 'ODV'} ${c.simbolo_cfb} — ${clienteNombre}</title>`)
+    .replace('<body>', `<body>${actionsBar()}`);
 }
 // Helper local (Deno no tiene addDaysISO importable desde el frontend)
 function addDaysISO(iso: string, days: number): string {
