@@ -37,8 +37,8 @@ interface Row {
   tasa_cambio_bs_usd: number; dias_colocados: number;
   programa_id?: string | null; cedente_id?: string | null; financista_id?: string | null;
   cantidad_ordenes_compra?: number | null;
-  programas?: { codigo_pcfb: string; cedentes?: { razon_social: string; rif: string } } | null;
-  cedentes?: { razon_social: string; rif: string } | null;
+  programas?: { codigo_pcfb: string; cedentes?: { razon_social: string; rif: string; codigo_cliente?: string | null } } | null;
+  cedentes?: { razon_social: string; rif: string; codigo_cliente?: string | null } | null;
   financistas?: { razon_social: string; rif: string } | null;
 }
 
@@ -88,7 +88,7 @@ function csvNum(n: number | null | undefined, fmt: CsvFormat, decimals = 4): str
 function downloadCSV(filename: string, rows: Row[], fmt: CsvFormat) {
   const sep = fmt === "es" ? ";" : ",";
   const header = [
-    "Simbolo CFB", "Programa", "Cedente", "RIF Cedente", "Financista", "RIF Financista",
+    "Simbolo CFB", "Programa", "Cedente", "RIF Cedente", "Código Cliente Cedente", "Financista", "RIF Financista",
     "Valor Nominal USD", "Monto SIBE", "Monto Efectivo USD", "Precio",
     "Rendimiento Anualizado", "Fecha Emisión", "Fecha Vencimiento", "Estado",
     "Tasa BCV Emisión", "Tasa Derecho Registro %", "Derecho de Registro USD", "Derecho de Registro Bs",
@@ -106,6 +106,7 @@ function downloadCSV(filename: string, rows: Row[], fmt: CsvFormat) {
       programaDe(r),
       cedenteDe(r)?.razon_social ?? "",
       cedenteDe(r)?.rif ?? "",
+      cedenteDe(r)?.codigo_cliente ?? "",
       r.financistas?.razon_social ?? "SIN FINANCISTA",
       r.financistas?.rif ?? "",
       csvNum(r.valor_nominal_usd, fmt),
@@ -273,7 +274,7 @@ export default function Emisiones() {
   async function load() {
     const { data } = await supabase
       .from("emisiones")
-      .select("*, programas(codigo_pcfb, cedentes(razon_social, rif)), cedentes(razon_social, rif), financistas(razon_social, rif)")
+      .select("*, programas(codigo_pcfb, cedentes(razon_social, rif, codigo_cliente)), cedentes(razon_social, rif, codigo_cliente), financistas(razon_social, rif)")
       .is("deleted_at", null)
       .order("fecha_emision", { ascending: false });
     setRows((data ?? []) as Row[]);
