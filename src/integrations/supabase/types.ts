@@ -139,6 +139,27 @@ export type Database = {
           },
         ]
       }
+      emision_dia_documentos: {
+        Row: {
+          estado: string
+          fecha_emision: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          estado?: string
+          fecha_emision: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          estado?: string
+          fecha_emision?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       emisiones: {
         Row: {
           cantidad_ordenes_compra: number
