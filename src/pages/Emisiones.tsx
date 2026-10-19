@@ -14,7 +14,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 import EmisionEditDialog, { type EditableEmision } from "@/components/EmisionEditDialog";
-import { buildPaqueteZipBlob, downloadBlob } from "@/lib/paqueteZip";
+import { buildPaqueteZipBlob, buildVectorRow, downloadBlob } from "@/lib/paqueteZip";
+import { buildVectorXlsx } from "@/lib/vectorXlsx";
 
 const DERECHO_REGISTRO_RATE_DEFAULT = 0.001; // 0.1%
 const DERECHO_REGISTRO_RATE_14D = 0.00078;   // 0.078%
@@ -210,7 +211,7 @@ function SortTh({
   );
 }
 
-export default function Emisiones() {
+export default function Emisiones({ fechaEmision, embedded = false, onChanged }: { fechaEmision?: string; embedded?: boolean; onChanged?: () => void } = {}) {
   const { isOperador, isAdmin } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -272,14 +273,20 @@ export default function Emisiones() {
   }
 
   async function load() {
-    const { data } = await supabase
-      .from("emisiones")
-      .select("*, programas(codigo_pcfb, cedentes(razon_social, rif, codigo_cliente)), cedentes(razon_social, rif, codigo_cliente), financistas(razon_social, rif)")
-      .is("deleted_at", null)
-      .order("fecha_emision", { ascending: false });
-    setRows((data ?? []) as Row[]);
+    const collected: Row[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      let query = supabase.from("emisiones")
+        .select("*, programas(codigo_pcfb, cedentes(razon_social, rif, codigo_cliente)), cedentes(razon_social, rif, codigo_cliente), financistas(razon_social, rif)")
+        .is("deleted_at", null).order("fecha_emision", { ascending: false }).order("id").range(offset, offset + 999);
+      if (fechaEmision) query = query.eq("fecha_emision", fechaEmision);
+      const { data, error } = await query;
+      if (error) { toast.error(error.message); return; }
+      collected.push(...((data ?? []) as Row[]));
+      if (!data || data.length < 1000) break;
+    }
+    setRows(collected);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); setSelected([]); setF(INITIAL_FILTERS); }, [fechaEmision]);
 
   async function deleteEmission(row: Row) {
     if (!window.confirm(`¿Enviar a la papelera el certificado ${row.simbolo_cfb}? Podrás restaurarlo desde Papelera.`)) return;
@@ -288,6 +295,7 @@ export default function Emisiones() {
     if (error) { toast.error(error.message); return; }
     await logAudit({ action: "delete", resource_type: "emision", resource_id: row.id, details: { simbolo_cfb: row.simbolo_cfb, soft: true } });
     setRows(prev => prev.filter(r => r.id !== row.id));
+    onChanged?.();
     toast.success(`Certificado ${row.simbolo_cfb} enviado a la papelera`);
   }
 
@@ -306,6 +314,7 @@ export default function Emisiones() {
     setRows(prev => prev.filter(r => !selected.includes(r.id)));
     setSelected([]);
     setDeleting(false);
+    onChanged?.();
     toast.success(`${selectedRows.length} certificado(s) enviado(s) a la papelera`);
   }
 
@@ -387,6 +396,14 @@ export default function Emisiones() {
     toast.success(`Exportadas ${subset.length} emisiones`);
   }
 
+  function exportVector() {
+    const subset = selected.length ? filtered.filter(r => selected.includes(r.id)) : filtered;
+    if (!subset.length) { toast.error("No hay emisiones para exportar"); return; }
+    const date = fechaEmision ?? subset[0].fecha_emision;
+    const buffer = buildVectorXlsx(subset.map(buildVectorRow), date);
+    downloadBlob(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `VECTOR_${date}_CONSOLIDADO.xlsx`);
+  }
+
   async function exportZipSeleccion() {
     const subset = filtered.filter(r => selected.includes(r.id));
     if (!subset.length) { toast.error("No hay certificados seleccionados"); return; }
@@ -426,7 +443,7 @@ export default function Emisiones() {
 
   return (
     <>
-      <PageHeader title="Emisiones" subtitle="Listado completo de Certificados de Financiamiento Bursátil">
+      {!embedded && <PageHeader title="Emisiones" subtitle="Listado completo de Certificados de Financiamiento Bursátil">
         {isAdmin && (
           <>
             <Link to="/emisiones/papelera">
@@ -441,9 +458,9 @@ export default function Emisiones() {
             </Link>
           </>
         )}
-      </PageHeader>
+      </PageHeader>}
 
-      <div className="flex flex-col md:flex-row gap-3 mb-4">
+      <div className="flex flex-wrap gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={f.q} onChange={e => setFilter("q", e.target.value)} placeholder="Buscar por símbolo, programa, cedente o financista…" className="pl-9" />
@@ -462,6 +479,9 @@ export default function Emisiones() {
         <Button variant="outline" onClick={() => exportCSV("filtered")}>
           <Download className="h-4 w-4 mr-1.5" /> CSV ({filtered.length})
         </Button>
+        {embedded && <Button variant="outline" onClick={exportVector} disabled={!filtered.length}>
+          <Download className="h-4 w-4" /> Vector {selected.length ? "selección" : "del día"}
+        </Button>}
         {selected.length > 0 && (
           <Button variant="outline" onClick={() => exportCSV("selected")}>
             <Download className="h-4 w-4 mr-1.5" /> CSV selección ({selected.length})
@@ -692,7 +712,7 @@ export default function Emisiones() {
         emision={editing}
         open={!!editing}
         onOpenChange={(v) => { if (!v) setEditing(null); }}
-        onSaved={load}
+        onSaved={() => { load(); onChanged?.(); }}
       />
     </>
 
