@@ -3,6 +3,7 @@
 export const SECTIONS: { id: string; label: string; path: string; group: string }[] = [
   { id: "dashboard",        label: "Dashboard",         path: "/",                 group: "general" },
   { id: "operaciones_dia",  label: "Operaciones del día", path: "/operaciones-dia", group: "operación" },
+  { id: "calendario_emisiones", label: "Calendario de emisiones", path: "/calendario-emisiones", group: "operación" },
   { id: "emisiones",        label: "Emisiones",         path: "/emisiones",        group: "operación" },
   { id: "emisiones_nueva",  label: "Nueva Emisión",     path: "/emisiones/nueva",  group: "operación" },
   { id: "emisiones_masiva", label: "Emisión Masiva",    path: "/emisiones/masiva", group: "operación" },
