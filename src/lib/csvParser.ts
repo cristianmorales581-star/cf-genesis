@@ -134,9 +134,11 @@ function parseNumber(s: string): number {
  *  - Express: basis points × 100  (ej: 300 = 3.00%  => 0.03)
  *  - Masivo/Paquetizado: porcentaje directo (ej: 0.92 = 0.92%  => 0.0092)
  */
-function parseDescuentoDecimal(raw: string, tipo: "Express" | "Masivo" | "Paquetizado"): number {
+function parseDescuentoDecimal(raw: string, tipo: "Express" | "Masivo" | "Paquetizado", explicitPercent = false): number {
   const n = parseNumber(raw);
   if (!isFinite(n) || n === 0) return 0;
+  // Unidades explícitas tienen prioridad sobre las escalas de formatos históricos.
+  if (explicitPercent || raw.includes("%")) return n / 100;
   // Los CSV históricos han venido en 3 escalas distintas:
   // 300 → 3.00%, 3 → 3.00%, 0.92 → 0.92%, 0.03 → 3.00%.
   if (n >= 100) return n / 10000;
@@ -155,7 +157,7 @@ export function parseCSVText(text: string): ParseResult {
     return { rows: [], detectedFormat: "Desconocido", warnings: ["CSV vacío"] };
   }
 
-  const header = parseCSVLine(lines[0], sep).map(h => h.toUpperCase());
+  const header = parseCSVLine(lines[0], sep).map(h => h.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase());
   // Mapear columnas por nombre (tolerando acentos faltantes por encoding)
   const idx = {
     nro: header.findIndex(h => h.startsWith("NRO")),
@@ -170,10 +172,10 @@ export function parseCSVText(text: string): ParseResult {
     monto: header.findIndex(h => h.includes("MONTO TOTAL")),
     venc: header.findIndex(h => h.includes("VENCIMIENTO")),
     plazo: header.findIndex(h => h === "PLAZO"),
-    desc: header.findIndex(h => h === "DESCUENTO"),
+    desc: header.findIndex(h => /^DESCUENTO(?:\s*\(\s*%\s*\)|\s*%)?$/.test(h)),
     certs: header.findIndex(h => h.includes("CERTIFICADOS") || h.includes("REPORTE")),
     progInv: header.findIndex(h => h === "PROGRAMA" || h === "INVERSIONISTA"),
-    status: header.findIndex(h => h === "STATUS"),
+    status: header.findIndex(h => h === "STATUS" || h === "VALIDACION"),
   };
 
   const warnings: string[] = [];
@@ -205,7 +207,7 @@ export function parseCSVText(text: string): ParseResult {
       monto_total_usd: parseNumber(cols[idx.monto] ?? "0"),
       vencimiento_primera_orden: parseDateDDMMYYYY(cols[idx.venc] ?? ""),
       plazo_dias: parsePlazo(cols[idx.plazo] ?? ""),
-      descuento_decimal: parseDescuentoDecimal(cols[idx.desc] ?? "0", tipo),
+      descuento_decimal: parseDescuentoDecimal(cols[idx.desc] ?? "0", tipo, (header[idx.desc] ?? "").includes("%")),
       certificados_reporte: clean(cols[idx.certs] ?? ""),
       programa_o_inversionista: clean(cols[idx.progInv] ?? ""),
       status_csv: clean(cols[idx.status] ?? ""),
@@ -213,7 +215,8 @@ export function parseCSVText(text: string): ParseResult {
 
     if (!row.monto_total_usd) warnings.push(`Fila ${row.nro}: monto inválido`);
     if (!row.vencimiento_primera_orden) warnings.push(`Fila ${row.nro}: fecha inválida`);
-    if (!row.simbolo_cfb) warnings.push(`Fila ${row.nro}: símbolo CFB faltante`);
+    if (idx.desc < 0 || !clean(cols[idx.desc] ?? "")) warnings.push(`Fila ${row.nro}: descuento faltante`);
+    if (idx.simbolo >= 0 && !row.simbolo_cfb) warnings.push(`Fila ${row.nro}: símbolo CFB faltante`);
 
     rows.push(row);
   }
