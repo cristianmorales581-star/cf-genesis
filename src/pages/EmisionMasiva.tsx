@@ -20,6 +20,7 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
 }
 import { fmtUSD, fmtPct, todayISO } from "@/lib/format";
 import { parseCSVText, inferCedenteName, decodeCsvBuffer, type ParsedRow } from "@/lib/csvParser";
+import { missingCsvDiscounts } from "@/lib/csvDiscounts";
 import JSZip from "jszip";
 
 import { buildVectorXlsx } from "@/lib/vectorXlsx";
@@ -90,6 +91,7 @@ export default function EmisionMasiva() {
   const [lastSavedAt, setLastSavedAt] = useState<number>(initialSavedAt);
   const fileRef = useRef<HTMLInputElement>(null);
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const discountSyncRef = useRef<Promise<boolean>>(Promise.resolve(true));
 
   useEffect(() => {
     (async () => {
@@ -173,9 +175,7 @@ export default function EmisionMasiva() {
       return {
         ...r,
         // El descuento del título es SIEMPRE el que viene en el CSV.
-        descuento_decimal: Number.isFinite(r.descuento_decimal) && r.descuento_decimal > 0
-          ? r.descuento_decimal
-          : (matchedPrograma ? Number(matchedPrograma.descuento_base) : r.descuento_decimal),
+        descuento_decimal: r.descuento_decimal,
         cedente_id: matchedCedente.id,
         programa_id: matchedPrograma?.id,
         financista_id: defaultFinancista?.id,
@@ -184,45 +184,39 @@ export default function EmisionMasiva() {
     });
     setRows(mapped);
     toast({ title: `${parsed.length} filas leídas`, description: `Formato: ${detectedFormat}` });
-    void syncCsvDiscounts(mapped);
+    void queueDiscountSync(mapped);
+  }
+
+  function queueDiscountSync(mapped: RowMapping[]) {
+    const task = discountSyncRef.current.then(() => syncCsvDiscounts(mapped));
+    discountSyncRef.current = task.catch(() => false);
+    return discountSyncRef.current;
   }
 
   /** Registra en cada programa los descuentos del CSV que aún no existen (etiqueta = fecha de alta). */
   async function syncCsvDiscounts(mapped: RowMapping[]) {
-    const round = (n: number) => Math.round(n * 1e6) / 1e6;
-    const pending = new Map<string, number>(); // `${programaId}|${desc}`
-    for (const r of mapped) {
-      if (!r.programa_id || !Number.isFinite(r.descuento_decimal) || r.descuento_decimal <= 0) continue;
-      const prog = programas.find(p => p.id === r.programa_id);
-      if (!prog) continue;
-      const d = round(r.descuento_decimal);
-      const registrados = [
-        round(Number(prog.descuento_base)),
-        ...(prog.programa_descuentos ?? []).filter(x => x.activo).map(x => round(Number(x.descuento))),
-      ];
-      if (!registrados.includes(d)) pending.set(`${r.programa_id}|${d}`, d);
+    const ids = [...new Set(mapped.flatMap(r => r.programa_id ? [r.programa_id] : []))];
+    if (!ids.length) return true;
+    const { data: catalog, error: catalogError } = await supabase.from("programas")
+      .select("id, descuento_base, programa_descuentos(descuento, activo)").in("id", ids);
+    if (catalogError) {
+      toast({ title: "No se pudieron verificar los descuentos", description: catalogError.message, variant: "destructive" });
+      return false;
     }
-    if (!pending.size) { setDescuentosNuevos([]); return; }
-
     const etiqueta = new Date().toLocaleDateString("es-VE");
-    const inserts = [...pending.keys()].map(k => ({
-      programa_id: k.split("|")[0],
-      descuento: pending.get(k)!,
-      etiqueta,
-      es_default: false,
-      activo: true,
-    }));
+    const inserts = missingCsvDiscounts(mapped, catalog ?? [], etiqueta);
+    if (!inserts.length) return true;
     const { error } = await supabase.from("programa_descuentos").insert(inserts);
     if (error) {
       toast({ title: "No se pudieron registrar descuentos nuevos", description: error.message, variant: "destructive" });
-      return;
+      return false;
     }
     const avisos = inserts.map(i => ({
       programa: programas.find(p => p.id === i.programa_id)?.codigo_pcfb ?? i.programa_id,
       descuento: i.descuento,
       etiqueta,
     }));
-    setDescuentosNuevos(avisos);
+    setDescuentosNuevos(prev => [...prev, ...avisos].filter((a, i, all) => all.findIndex(b => b.programa === a.programa && b.descuento === a.descuento) === i));
     // Refrescar catálogo de programas con los nuevos descuentos
     const { data } = await supabase
       .from("programas")
@@ -233,6 +227,7 @@ export default function EmisionMasiva() {
       title: `${avisos.length} descuento(s) nuevo(s) agregados`,
       description: avisos.map(a => `${a.programa}: ${(a.descuento * 100).toFixed(2)}%`).join(" · "),
     });
+    return true;
   }
 
 
@@ -287,13 +282,9 @@ export default function EmisionMasiva() {
   }
 
   function updatePrograma(i: number, programaId: string) {
-    const programa = programas.find(p => p.id === programaId);
-    const def = programa?.programa_descuentos?.find(d => d.es_default && d.activo)
-      ?? programa?.programa_descuentos?.find(d => d.activo);
-    updateRow(i, {
-      programa_id: programaId,
-      descuento_decimal: def ? Number(def.descuento) : (programa ? Number(programa.descuento_base) : rows[i].descuento_decimal),
-    });
+    const mapped = rows.map((row, index) => index === i ? { ...row, programa_id: programaId } : row);
+    setRows(mapped);
+    void queueDiscountSync(mapped);
   }
 
   const stats = useMemo(() => {
@@ -313,6 +304,7 @@ export default function EmisionMasiva() {
     setGenerating("vector");
     try {
       const includedRows = rows.filter(r => r.include);
+      if (!await queueDiscountSync(includedRows)) throw new Error("Revisa los descuentos del programa antes de continuar.");
       const rateByDate = await resolveRatesByReferenceDate(includedRows, programas, fechaEmision, tasaBcv, fetchBcvRate);
       const vectorXlsx = buildVectorXlsx(buildLocalVectorRows(includedRows, cedentes, financistas, programas, fechaEmision, tasaBcv, rateByDate), fechaEmision);
       downloadBlob(new Blob([vectorXlsx], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `VECTOR_${fechaEmision}_CONSOLIDADO.xlsx`);
@@ -334,6 +326,7 @@ export default function EmisionMasiva() {
 
     setGenerating("zip");
     try {
+      if (!await queueDiscountSync(rows.filter(r => r.include))) throw new Error("Revisa los descuentos del programa antes de continuar.");
       const payload = {
         fecha_emision: fechaEmision,
         tasa_bcv: tasaBcv,
@@ -594,6 +587,9 @@ export default function EmisionMasiva() {
                                 >
                                   <SelectTrigger className="h-7 w-28 text-[11px]"><SelectValue /></SelectTrigger>
                                   <SelectContent>
+                                    {!descs.some(d => Number(d.descuento) === r.descuento_decimal) && (
+                                      <SelectItem value={String(r.descuento_decimal)}>{(r.descuento_decimal * 100).toFixed(2)}% CSV</SelectItem>
+                                    )}
                                     {descs.sort((a, b) => a.descuento - b.descuento).map(d => (
                                       <SelectItem key={d.id} value={String(d.descuento)}>
                                         {(d.descuento * 100).toFixed(2)}%{d.etiqueta ? ` ${d.etiqueta}` : ""}
