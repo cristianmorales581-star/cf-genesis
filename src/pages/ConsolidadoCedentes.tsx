@@ -13,6 +13,14 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fmtDate, fmtUSD } from "@/lib/format";
 import { consolidateCedentes, emissionCedente, type IssuedRow } from "@/lib/cedenteConsolidation";
 
+const CHART_COLORS = [
+  "hsl(188 70% 52%)", "hsl(152 56% 48%)", "hsl(35 90% 58%)", "hsl(262 60% 62%)",
+  "hsl(0 70% 60%)", "hsl(210 80% 60%)", "hsl(90 55% 50%)", "hsl(320 60% 60%)",
+];
+const MAX_CHART_CEDENTES = 8;
+const fmtCompactUSD = (n: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 }).format(n);
+
 export default function ConsolidadoCedentes() {
   const [rows, setRows] = useState<IssuedRow[]>([]);
   const [loading, setLoading] = useState(true);
