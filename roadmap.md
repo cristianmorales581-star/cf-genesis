@@ -1,3 +1,8 @@
+# Cedente issuance consolidation
+- [ ] Add monthly and weekly issued nominal USD totals per cedente with date and cedente filters.
+- [ ] Register the new section in navigation and role access settings.
+- [ ] Test aggregation and verify the section with authenticated real records.
+
 # CSV discount compatibility
 - [x] Recognize percentage discount headers in the new CSV without replacing values with program defaults.
 - [x] Preserve CSV discounts on program reassignment and register missing values automatically.
