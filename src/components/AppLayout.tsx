@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, Building2, BookOpenCheck,
   FilePlus2, FileStack, Upload, ScrollText, LogOut, FileSpreadsheet,
-  Database, Briefcase, ShieldCheck, CalendarClock,
+  Database, Briefcase, ShieldCheck, CalendarClock, BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import gbvLogo from "@/assets/gbv-logo-white.png.asset.json";
@@ -19,6 +19,7 @@ const NAV = [
   { to: "/confirmaciones",   icon: Upload,           label: "Confirmaciones",              group: "operación", section: "confirmaciones" },
   { to: "/portafolio",       icon: Briefcase,        label: "Portafolio",                  group: "operación", section: "portafolio" },
   { to: "/honorarios",       icon: FileSpreadsheet,  label: "Honorarios",                  group: "backoffice", section: "honorarios" },
+  { to: "/consolidado-cedentes", icon: BarChart3, label: "Consolidado por cedente", group: "backoffice", section: "consolidado_cedentes" },
   { to: "/backoffice/reporte-ras", icon: FileSpreadsheet, label: "Reporte RAS",            group: "backoffice", section: "reporte_ras" },
   { to: "/backoffice/reporte-agilecheck", icon: FileSpreadsheet, label: "Reporte AgileCheck", group: "backoffice", section: "reporte_agilecheck" },
   { to: "/backoffice/carga-historica", icon: Upload, label: "Carga Histórica",            group: "backoffice", section: "carga_historica", adminOnly: true },
