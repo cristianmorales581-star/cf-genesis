@@ -60,6 +60,22 @@ export default function ConsolidadoCedentes() {
   const filtered = useMemo(() => invalidRange ? [] : rows.filter(r => (!from || r.fecha_emision >= from) && (!to || r.fecha_emision <= to) && (cedenteId === "__all__" || emissionCedente(r)?.id === cedenteId)), [rows, from, to, cedenteId, invalidRange]);
   const consolidated = useMemo(() => consolidateCedentes(filtered, mode), [filtered, mode]);
   const nominal = filtered.reduce((sum, row) => sum + Number(row.valor_nominal_usd), 0);
+  const chart = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const row of consolidated) totals.set(row.cedente, (totals.get(row.cedente) ?? 0) + row.nominal);
+    const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]);
+    const top = ranked.slice(0, MAX_CHART_CEDENTES).map(([name]) => name);
+    const series = ranked.length > MAX_CHART_CEDENTES ? [...top, "Otros"] : top;
+    const periods = new Map<string, Record<string, number | string>>();
+    for (const row of consolidated) {
+      const bucket = series.includes(row.cedente) ? row.cedente : "Otros";
+      const point = periods.get(row.start) ?? { periodo: row.start };
+      point[bucket] = (Number(point[bucket]) || 0) + row.nominal;
+      periods.set(row.start, point);
+    }
+    const data = [...periods.values()].sort((a, b) => String(a.periodo).localeCompare(String(b.periodo)));
+    return { data, series };
+  }, [consolidated]);
   return <>
     <PageHeader title="Consolidado por cedente" />
     <div className="flex flex-wrap items-end gap-4 mb-6">
