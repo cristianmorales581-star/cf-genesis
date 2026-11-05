@@ -4,3 +4,4 @@
 - Calendar daily detail reuses the Emisiones view with a server-side date scope; standalone vector exports reuse buildVectorRow/buildVectorXlsx to keep table capabilities and document formats consistent.
 - Daily signing state is persisted separately from financial emission state with staff-only write policies, so document tracking cannot grant emission editing rights.
 - Batch CSV discount registration uses a shared deduplicating helper and a fresh program catalog before writes; program reassignment preserves the row discount to avoid silently changing financial terms.
+- Cedente issuance consolidation uses a shared tested aggregator keyed by counterparty ID and emission-date period with complete paginated reads, so programless titles remain included and same-name counterparties do not merge.

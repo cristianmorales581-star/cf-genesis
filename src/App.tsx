@@ -28,6 +28,7 @@ import CargaHistorica from "./pages/CargaHistorica";
 import Papelera from "./pages/Papelera";
 import OperacionesDia from "./pages/OperacionesDia";
 import CalendarioEmisiones from "./pages/CalendarioEmisiones";
+import ConsolidadoCedentes from "./pages/ConsolidadoCedentes";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/emisiones" element={<Emisiones />} />
               <Route path="/operaciones-dia" element={<OperacionesDia />} />
               <Route path="/calendario-emisiones" element={<ProtectedRoute section="calendario_emisiones"><CalendarioEmisiones /></ProtectedRoute>} />
+              <Route path="/consolidado-cedentes" element={<ProtectedRoute section="consolidado_cedentes"><ConsolidadoCedentes /></ProtectedRoute>} />
               <Route path="/emisiones/nueva" element={<ProtectedRoute requireAdmin><NuevaEmision /></ProtectedRoute>} />
               <Route path="/emisiones/papelera" element={<ProtectedRoute requireAdmin><Papelera /></ProtectedRoute>} />
               <Route path="/emisiones/masiva" element={<ProtectedRoute requireAdmin><EmisionMasiva /></ProtectedRoute>} />
