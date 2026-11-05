@@ -94,6 +94,30 @@ export default function ConsolidadoCedentes() {
       : <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] gap-4 mb-6"><div className="surface-card p-5 min-w-0 sm:col-span-2 lg:col-span-1"><p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">Monto nominal emitido USD</p><p className="mt-2 font-display text-xl font-semibold tabular-nums break-all">{fmtUSD(nominal)}</p></div><StatCard label="CFB emitidos" value={String(filtered.length)} /><StatCard label="Cedentes" value={String(new Set(consolidated.map(r => r.cedenteId)).size)} /></div>
         <Tabs value={mode} onValueChange={value => { if (value === "month" || value === "week") setMode(value); }} className="mb-4"><TabsList aria-label="Periodo del consolidado"><TabsTrigger value="month">Por mes</TabsTrigger><TabsTrigger value="week">Por semana</TabsTrigger></TabsList></Tabs>
+        {chart.data.length > 0 && (
+          <div className="surface-card p-5 mb-6" role="img" aria-label={`Gráfico de monto nominal emitido por cedente ${mode === "month" ? "por mes" : "por semana"}`}>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold mb-4">Monto nominal emitido USD {mode === "month" ? "por mes" : "por semana"}</p>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chart.data} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="periodo" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={{ stroke: "hsl(var(--border))" }}
+                    tickFormatter={value => mode === "month" ? format(parseISO(String(value)), "MMM yy", { locale: es }) : fmtDate(String(value))} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={value => fmtCompactUSD(Number(value))} width={70} />
+                  <Tooltip cursor={{ fill: "hsl(var(--secondary) / 0.4)" }}
+                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)", fontSize: 12 }}
+                    labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
+                    labelFormatter={value => mode === "month" ? format(parseISO(String(value)), "MMMM yyyy", { locale: es }) : `Semana del ${fmtDate(String(value))}`}
+                    formatter={(value: number, name: string) => [fmtUSD(value), name]} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  {chart.series.map((name, i) => (
+                    <Bar key={name} dataKey={name} stackId="nominal" fill={CHART_COLORS[i % CHART_COLORS.length]} radius={i === chart.series.length - 1 ? [3, 3, 0, 0] : 0} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
         <div className="overflow-x-auto border-y border-border"><table className="w-full min-w-[760px] text-sm" aria-label={mode === "month" ? "Consolidado mensual por cedente" : "Consolidado semanal por cedente"}>
           <thead className="bg-secondary/40 text-xs text-muted-foreground"><tr><th className="text-left px-4 py-3">{mode === "month" ? "Mes" : "Semana (lunes a domingo)"}</th><th className="text-left px-4 py-3">Cedente</th><th className="text-left px-4 py-3">RIF</th><th className="text-right px-4 py-3">CFB</th><th className="text-right px-4 py-3 whitespace-nowrap">Monto nominal emitido USD</th></tr></thead>
           <tbody>{consolidated.map(row => <tr key={row.key} className="border-t border-border hover:bg-secondary/30"><td className="px-4 py-3 whitespace-nowrap capitalize">{mode === "month" ? format(parseISO(row.start), "MMMM yyyy", { locale: es }) : `${fmtDate(row.start)} – ${fmtDate(row.end)}`}</td><td className="px-4 py-3 font-medium">{row.cedente}</td><td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{row.rif}</td><td className="px-4 py-3 text-right tabular-nums">{row.count}</td><td className="px-4 py-3 text-right whitespace-nowrap"><Numeric>{fmtUSD(row.nominal)}</Numeric></td></tr>)}{!consolidated.length && <tr><td colSpan={5} className="text-center py-12 text-muted-foreground">Sin emisiones en este período</td></tr>}</tbody>
